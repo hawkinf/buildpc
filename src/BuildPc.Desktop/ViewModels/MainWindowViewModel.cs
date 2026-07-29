@@ -156,6 +156,9 @@ public sealed class MainWindowViewModel : ViewModelBase
             _businessSettings,
             CategoryOptions,
             SaveBusinessSettings,
+            apiSettings,
+            settings => SaveApiSettings(apiSettingsPath, settings),
+            TestApiConnectionAsync,
             ApplicationThemeService.Apply);
         BulkDescriptionOperations =
         [
@@ -787,6 +790,25 @@ public sealed class MainWindowViewModel : ViewModelBase
         _businessSettings = settings;
         ApplicationThemeService.Apply(settings.ThemeMode);
         FlexibleList.ApplySettings(settings);
+    }
+
+    private static void SaveApiSettings(
+        string settingsPath,
+        BuildPcApiSettings? settings)
+    {
+        if (settings is null)
+        {
+            BuildPcApiSettings.Disable(settingsPath);
+            return;
+        }
+
+        settings.Save(settingsPath);
+    }
+
+    private static async Task TestApiConnectionAsync(BuildPcApiSettings settings)
+    {
+        using var client = new BuildPcApiClient(settings);
+        await client.TestConnectionAsync();
     }
 
     private ImportSourceViewModel ImportSource(

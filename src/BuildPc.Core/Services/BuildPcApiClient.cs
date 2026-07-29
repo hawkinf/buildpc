@@ -155,6 +155,36 @@ public sealed class BuildPcApiClient :
     public IReadOnlyList<SavedQuote> GetQuotes() =>
         Send<List<SavedQuote>>(HttpMethod.Get, "quotes");
 
+    public async Task TestConnectionAsync()
+    {
+        using var response = await _httpClient
+            .GetAsync("connection")
+            .ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content
+                .ReadAsStringAsync()
+                .ConfigureAwait(false);
+            throw CreateHttpError(response, body);
+        }
+
+        await using var stream = await response.Content
+            .ReadAsStreamAsync()
+            .ConfigureAwait(false);
+        using var document = await JsonDocument
+            .ParseAsync(stream)
+            .ConfigureAwait(false);
+        if (!document.RootElement.TryGetProperty("status", out var status) ||
+            !string.Equals(
+                status.GetString(),
+                "ok",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "O endereço respondeu, mas não parece ser uma API do BuildPC.");
+        }
+    }
+
     public void Dispose() => _httpClient.Dispose();
 
     private T Send<T>(HttpMethod method, string path, object? content = null)
@@ -215,8 +245,15 @@ public sealed class BuildPcApiClient :
         }
 
         var body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        throw CreateHttpError(response, body);
+    }
+
+    private static InvalidOperationException CreateHttpError(
+        HttpResponseMessage response,
+        string body)
+    {
         var detail = TryReadProblemDetail(body);
-        throw new InvalidOperationException(
+        return new InvalidOperationException(
             detail ??
             $"O servidor do BuildPC respondeu com o código {(int)response.StatusCode}.");
     }

@@ -58,6 +58,10 @@ O aplicativo continua usando SQLite quando não existe o arquivo
 e uma chave válidas, produtos, configurações e orçamentos passam a ser lidos e
 gravados pela API `BuildPc.Api`.
 
+A seção **Configurações > Servidor de dados** permite testar e trocar a URL e a
+chave da API, ou voltar ao SQLite local. A alteração entra em vigor depois que o
+BuildPC é reiniciado; a senha do PostgreSQL permanece somente na VPS.
+
 Na VPS, a API acessa o PostgreSQL por `127.0.0.1:5432` e o Nginx publica somente
 o caminho HTTPS `/buildpc-api/`. A porta do banco não deve ser liberada no
 firewall. Modelos de configuração ficam na pasta `deploy`. O timer de backup

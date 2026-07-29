@@ -63,6 +63,25 @@ public sealed class BuildPcApiClientTests
         Assert.Equal("Chave inválida.", exception.Message);
     }
 
+    [Fact]
+    public async Task TestConnectionAcceptsBuildPcHealthResponse()
+    {
+        var handler = new StubHttpMessageHandler(request =>
+        {
+            Assert.Equal(
+                "https://buildpc.example/connection",
+                request.RequestUri?.ToString());
+            return JsonResponse("""{"status":"ok"}""");
+        });
+        using var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://buildpc.example/")
+        };
+        using var client = new BuildPcApiClient(httpClient, "secret");
+
+        await client.TestConnectionAsync();
+    }
+
     private static HttpResponseMessage JsonResponse(
         string json,
         HttpStatusCode statusCode = HttpStatusCode.OK) =>

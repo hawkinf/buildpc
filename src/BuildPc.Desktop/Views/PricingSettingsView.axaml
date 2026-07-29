@@ -7,7 +7,7 @@
     <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="30,20">
       <StackPanel Spacing="4">
         <TextBlock Text="Configurações" FontSize="22" FontWeight="Bold" />
-        <TextBlock Text="Defina margens de lucro e os dados exibidos nos orçamentos."
+        <TextBlock Text="Defina o servidor de dados, margens e informações dos orçamentos."
                    Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="12" />
       </StackPanel>
     </Border>
@@ -41,6 +41,94 @@
               <TextBlock Text="A alteração é aplicada imediatamente. Use “Salvar configurações” para mantê-la."
                          FontSize="9" TextWrapping="Wrap"
                          Foreground="{DynamicResource Brush.TextMuted}" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" DataContext="{Binding ServerSettings}">
+            <StackPanel Spacing="13">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Servidor de dados" FontSize="16" FontWeight="Bold" />
+                <TextBlock
+                    Text="Troque a VPS utilizada pelo BuildPC sem expor a senha do PostgreSQL."
+                    Foreground="{DynamicResource Brush.TextSecondary}"
+                    FontSize="10"
+                    TextWrapping="Wrap" />
+              </StackPanel>
+
+              <CheckBox
+                  IsChecked="{Binding UseServer, Mode=TwoWay}"
+                  Content="Usar API em uma VPS" />
+
+              <Border Classes="input-group" IsEnabled="{Binding UseServer}">
+                <StackPanel Spacing="11">
+                  <StackPanel Spacing="5">
+                    <TextBlock Text="Endereço da API" FontSize="10" />
+                    <TextBox
+                        Text="{Binding ServerUrl, Mode=TwoWay}"
+                        PlaceholderText="https://servidor.exemplo/buildpc-api/" />
+                    <TextBlock
+                        Text="Use sempre HTTPS. Não informe aqui o endereço direto do PostgreSQL."
+                        FontSize="9"
+                        TextWrapping="Wrap"
+                        Foreground="{DynamicResource Brush.TextMuted}" />
+                  </StackPanel>
+
+                  <StackPanel Spacing="5">
+                    <TextBlock Text="Chave de acesso" FontSize="10" />
+                    <Grid>
+                      <TextBox
+                          Text="{Binding ApiKey, Mode=TwoWay}"
+                          PasswordChar="●"
+                          IsVisible="{Binding HideApiKey}"
+                          PlaceholderText="Chave fornecida pela API" />
+                      <TextBox
+                          Text="{Binding ApiKey, Mode=TwoWay}"
+                          IsVisible="{Binding ShowApiKey}"
+                          PlaceholderText="Chave fornecida pela API" />
+                    </Grid>
+                    <CheckBox
+                        IsChecked="{Binding ShowApiKey, Mode=TwoWay}"
+                        Content="Mostrar chave de acesso"
+                        FontSize="10" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+
+              <TextBlock
+                  IsVisible="{Binding UseLocalDatabase}"
+                  Text="Ao salvar, o BuildPC voltará a usar o SQLite deste computador."
+                  FontSize="9"
+                  TextWrapping="Wrap"
+                  Foreground="{DynamicResource Brush.TextMuted}" />
+
+              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                <TextBlock
+                    Text="{Binding StatusMessage}"
+                    IsVisible="{Binding HasStatus}"
+                    TextWrapping="Wrap"
+                    VerticalAlignment="Center"
+                    FontSize="10"
+                    Foreground="{DynamicResource Brush.TextLabel}" />
+                <Button
+                    Grid.Column="1"
+                    Classes="secondary"
+                    Command="{Binding TestConnectionCommand}"
+                    IsVisible="{Binding UseServer}">
+                  <TextBlock Text="Testar conexão" />
+                </Button>
+                <Button
+                    Grid.Column="2"
+                    Classes="primary"
+                    Command="{Binding SaveCommand}">
+                  <TextBlock Text="Salvar acesso" Foreground="White" />
+                </Button>
+              </Grid>
+
+              <TextBlock
+                  Text="A alteração será usada depois que o programa for reiniciado."
+                  FontSize="9"
+                  TextWrapping="Wrap"
+                  Foreground="{DynamicResource Brush.TextMuted}" />
             </StackPanel>
           </Border>
 

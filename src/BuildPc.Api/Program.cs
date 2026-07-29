@@ -95,6 +95,11 @@ app.MapGet("/health", () => Results.Ok(new
     utc = DateTimeOffset.UtcNow
 }));
 
+app.MapGet("/connection", () => Results.Ok(new
+{
+    status = "ok"
+}));
+
 app.MapGet(
     "/products",
     (PostgresBuildPcRepository repository) => repository.GetAll());

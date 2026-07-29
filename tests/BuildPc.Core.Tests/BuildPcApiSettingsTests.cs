@@ -60,6 +60,35 @@ public sealed class BuildPcApiSettingsTests
         }
     }
 
+    [Fact]
+    public void SaveAndDisableManageConfigurationAtomically()
+    {
+        var path = CreateTemporaryPath();
+        try
+        {
+            var expected = new BuildPcApiSettings
+            {
+                BaseUrl = "https://servidor.example/buildpc-api/",
+                ApiKey = "secret"
+            };
+
+            expected.Save(path);
+
+            Assert.Equal(expected, BuildPcApiSettings.Load(path));
+            Assert.Empty(Directory.GetFiles(
+                Path.GetDirectoryName(path)!,
+                $"{Path.GetFileName(path)}.*.tmp"));
+
+            BuildPcApiSettings.Disable(path);
+
+            Assert.False(File.Exists(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     private static string CreateTemporaryPath() =>
         Path.Combine(
             Path.GetTempPath(),

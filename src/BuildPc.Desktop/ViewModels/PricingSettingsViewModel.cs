@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Input;
 using BuildPc.Core.Models;
+using BuildPc.Core.Services;
 using BuildPc.Desktop.Services;
 
 namespace BuildPc.Desktop.ViewModels;
@@ -30,6 +31,9 @@ public sealed class PricingSettingsViewModel : ViewModelBase
         BusinessSettings settings,
         IReadOnlyList<CategoryOptionViewModel> categories,
         Action<BusinessSettings> save,
+        BuildPcApiSettings? apiSettings,
+        Action<BuildPcApiSettings?> saveApiSettings,
+        Func<BuildPcApiSettings, Task> testApiConnection,
         Action<AppThemeMode> applyTheme)
     {
         _categories = categories;
@@ -56,6 +60,10 @@ public sealed class PricingSettingsViewModel : ViewModelBase
         _companyAddress = settings.CompanyAddress;
         _logoPath = settings.LogoPath;
         _additionalQuoteInfo = settings.AdditionalQuoteInfo;
+        ServerSettings = new DataServerSettingsViewModel(
+            apiSettings,
+            saveApiSettings,
+            testApiConnection);
         CategoryMargins = [];
         foreach (var entry in settings.CategoryMargins)
         {
@@ -73,6 +81,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
     }
 
     public ObservableCollection<CategoryMarginViewModel> CategoryMargins { get; }
+    public DataServerSettingsViewModel ServerSettings { get; }
     public IReadOnlyList<ThemeModeOptionViewModel> ThemeOptions { get; }
     public IReadOnlyList<CategoryOptionViewModel> AvailableCategories =>
         _categories.Where(category =>

@@ -224,11 +224,14 @@ function Get-ProjetosExecutaveis {
             Caminho = $arquivo.FullName
             Alvo    = $alvosWindows | Select-Object -First 1
             Relativo = $arquivo.FullName.Replace("$RaizProjeto\", '')
+            # Aplicativos com janela são a opção natural para ENTER. APIs e
+            # workers continuam disponíveis, mas aparecem depois no menu.
+            Prioridade = if ($tipoSaida -eq 'WinExe') { 0 } elseif ($padraoExecutavel) { 2 } else { 1 }
         }
     }
 
     # Quem chama envolve em @(), o que garante array mesmo com zero ou um item.
-    return $resultado
+    return $resultado | Sort-Object Prioridade, Nome
 }
 
 # ---------------------------------------------------------------------------

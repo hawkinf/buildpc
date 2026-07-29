@@ -7,6 +7,7 @@ public sealed record SavedQuoteItem
     public string CategoryName { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
+    public string? ImageUrl { get; init; }
     public int Quantity { get; init; }
     public decimal UnitCost { get; init; }
     public decimal MarginPercent { get; init; }

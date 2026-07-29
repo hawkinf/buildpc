@@ -128,7 +128,8 @@
                                  MaxHeight="360">
                           <ListBox.ItemTemplate>
                             <DataTemplate>
-                              <Border Classes="option-row"
+                              <Border x:Name="flexiblePickerProductRow"
+                                      Classes="option-row"
                                       Classes.alternate="{Binding IsAlternate}"
                                       Margin="0,0,22,0">
                                 <Grid ColumnDefinitions="Auto,*,135" ColumnSpacing="9">
@@ -160,11 +161,18 @@
                                         Foreground="{DynamicResource Brush.TextSecondary}"
                                         TextTrimming="CharacterEllipsis" />
                                   </StackPanel>
-                                  <TextBlock Grid.Column="2"
-                                             Text="{Binding Price, StringFormat='R$ {0:N2}'}"
+                                   <TextBlock Grid.Column="2"
+                                              Text="{Binding Price, StringFormat='R$ {0:N2}'}"
                                              FontSize="11" Foreground="{DynamicResource Brush.Warning}"
                                              FontWeight="SemiBold" VerticalAlignment="Center"
-                                             Margin="10,0,0,0" TextAlignment="Right" />
+                                              Margin="10,0,0,0" TextAlignment="Right" />
+                                  <controls:ProductHoverPreview
+                                      Grid.ColumnSpan="3"
+                                      PlacementTarget="{Binding #flexiblePickerProductRow}"
+                                      Title="{Binding Name}"
+                                      Description="{Binding Description}"
+                                      ImageUrl="{Binding ImageUrl}"
+                                      Price="{Binding DisplayPrice}" />
                                 </Grid>
                               </Border>
                             </DataTemplate>
@@ -272,7 +280,8 @@
         <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Border Classes="component-row" Classes.alternate="{Binding IsAlternate}"
+              <Border x:Name="flexibleSelectedProductRow"
+                      Classes="component-row" Classes.alternate="{Binding IsAlternate}"
                       Margin="0,0,0,8">
                 <Grid ColumnDefinitions="84,100,1.15*,*,76,154,44"
                       ColumnSpacing="10"
@@ -355,6 +364,13 @@
                     <PathIcon Data="{StaticResource Icon.Clear}" Width="15" Height="15"
                               Foreground="{DynamicResource Brush.Error}" />
                   </Button>
+                  <controls:ProductHoverPreview
+                      Grid.ColumnSpan="7"
+                      PlacementTarget="{Binding #flexibleSelectedProductRow}"
+                      Title="{Binding Name}"
+                      Description="{Binding Description}"
+                      ImageUrl="{Binding ImageUrl}"
+                      Price="{Binding SellingUnitPrice}" />
                 </Grid>
               </Border>
             </DataTemplate>

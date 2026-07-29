@@ -309,7 +309,8 @@
                                      MaxHeight="360">
                               <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                  <Border Classes="option-row"
+                                  <Border x:Name="assemblyPickerProductRow"
+                                          Classes="option-row"
                                           Classes.alternate="{Binding IsAlternate}">
                                     <Grid ColumnDefinitions="Auto,*,135" ColumnSpacing="9">
                                       <Border Width="42" Height="42" CornerRadius="6"
@@ -354,12 +355,19 @@
                                             Foreground="{DynamicResource Brush.AccentLight}"
                                             TextTrimming="CharacterEllipsis" />
                                       </StackPanel>
-                                      <TextBlock Grid.Column="2"
-                                                 Text="{Binding Price, StringFormat='R$ {0:N2}'}"
+                                       <TextBlock Grid.Column="2"
+                                                  Text="{Binding Price, StringFormat='R$ {0:N2}'}"
                                                  FontSize="11" Foreground="{DynamicResource Brush.Warning}"
                                                  FontWeight="SemiBold" VerticalAlignment="Center"
-                                                 Margin="10,0,0,0"
-                                                 TextAlignment="Right" />
+                                                  Margin="10,0,0,0"
+                                                  TextAlignment="Right" />
+                                      <controls:ProductHoverPreview
+                                          Grid.ColumnSpan="3"
+                                          PlacementTarget="{Binding #assemblyPickerProductRow}"
+                                          Title="{Binding Name}"
+                                          Description="{Binding Description}"
+                                          ImageUrl="{Binding ImageUrl}"
+                                          Price="{Binding DisplayPrice}" />
                                     </Grid>
                                   </Border>
                                 </DataTemplate>
@@ -415,16 +423,24 @@
             <ItemsControl ItemsSource="{Binding SelectedItems}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,13">
+                  <Grid x:Name="assemblySelectedProductRow"
+                        ColumnDefinitions="*,Auto" Margin="0,0,0,13">
                     <StackPanel Spacing="2">
                       <TextBlock Text="{Binding Category}" FontSize="9" Foreground="{DynamicResource Brush.TextMuted}" />
                       <TextBlock Text="{Binding Name}" FontSize="11"
                                  Foreground="{DynamicResource Brush.AccentPale}"
                                  TextTrimming="CharacterEllipsis" MaxWidth="195" />
                     </StackPanel>
-                    <TextBlock Grid.Column="1" Text="{Binding Price}" FontSize="11"
-                               Foreground="{DynamicResource Brush.Warning}"
-                               FontWeight="SemiBold" VerticalAlignment="Bottom" />
+                     <TextBlock Grid.Column="1" Text="{Binding Price}" FontSize="11"
+                                Foreground="{DynamicResource Brush.Warning}"
+                                FontWeight="SemiBold" VerticalAlignment="Bottom" />
+                    <controls:ProductHoverPreview
+                        Grid.ColumnSpan="2"
+                        PlacementTarget="{Binding #assemblySelectedProductRow}"
+                        Title="{Binding Name}"
+                        Description="{Binding Description}"
+                        ImageUrl="{Binding ImageUrl}"
+                        Price="{Binding Price}" />
                   </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
@@ -701,7 +717,8 @@
                       <Button Grid.Column="1" Classes="catalog-item"
                               Click="CatalogProduct_Click"
                               ToolTip.Tip="Clique para editar o produto">
-                        <Border Classes="catalog-row"
+                        <Border x:Name="catalogProductRow"
+                                Classes="catalog-row"
                                 Classes.alternate="{Binding IsAlternate}"
                                 Classes.selected="{Binding IsSelected}">
                           <Grid ColumnDefinitions="Auto,*,115" ColumnSpacing="12">
@@ -742,13 +759,20 @@
                                        TextTrimming="CharacterEllipsis"
                                        MaxLines="1" />
                           </StackPanel>
-                          <TextBlock Grid.Column="2"
-                                     Text="{Binding DisplayPrice}"
+                           <TextBlock Grid.Column="2"
+                                      Text="{Binding DisplayPrice}"
                                      Foreground="{DynamicResource Brush.Warning}"
                                      FontSize="11" FontWeight="SemiBold"
-                                     TextAlignment="Right"
-                                     VerticalAlignment="Center" />
-                          </Grid>
+                                      TextAlignment="Right"
+                                      VerticalAlignment="Center" />
+                           <controls:ProductHoverPreview
+                               Grid.ColumnSpan="3"
+                               PlacementTarget="{Binding #catalogProductRow}"
+                               Title="{Binding Name}"
+                               Description="{Binding Description}"
+                               ImageUrl="{Binding ImageUrl}"
+                               Price="{Binding DisplayPrice}" />
+                           </Grid>
                         </Border>
                       </Button>
                     </Grid>

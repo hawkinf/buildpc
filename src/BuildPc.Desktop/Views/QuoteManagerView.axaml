@@ -1,7 +1,8 @@
 <UserControl
     x:Class="BuildPc.Desktop.Views.QuoteManagerView"
     xmlns="https://github.com/avaloniaui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:BuildPc.Desktop.Controls">
 
   <Grid RowDefinitions="Auto,*">
     <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="30,20">
@@ -73,7 +74,8 @@
                           Margin="0,0,36,0">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Border Classes="component-row"
+                  <Border x:Name="savedQuoteProductRow"
+                          Classes="component-row"
                           Classes.alternate="{Binding IsAlternate}"
                           Margin="0,0,0,7" Padding="10">
                     <Grid ColumnDefinitions="54,*,170">
@@ -98,6 +100,13 @@
                                    FontSize="9"
                                    Foreground="{DynamicResource Brush.TextSecondary}" />
                       </StackPanel>
+                      <controls:ProductHoverPreview
+                          Grid.ColumnSpan="3"
+                          PlacementTarget="{Binding #savedQuoteProductRow}"
+                          Title="{Binding Name}"
+                          Description="{Binding Description}"
+                          ImageUrl="{Binding ImageUrl}"
+                          Price="{Binding TotalPriceText}" />
                     </Grid>
                   </Border>
                 </DataTemplate>

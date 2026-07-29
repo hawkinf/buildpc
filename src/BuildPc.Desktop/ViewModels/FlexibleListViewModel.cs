@@ -365,6 +365,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
             CategoryName = item.CategoryName,
             Name = item.Name.Trim(),
             Description = item.Description.Trim(),
+            ImageUrl = item.ImageUrl,
             Quantity = item.Quantity,
             UnitCost = item.UnitPriceValue,
             MarginPercent = item.MarginPercent,

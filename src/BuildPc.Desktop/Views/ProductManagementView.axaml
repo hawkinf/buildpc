@@ -303,7 +303,8 @@
                           HorizontalContentAlignment="Stretch"
                           Margin="0,0,0,7"
                           ToolTip.Tip="Selecione para editar ou excluir">
-                    <Border Classes="catalog-row"
+                    <Border x:Name="managedProductRow"
+                            Classes="catalog-row"
                             Classes.alternate="{Binding IsAlternate}"
                             Classes.selected="{Binding IsSelected}">
                       <Grid ColumnDefinitions="Auto,*,105"
@@ -350,6 +351,13 @@
                                    Foreground="{DynamicResource Brush.Warning}"
                                    TextAlignment="Right"
                                    VerticalAlignment="Center" />
+                        <controls:ProductHoverPreview
+                            Grid.ColumnSpan="3"
+                            PlacementTarget="{Binding #managedProductRow}"
+                            Title="{Binding Name}"
+                            Description="{Binding Description}"
+                            ImageUrl="{Binding ImageUrl}"
+                            Price="{Binding DisplayPrice}" />
                       </Grid>
                     </Border>
                   </Button>

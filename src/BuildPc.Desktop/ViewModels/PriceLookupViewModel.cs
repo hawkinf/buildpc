@@ -235,8 +235,6 @@ public sealed class PriceLookupItemViewModel : ViewModelBase
     private decimal _displayPriceValue;
     private string _displayPrice = string.Empty;
     private bool _isAlternate;
-    private bool _isPreviewOpen;
-    private bool _isPreviewVisible;
 
     public PriceLookupItemViewModel(
         PcComponent component,
@@ -272,17 +270,6 @@ public sealed class PriceLookupItemViewModel : ViewModelBase
         get => _isAlternate;
         private set => SetProperty(ref _isAlternate, value);
     }
-    public bool IsPreviewOpen
-    {
-        get => _isPreviewOpen;
-        internal set => SetProperty(ref _isPreviewOpen, value);
-    }
-    public bool IsPreviewVisible
-    {
-        get => _isPreviewVisible;
-        internal set => SetProperty(ref _isPreviewVisible, value);
-    }
-
     public void SetDisplayPrice(decimal price)
     {
         DisplayPriceValue = price;

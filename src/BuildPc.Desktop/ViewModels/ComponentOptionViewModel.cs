@@ -23,4 +23,6 @@ public sealed class ComponentOptionViewModel(
             .Where(value => !string.IsNullOrWhiteSpace(value)));
     public bool HasSpecifications => Specifications.Length > 0;
     public decimal Price => displayPrice ?? Component.Price;
+    public string DisplayPrice =>
+        Price.ToString("C", MainWindowViewModel.BrazilianCulture);
 }

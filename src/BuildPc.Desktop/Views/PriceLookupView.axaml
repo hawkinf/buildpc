@@ -162,9 +162,7 @@
               <Border x:Name="lookupProductRow"
                       Classes="catalog-row"
                       Classes.alternate="{Binding IsAlternate}"
-                      Padding="12,8"
-                      PointerEntered="ProductRow_PointerEntered"
-                      PointerExited="ProductRow_PointerExited">
+                      Padding="12,8">
                 <Grid>
                   <Grid ColumnDefinitions="52,*,180" ColumnSpacing="12">
                     <Border Width="48"
@@ -208,62 +206,12 @@
                                Foreground="{DynamicResource Brush.Warning}" />
                   </Grid>
 
-                  <Popup IsOpen="{Binding IsPreviewOpen}"
-                         PlacementTarget="{Binding #lookupProductRow}"
-                         Placement="Pointer"
-                         HorizontalOffset="18"
-                         VerticalOffset="18"
-                         IsLightDismissEnabled="False">
-                    <Border Classes="price-preview"
-                            Classes.visible="{Binding IsPreviewVisible}"
-                            IsHitTestVisible="False"
-                            Width="470"
-                            Padding="16">
-                      <Grid ColumnDefinitions="132,*"
-                            RowDefinitions="Auto,*,Auto"
-                            ColumnSpacing="15"
-                            RowSpacing="8">
-                        <Border Grid.RowSpan="3"
-                                Width="132"
-                                Height="132"
-                                CornerRadius="9"
-                                Background="White">
-                          <Grid>
-                            <PathIcon Data="{StaticResource Icon.Products}"
-                                      Width="30"
-                                      Height="30"
-                                      Foreground="{DynamicResource Brush.TextMuted}"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center" />
-                            <controls:RemoteImage Url="{Binding ImageUrl}"
-                                                  Stretch="Uniform"
-                                                  Margin="5" />
-                          </Grid>
-                        </Border>
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding Name}"
-                                   TextWrapping="Wrap"
-                                   MaxLines="2"
-                                   FontSize="14"
-                                   FontWeight="Bold"
-                                   Foreground="{DynamicResource Brush.AccentPale}" />
-                        <TextBlock Grid.Column="1"
-                                   Grid.Row="1"
-                                   Text="{Binding Description}"
-                                   TextWrapping="Wrap"
-                                   MaxLines="4"
-                                   FontSize="10"
-                                   Foreground="{DynamicResource Brush.TextBody}" />
-                        <TextBlock Grid.Column="1"
-                                   Grid.Row="2"
-                                   Text="{Binding DisplayPrice}"
-                                   HorizontalAlignment="Right"
-                                   FontSize="17"
-                                   FontWeight="Bold"
-                                   Foreground="{DynamicResource Brush.Warning}" />
-                      </Grid>
-                    </Border>
-                  </Popup>
+                  <controls:ProductHoverPreview
+                      PlacementTarget="{Binding #lookupProductRow}"
+                      Title="{Binding Name}"
+                      Description="{Binding Description}"
+                      ImageUrl="{Binding ImageUrl}"
+                      Price="{Binding DisplayPrice}" />
                 </Grid>
               </Border>
             </DataTemplate>

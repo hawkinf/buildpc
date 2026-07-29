@@ -1,0 +1,65 @@
+<UserControl
+    x:Class="BuildPc.Desktop.Controls.ProductHoverPreview"
+    x:Name="previewRoot"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:BuildPc.Desktop.Controls"
+    IsHitTestVisible="False">
+
+  <Popup x:Name="previewPopup"
+         PlacementTarget="{Binding #previewRoot.PlacementTarget}"
+         Placement="Pointer"
+         HorizontalOffset="18"
+         VerticalOffset="18"
+         IsLightDismissEnabled="False">
+    <Border Classes="price-preview"
+            Classes.visible="{Binding #previewRoot.IsExpanded}"
+            IsHitTestVisible="False"
+            Width="470"
+            Padding="16">
+      <Grid ColumnDefinitions="132,*"
+            RowDefinitions="Auto,*,Auto"
+            ColumnSpacing="15"
+            RowSpacing="8">
+        <Border Grid.RowSpan="3"
+                Width="132"
+                Height="132"
+                CornerRadius="9"
+                Background="White">
+          <Grid>
+            <PathIcon Data="{StaticResource Icon.Products}"
+                      Width="30"
+                      Height="30"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center" />
+            <controls:RemoteImage Url="{Binding #previewRoot.ImageUrl}"
+                                  Stretch="Uniform"
+                                  Margin="5" />
+          </Grid>
+        </Border>
+        <TextBlock Grid.Column="1"
+                   Text="{Binding #previewRoot.Title}"
+                   TextWrapping="Wrap"
+                   MaxLines="2"
+                   FontSize="14"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource Brush.AccentPale}" />
+        <TextBlock Grid.Column="1"
+                   Grid.Row="1"
+                   Text="{Binding #previewRoot.Description}"
+                   TextWrapping="Wrap"
+                   MaxLines="4"
+                   FontSize="10"
+                   Foreground="{DynamicResource Brush.TextBody}" />
+        <TextBlock Grid.Column="1"
+                   Grid.Row="2"
+                   Text="{Binding #previewRoot.Price}"
+                   HorizontalAlignment="Right"
+                   FontSize="17"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource Brush.Warning}" />
+      </Grid>
+    </Border>
+  </Popup>
+</UserControl>

@@ -827,7 +827,9 @@
                   <Button Grid.Column="2" Classes="list-header"
                           Classes.active="{Binding IsCatalogDescriptionSortActive}"
                           Command="{Binding SortCatalogByDescriptionCommand}"
-                          HorizontalContentAlignment="Left">
+                          HorizontalContentAlignment="Left"
+                          VerticalContentAlignment="Bottom"
+                          Padding="6,4,6,2">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <TextBlock Text="DESCRIÇÃO" FontSize="9" FontWeight="Bold" />
                       <PathIcon Data="{Binding CatalogDescriptionSortIcon,
@@ -839,7 +841,9 @@
                   <Button Grid.Column="3" Classes="list-header"
                           Classes.active="{Binding IsCatalogCostSortActive}"
                           Command="{Binding SortCatalogByCostCommand}"
-                          HorizontalContentAlignment="Right">
+                          HorizontalContentAlignment="Right"
+                          VerticalContentAlignment="Bottom"
+                          Padding="6,4,6,2">
                     <StackPanel Orientation="Horizontal" Spacing="6"
                                 HorizontalAlignment="Right">
                       <TextBlock Text="CUSTO" FontSize="9" FontWeight="Bold" />
@@ -915,18 +919,12 @@
                                        TextTrimming="CharacterEllipsis"
                                        MaxLines="1" />
                           </StackPanel>
-                          <StackPanel Grid.Column="2"
-                                      VerticalAlignment="Center"
-                                      HorizontalAlignment="Stretch"
-                                      Spacing="3">
-                            <TextBlock Text="CUSTO" FontSize="8" FontWeight="Bold"
-                                       Foreground="{DynamicResource Brush.TextMuted}"
-                                       TextAlignment="Right" />
-                            <TextBlock Text="{Binding Price}"
-                                       Foreground="{DynamicResource Brush.Warning}"
-                                       FontSize="11" FontWeight="SemiBold"
-                                       TextAlignment="Right" />
-                          </StackPanel>
+                          <TextBlock Grid.Column="2"
+                                     Text="{Binding Price}"
+                                     Foreground="{DynamicResource Brush.Warning}"
+                                     FontSize="11" FontWeight="SemiBold"
+                                     TextAlignment="Right"
+                                     VerticalAlignment="Center" />
                           </Grid>
                         </Border>
                       </Button>

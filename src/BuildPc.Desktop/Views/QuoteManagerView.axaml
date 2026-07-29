@@ -68,15 +68,15 @@
             </StackPanel>
           </Grid>
           <ScrollViewer Grid.Row="2"
-                        Padding="0,0,28,0"
                         HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl ItemsSource="{Binding Items}">
+            <ItemsControl ItemsSource="{Binding Items}"
+                          Margin="0,0,36,0">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <Border Classes="component-row"
                           Classes.alternate="{Binding IsAlternate}"
                           Margin="0,0,0,7" Padding="10">
-                    <Grid ColumnDefinitions="54,*,150">
+                    <Grid ColumnDefinitions="54,*,170">
                       <TextBlock Text="{Binding Quantity, StringFormat='{}{0}x'}"
                                  VerticalAlignment="Center" FontWeight="Bold" />
                       <StackPanel Grid.Column="1">
@@ -105,63 +105,55 @@
             </ItemsControl>
           </ScrollViewer>
           <Grid Grid.Row="3"
-                ColumnDefinitions="1.15*,*,*,0.9*,0.25*,Auto"
-                RowDefinitions="Auto,Auto,Auto"
-                ColumnSpacing="8"
+                ColumnDefinitions="*,Auto"
+                ColumnSpacing="18"
                 Margin="0,14,0,0">
-            <TextBlock Text="TOTAL"
-                       FontSize="9"
-                       Foreground="{DynamicResource Brush.TextMuted}" />
-            <TextBlock Grid.Column="1"
-                       Text="CUSTO"
-                       FontSize="9"
-                       Foreground="{DynamicResource Brush.TextMuted}" />
-            <TextBlock Grid.Column="2"
-                       Text="LUCRO"
-                       FontSize="9"
-                       Foreground="{DynamicResource Brush.TextMuted}" />
-            <TextBlock Grid.Column="3"
-                       Text="% LUCRO"
-                       FontSize="9"
-                       Foreground="{DynamicResource Brush.TextMuted}" />
-
-            <TextBlock Grid.Row="1"
-                       Text="{Binding TotalText}"
-                       FontSize="17"
-                       FontWeight="Bold"
-                       VerticalAlignment="Top"
-                       Foreground="{DynamicResource Brush.AccentLight}" />
-            <TextBlock Grid.Row="1"
-                       Grid.Column="1"
-                       Text="{Binding CostText}"
-                       FontSize="12"
-                       FontWeight="SemiBold"
-                       VerticalAlignment="Top" />
-            <TextBlock Grid.Row="1"
-                       Grid.Column="2"
-                       Text="{Binding ProfitText}"
-                       FontSize="12"
-                       FontWeight="SemiBold"
-                       VerticalAlignment="Top"
-                       Foreground="{DynamicResource Brush.Success}" />
-            <TextBlock Grid.Row="1"
-                       Grid.Column="3"
-                       Text="{Binding ProfitPercentText}"
-                       FontSize="12"
-                       FontWeight="SemiBold"
-                       VerticalAlignment="Top"
-                       Foreground="{DynamicResource Brush.Success}" />
-
-            <TextBlock Grid.Row="2"
-                       Grid.ColumnSpan="5"
-                       Text="{Binding $parent[UserControl].DataContext.StatusMessage}"
-                       Margin="0,4,0,0"
-                       FontSize="9"
-                       TextWrapping="Wrap"
-                       MaxWidth="420"
-                       Foreground="{DynamicResource Brush.TextSecondary}" />
-            <Button Grid.Column="5"
-                    Grid.RowSpan="3"
+            <StackPanel Spacing="4">
+              <Grid ColumnDefinitions="*,*,*,*"
+                    ColumnSpacing="12">
+                <StackPanel>
+                  <TextBlock Text="TOTAL"
+                             FontSize="9"
+                             Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBlock Text="{Binding TotalText}"
+                             FontSize="13"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource Brush.AccentLight}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="CUSTO"
+                             FontSize="9"
+                             Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBlock Text="{Binding CostText}"
+                             FontSize="13"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource Brush.Error}" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="LUCRO"
+                             FontSize="9"
+                             Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBlock Text="{Binding ProfitText}"
+                             FontSize="13"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource Brush.Success}" />
+                </StackPanel>
+                <StackPanel Grid.Column="3">
+                  <TextBlock Text="% LUCRO"
+                             FontSize="9"
+                             Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBlock Text="{Binding ProfitPercentText}"
+                             FontSize="13"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource Brush.Success}" />
+                </StackPanel>
+              </Grid>
+              <TextBlock Text="{Binding $parent[UserControl].DataContext.StatusMessage}"
+                         FontSize="9"
+                         TextWrapping="Wrap"
+                         Foreground="{DynamicResource Brush.TextSecondary}" />
+            </StackPanel>
+            <Button Grid.Column="1"
                     Classes="primary"
                     Click="ExportPdf_Click"
                     MinHeight="36"

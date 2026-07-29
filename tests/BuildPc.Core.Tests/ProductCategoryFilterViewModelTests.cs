@@ -16,6 +16,7 @@ public sealed class ProductCategoryFilterViewModelTests
         Assert.Equal("SSDs / NVMe (115)", category.DisplayName);
 
         category.UpdateCounts(115, 8, true);
+        Assert.Equal("SSDs / NVMe (115)", category.TotalDisplayName);
         Assert.Equal("SSDs / NVMe (115) (8)", category.DisplayName);
     }
 }

@@ -26,108 +26,124 @@
           </StackPanel>
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Margin="0,42,0,0" Spacing="8">
-          <Button Classes="nav" Classes.active="{Binding IsFlexibleListView}"
-                  Command="{Binding ShowFlexibleListCommand}">
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <PathIcon Data="{StaticResource Icon.Assembly}" Width="18" Height="18" />
-              <TextBlock Text="Montagem" VerticalAlignment="Center" />
+        <ScrollViewer Grid.Row="1"
+                      Margin="0,42,0,10"
+                      HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="8">
+            <Button Classes="nav" Classes.active="{Binding IsFlexibleListView}"
+                    Command="{Binding ShowFlexibleListCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <PathIcon Data="{StaticResource Icon.Assembly}" Width="18" Height="18" />
+                <TextBlock Text="Montagem" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <Button Classes="nav" Classes.active="{Binding IsPriceLookupView}"
+                    Command="{Binding ShowPriceLookupCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <PathIcon Data="{StaticResource Icon.Currency}" Width="18" Height="18" />
+                <TextBlock Text="Consultar preço" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <Button Classes="nav" Classes.active="{Binding IsQuotesView}"
+                    Command="{Binding ShowQuotesCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <PathIcon Data="{StaticResource Icon.Quotes}" Width="18" Height="18" />
+                <TextBlock Text="Orçamentos" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <Button Classes="nav" Classes.active="{Binding IsToolsView}"
+                    Command="{Binding ToggleToolsMenuCommand}">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <PathIcon Data="{StaticResource Icon.Settings}" Width="18" Height="18" />
+                <TextBlock Grid.Column="1"
+                           Text="Ferramentas"
+                           VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2"
+                           Text="{Binding ToolsMenuIndicator}"
+                           FontSize="16"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </Button>
+
+            <StackPanel IsVisible="{Binding IsToolsMenuExpanded}"
+                        Spacing="4"
+                        Margin="18,0,0,0">
+              <Button Classes="nav"
+                      Classes.active="{Binding IsImportsView}"
+                      Command="{Binding ShowImportsCommand}"
+                      MinHeight="34"
+                      Padding="10,7">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <PathIcon Data="{StaticResource Icon.Imports}" Width="15" Height="15" />
+                  <TextBlock Text="Importações"
+                             FontSize="12"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <Button Classes="nav"
+                      Classes.active="{Binding IsProductCatalogManagementActive}"
+                      Command="{Binding ShowProductsCommand}"
+                      MinHeight="34"
+                      Padding="10,7">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <PathIcon Data="{StaticResource Icon.Products}" Width="15" Height="15" />
+                  <TextBlock Text="Gerenciar Produtos"
+                             FontSize="12"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <Button Classes="nav"
+                      Classes.active="{Binding IsCategoryManagementView}"
+                      Command="{Binding ShowCategoryManagementCommand}"
+                      MinHeight="34"
+                      Padding="10,7">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <PathIcon Data="{StaticResource Icon.Components}" Width="15" Height="15" />
+                  <TextBlock Text="Gerenciar Categorias"
+                             FontSize="12"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+
+              <Button Classes="nav"
+                      Classes.active="{Binding IsSettingsView}"
+                      Command="{Binding ShowSettingsCommand}"
+                      MinHeight="34"
+                      Padding="10,7">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <PathIcon Data="{StaticResource Icon.Settings}" Width="15" Height="15" />
+                  <TextBlock Text="Configurações"
+                             FontSize="12"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
             </StackPanel>
-          </Button>
-
-          <Button Classes="nav" Classes.active="{Binding IsPriceLookupView}"
-                  Command="{Binding ShowPriceLookupCommand}">
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <PathIcon Data="{StaticResource Icon.Currency}" Width="18" Height="18" />
-              <TextBlock Text="Consultar preço" VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
-
-          <Button Classes="nav" Classes.active="{Binding IsQuotesView}"
-                  Command="{Binding ShowQuotesCommand}">
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <PathIcon Data="{StaticResource Icon.Quotes}" Width="18" Height="18" />
-              <TextBlock Text="Orçamentos" VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
-
-          <Button Classes="nav" Classes.active="{Binding IsToolsView}"
-                  Command="{Binding ToggleToolsMenuCommand}">
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-              <PathIcon Data="{StaticResource Icon.Settings}" Width="18" Height="18" />
-              <TextBlock Grid.Column="1"
-                         Text="Ferramentas"
-                         VerticalAlignment="Center" />
-              <TextBlock Grid.Column="2"
-                         Text="{Binding ToolsMenuIndicator}"
-                         FontSize="16"
-                         VerticalAlignment="Center" />
-            </Grid>
-          </Button>
-
-          <StackPanel IsVisible="{Binding IsToolsMenuExpanded}"
-                      Spacing="4"
-                      Margin="18,0,0,0">
-            <Button Classes="nav"
-                    Classes.active="{Binding IsImportsView}"
-                    Command="{Binding ShowImportsCommand}"
-                    MinHeight="34"
-                    Padding="10,7">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <PathIcon Data="{StaticResource Icon.Imports}" Width="15" Height="15" />
-                <TextBlock Text="Importações"
-                           FontSize="12"
-                           VerticalAlignment="Center" />
-              </StackPanel>
-            </Button>
-
-            <Button Classes="nav"
-                    Classes.active="{Binding IsProductCatalogManagementActive}"
-                    Command="{Binding ShowProductsCommand}"
-                    MinHeight="34"
-                    Padding="10,7">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <PathIcon Data="{StaticResource Icon.Products}" Width="15" Height="15" />
-                <TextBlock Text="Gerenciar Produtos"
-                           FontSize="12"
-                           VerticalAlignment="Center" />
-              </StackPanel>
-            </Button>
-
-            <Button Classes="nav"
-                    Classes.active="{Binding IsCategoryManagementView}"
-                    Command="{Binding ShowCategoryManagementCommand}"
-                    MinHeight="34"
-                    Padding="10,7">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <PathIcon Data="{StaticResource Icon.Components}" Width="15" Height="15" />
-                <TextBlock Text="Gerenciar Categorias"
-                           FontSize="12"
-                           VerticalAlignment="Center" />
-              </StackPanel>
-            </Button>
-
-            <Button Classes="nav"
-                    Classes.active="{Binding IsSettingsView}"
-                    Command="{Binding ShowSettingsCommand}"
-                    MinHeight="34"
-                    Padding="10,7">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <PathIcon Data="{StaticResource Icon.Settings}" Width="15" Height="15" />
-                <TextBlock Text="Configurações"
-                           FontSize="12"
-                           VerticalAlignment="Center" />
-              </StackPanel>
-            </Button>
           </StackPanel>
-
-        </StackPanel>
+        </ScrollViewer>
 
         <Border Grid.Row="2" Background="{DynamicResource Brush.PanelBackground}" BorderBrush="{DynamicResource Brush.Border}"
-                BorderThickness="1" CornerRadius="9" Padding="12">
+                BorderThickness="1" CornerRadius="9" Padding="10">
           <StackPanel Spacing="3">
             <TextBlock Text="CATÁLOGO LOCAL" Foreground="{DynamicResource Brush.TextMuted}" FontSize="9" FontWeight="Bold" />
             <TextBlock Text="{Binding CatalogCountText}" FontSize="11" Foreground="{DynamicResource Brush.TextStrong}" />
+            <Border Height="1"
+                    Margin="0,4,0,3"
+                    Background="{DynamicResource Brush.Border}" />
+            <ItemsControl ItemsSource="{Binding CatalogCategorySummaries}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding TotalDisplayName}"
+                             FontSize="9"
+                             TextTrimming="CharacterEllipsis"
+                             Foreground="{DynamicResource Brush.TextSecondary}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
           </StackPanel>
         </Border>
       </Grid>

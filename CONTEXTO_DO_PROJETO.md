@@ -61,6 +61,11 @@ O programa permite:
 O menu principal está definido em
 `src/BuildPc.Desktop/Views/MainWindow.axaml`.
 
+- o cartão “Catálogo local” da barra lateral mostra o total geral e todas as
+  categorias no formato `Categoria (quantidade)`;
+- a navegação da barra lateral possui rolagem própria para não sobrepor esse
+  cartão quando Ferramentas está expandido em uma janela baixa.
+
 ### Montagem
 
 Arquivos principais:

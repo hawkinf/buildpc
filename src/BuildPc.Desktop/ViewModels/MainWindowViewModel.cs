@@ -405,6 +405,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public int CatalogCount => Products.Count;
     public string CatalogCountText => $"{CatalogCount} produtos disponíveis";
+    public IEnumerable<ProductCategoryFilterViewModel> CatalogCategorySummaries =>
+        ProductCategoryFilters.Where(category => category.Value is not null);
     public bool HasSelectedCatalogProduct => SelectedCatalogProduct is not null;
 
     public bool IsExportingProductPriceTable
@@ -1123,6 +1125,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 category.Value,
                 category.Name));
         }
+        OnPropertyChanged(nameof(CatalogCategorySummaries));
 
         SelectedProductCategory =
             CategoryOptions.FirstOrDefault(category =>

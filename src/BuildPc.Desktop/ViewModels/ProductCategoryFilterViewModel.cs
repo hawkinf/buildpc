@@ -15,9 +15,10 @@ public sealed class ProductCategoryFilterViewModel(
     public int TotalCount => _totalCount;
     public int FilteredCount => _filteredCount;
     public bool ShowFilteredCount => _showFilteredCount;
+    public string TotalDisplayName => $"{Name} ({TotalCount})";
     public string DisplayName => ShowFilteredCount
         ? $"{Name} ({TotalCount}) ({FilteredCount})"
-        : $"{Name} ({TotalCount})";
+        : TotalDisplayName;
 
     public void UpdateCounts(
         int totalCount,
@@ -37,6 +38,7 @@ public sealed class ProductCategoryFilterViewModel(
         OnPropertyChanged(nameof(TotalCount));
         OnPropertyChanged(nameof(FilteredCount));
         OnPropertyChanged(nameof(ShowFilteredCount));
+        OnPropertyChanged(nameof(TotalDisplayName));
         OnPropertyChanged(nameof(DisplayName));
     }
 }

@@ -185,7 +185,11 @@ Comportamento:
 - a exportação PDF respeita categoria, filtro, ordem e Custo/Venda selecionado;
 - a tabela de custo é agrupada por categorias;
 - a tabela inclui miniatura, título e preço;
-- toda exportação abre primeiro a prévia no visualizador do sistema.
+- toda exportação abre primeiro a prévia no visualizador do sistema;
+- as duas listas de produtos (catálogo em `IsProductsView` e o painel de
+  `ProductManagementView`) usam `ListBox` com `VirtualizingStackPanel` em vez
+  de `ItemsControl` dentro de `ScrollViewer`, para catálogos com milhares de
+  produtos não materializarem todas as linhas de uma vez.
 
 ### Ferramentas > Gerenciar Categorias
 

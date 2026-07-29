@@ -713,90 +713,101 @@
               </StackPanel>
             </Border>
 
-            <ScrollViewer Grid.Row="2" Padding="18,12" HorizontalScrollBarVisibility="Disabled">
-              <ItemsControl ItemsSource="{Binding FilteredProducts}"
-                            HorizontalAlignment="Stretch"
-                            Margin="0,0,0,180">
-                <ItemsControl.Styles>
-                  <Style Selector="ContentPresenter">
-                    <Setter Property="HorizontalAlignment" Value="Stretch" />
-                  </Style>
-                </ItemsControl.Styles>
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"
-                          Width="{Binding $parent[ScrollViewer].Viewport.Width,
-                                          Converter={StaticResource SubtractConverter},
-                                          ConverterParameter=36}">
-                      <CheckBox IsChecked="{Binding IsBulkSelected, Mode=TwoWay}"
-                                VerticalAlignment="Center"
-                                ToolTip.Tip="Marcar para alteração em massa" />
-                      <Button Grid.Column="1" Classes="catalog-item"
-                              Click="CatalogProduct_Click"
-                              ToolTip.Tip="Clique para editar o produto">
-                        <Border x:Name="catalogProductRow"
-                                Classes="catalog-row"
-                                Classes.alternate="{Binding IsAlternate}"
-                                Classes.selected="{Binding IsSelected}">
-                          <Grid ColumnDefinitions="Auto,*,115" ColumnSpacing="12">
-                          <Border Width="48" Height="48" CornerRadius="7"
-                                  Background="White"
-                                  IsVisible="{Binding HasImage}"
-                                  VerticalAlignment="Center">
-                            <controls:RemoteImage Url="{Binding ImageUrl}"
-                                                  Stretch="Uniform"
-                                                  Margin="3" />
-                          </Border>
-                          <StackPanel Grid.Column="1" Spacing="3">
-                            <TextBlock Text="{Binding Name}"
-                                       FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource Brush.AccentPale}"
-                                       TextTrimming="CharacterEllipsis"
-                                       MaxLines="1" />
-                            <WrapPanel Orientation="Horizontal">
-                              <TextBlock Text="{Binding Brand}"
-                                         Foreground="{DynamicResource Brush.TextBody}"
-                                         FontSize="10" Margin="0,0,8,0" />
-                              <Border Background="{DynamicResource Brush.BadgeBackground}"
-                                      CornerRadius="5" Padding="6,2" Margin="0,0,6,0">
-                                <TextBlock Text="{Binding Category}"
-                                           Foreground="{DynamicResource Brush.AccentPale}"
-                                           FontSize="9" />
-                              </Border>
-                              <Border Background="{DynamicResource Brush.PanelBackground}"
-                                      CornerRadius="5" Padding="6,2">
-                                <TextBlock Text="{Binding OriginText}"
-                                           Foreground="{DynamicResource Brush.TextBody}"
-                                           FontSize="9" />
-                              </Border>
-                            </WrapPanel>
-                            <TextBlock Text="{Binding Description}"
-                                       Foreground="{DynamicResource Brush.TextSecondary}"
-                                       FontSize="10"
-                                       TextTrimming="CharacterEllipsis"
-                                       MaxLines="1" />
-                          </StackPanel>
-                           <TextBlock Grid.Column="2"
-                                      Text="{Binding DisplayPrice}"
-                                     Foreground="{DynamicResource Brush.Warning}"
-                                     FontSize="11" FontWeight="SemiBold"
-                                      TextAlignment="Right"
-                                      VerticalAlignment="Center" />
-                           <controls:ProductHoverPreview
-                               Grid.ColumnSpan="3"
-                               PlacementTarget="{Binding #catalogProductRow}"
-                               Title="{Binding Name}"
-                               Description="{Binding Description}"
-                               ImageUrl="{Binding ImageUrl}"
-                               Price="{Binding DisplayPrice}" />
-                           </Grid>
+            <ListBox Grid.Row="2"
+                     ItemsSource="{Binding FilteredProducts}"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Padding="18,12,18,180"
+                     SelectionMode="Single">
+              <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+              </ListBox.ItemsPanel>
+              <ListBox.Styles>
+                <Style Selector="ListBoxItem">
+                  <Setter Property="Padding" Value="0" />
+                  <Setter Property="Margin" Value="0,0,0,4" />
+                  <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+                <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+                  <Setter Property="Background" Value="Transparent" />
+                </Style>
+                <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                  <Setter Property="Background" Value="Transparent" />
+                </Style>
+              </ListBox.Styles>
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                    <CheckBox IsChecked="{Binding IsBulkSelected, Mode=TwoWay}"
+                              VerticalAlignment="Center"
+                              ToolTip.Tip="Marcar para alteração em massa" />
+                    <Button Grid.Column="1" Classes="catalog-item"
+                            Click="CatalogProduct_Click"
+                            ToolTip.Tip="Clique para editar o produto">
+                      <Border x:Name="catalogProductRow"
+                              Classes="catalog-row"
+                              Classes.alternate="{Binding IsAlternate}"
+                              Classes.selected="{Binding IsSelected}">
+                        <Grid ColumnDefinitions="Auto,*,115" ColumnSpacing="12">
+                        <Border Width="48" Height="48" CornerRadius="7"
+                                Background="White"
+                                IsVisible="{Binding HasImage}"
+                                VerticalAlignment="Center">
+                          <controls:RemoteImage Url="{Binding ImageUrl}"
+                                                Stretch="Uniform"
+                                                Margin="3" />
                         </Border>
-                      </Button>
-                    </Grid>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
+                        <StackPanel Grid.Column="1" Spacing="3">
+                          <TextBlock Text="{Binding Name}"
+                                     FontSize="12" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource Brush.AccentPale}"
+                                     TextTrimming="CharacterEllipsis"
+                                     MaxLines="1" />
+                          <WrapPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Brand}"
+                                       Foreground="{DynamicResource Brush.TextBody}"
+                                       FontSize="10" Margin="0,0,8,0" />
+                            <Border Background="{DynamicResource Brush.BadgeBackground}"
+                                    CornerRadius="5" Padding="6,2" Margin="0,0,6,0">
+                              <TextBlock Text="{Binding Category}"
+                                         Foreground="{DynamicResource Brush.AccentPale}"
+                                         FontSize="9" />
+                            </Border>
+                            <Border Background="{DynamicResource Brush.PanelBackground}"
+                                    CornerRadius="5" Padding="6,2">
+                              <TextBlock Text="{Binding OriginText}"
+                                         Foreground="{DynamicResource Brush.TextBody}"
+                                         FontSize="9" />
+                            </Border>
+                          </WrapPanel>
+                          <TextBlock Text="{Binding Description}"
+                                     Foreground="{DynamicResource Brush.TextSecondary}"
+                                     FontSize="10"
+                                     TextTrimming="CharacterEllipsis"
+                                     MaxLines="1" />
+                        </StackPanel>
+                         <TextBlock Grid.Column="2"
+                                    Text="{Binding DisplayPrice}"
+                                   Foreground="{DynamicResource Brush.Warning}"
+                                   FontSize="11" FontWeight="SemiBold"
+                                    TextAlignment="Right"
+                                    VerticalAlignment="Center" />
+                         <controls:ProductHoverPreview
+                             Grid.ColumnSpan="3"
+                             PlacementTarget="{Binding #catalogProductRow}"
+                             Title="{Binding Name}"
+                             Description="{Binding Description}"
+                             ImageUrl="{Binding ImageUrl}"
+                             Price="{Binding DisplayPrice}" />
+                         </Grid>
+                      </Border>
+                    </Button>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
           </Grid>
         </Border>
       </Grid>

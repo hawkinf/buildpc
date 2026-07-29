@@ -59,6 +59,64 @@ public sealed class QuotePdfServiceTests
         }
     }
 
+    [Fact]
+    public async Task ProductPriceTableExport_CreatesPdfWithFilteredRows()
+    {
+        var requestedPath = Environment.GetEnvironmentVariable(
+            "BUILDPC_PRICE_TABLE_PDF_SAMPLE_PATH");
+        var shouldKeep = !string.IsNullOrWhiteSpace(requestedPath);
+        var directory = Path.Combine(
+            Path.GetTempPath(),
+            $"buildpc-price-table-tests-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        var imagePath = Path.Combine(directory, "preview.png");
+        var pdfPath = requestedPath ??
+                      Path.Combine(directory, "tabela-venda.pdf");
+        try
+        {
+            await File.WriteAllBytesAsync(
+                imagePath,
+                Convert.FromBase64String(
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC" +
+                    "AAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="));
+            var rows = Enumerable.Range(1, 36)
+                .Select(index => new ProductPriceTableRow(
+                    $"SSD NVMe ADATA {index * 128} GB - modelo para teste de paginação",
+                    index == 1 ? imagePath : null,
+                    299.90m + index * 25m))
+                .ToList();
+            var table = new ProductPriceTableDocument(
+                "Tabela de venda",
+                "Venda",
+                "SSD / NVMe",
+                "nvme 256 adata",
+                "BuildPC Tecnologia",
+                new DateTimeOffset(2026, 7, 29, 15, 0, 0, TimeSpan.FromHours(-3)),
+                rows);
+
+            await new ProductPriceTablePdfService().ExportAsync(table, pdfPath);
+
+            Assert.True(File.Exists(pdfPath));
+            var bytes = await File.ReadAllBytesAsync(pdfPath);
+            Assert.True(bytes.Length > 1000);
+            Assert.Equal(
+                "%PDF",
+                System.Text.Encoding.ASCII.GetString(bytes, 0, 4));
+            using var pdf = PdfSharp.Pdf.IO.PdfReader.Open(
+                pdfPath,
+                PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
+            Assert.True(pdf.PageCount > 1);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+            if (!shouldKeep && File.Exists(pdfPath))
+            {
+                File.Delete(pdfPath);
+            }
+        }
+    }
+
     private static SavedQuoteItem Item(
         string category,
         string name,

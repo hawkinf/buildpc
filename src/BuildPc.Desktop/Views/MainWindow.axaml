@@ -795,6 +795,38 @@
                              FontSize="9" Foreground="{DynamicResource Brush.TextSecondary}" />
                 </Grid>
 
+                <Border Background="{DynamicResource Brush.PanelBackground}"
+                        CornerRadius="7" Padding="10,8">
+                  <Grid ColumnDefinitions="*,180,Auto" ColumnSpacing="8">
+                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                      <TextBlock Text="Exportar tabela filtrada" FontSize="10"
+                                 FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding ProductPriceTableStatusMessage}"
+                                 FontSize="9" TextWrapping="Wrap"
+                                 Foreground="{DynamicResource Brush.TextSecondary}" />
+                    </StackPanel>
+                    <ComboBox Grid.Column="1"
+                              ItemsSource="{Binding ProductPriceTableOptions}"
+                              SelectedItem="{Binding SelectedProductPriceTableOption, Mode=TwoWay}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Grid.Column="2" Classes="primary"
+                            Click="ExportProductPriceTablePdf_Click"
+                            IsEnabled="{Binding CanExportProductPriceTable}">
+                      <StackPanel Orientation="Horizontal" Spacing="7">
+                        <PathIcon Data="{StaticResource Icon.Pdf}" Width="15" Height="15"
+                                  Foreground="White" />
+                        <TextBlock Text="{Binding ProductPriceTableButtonText}"
+                                   Foreground="White" />
+                      </StackPanel>
+                    </Button>
+                  </Grid>
+                </Border>
+
                 <Border Classes="input-group" Padding="10"
                         IsVisible="{Binding IsBulkDeleteConfirmationVisible}">
                   <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">

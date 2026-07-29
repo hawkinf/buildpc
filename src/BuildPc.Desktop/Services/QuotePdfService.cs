@@ -3,20 +3,16 @@ using BuildPc.Desktop.ViewModels;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.Rendering;
-using PdfSharp.Fonts;
 
 namespace BuildPc.Desktop.Services;
 
 public sealed class QuotePdfService
 {
-    private static readonly object FontLock = new();
-    private static bool _fontsConfigured;
-
     public void Export(SavedQuote quote, string outputPath)
     {
         ArgumentNullException.ThrowIfNull(quote);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
-        ConfigureFonts();
+        PdfFontConfiguration.EnsureConfigured();
 
         var directory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
         if (!string.IsNullOrEmpty(directory))
@@ -285,17 +281,4 @@ public sealed class QuotePdfService
     private static string Money(decimal value) =>
         value.ToString("C", MainWindowViewModel.BrazilianCulture);
 
-    private static void ConfigureFonts()
-    {
-        lock (FontLock)
-        {
-            if (_fontsConfigured)
-            {
-                return;
-            }
-
-            GlobalFontSettings.UseWindowsFontsUnderWindows = true;
-            _fontsConfigured = true;
-        }
-    }
 }

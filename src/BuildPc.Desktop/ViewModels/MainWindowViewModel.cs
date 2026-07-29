@@ -45,6 +45,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _catalogSearchText = string.Empty;
     private ProductCatalogSortOptionViewModel _selectedCatalogSort = null!;
     private string _productImagePath = string.Empty;
+    private ProductPriceTableOptionViewModel _selectedProductPriceTableOption = null!;
+    private bool _isExportingProductPriceTable;
+    private string _productPriceTableStatusMessage = string.Empty;
 
     public static CultureInfo BrazilianCulture { get; } = CultureInfo.GetCultureInfo("pt-BR");
 
@@ -124,6 +127,12 @@ public sealed class MainWindowViewModel : ViewModelBase
             new("Custo: maior primeiro", ProductCatalogSortMode.PriceDescending)
         ];
         _selectedCatalogSort = CatalogSortOptions[0];
+        ProductPriceTableOptions =
+        [
+            new(ProductPriceTableKind.Cost, "Tabela de custo"),
+            new(ProductPriceTableKind.Sale, "Tabela de venda")
+        ];
+        _selectedProductPriceTableOption = ProductPriceTableOptions[0];
         FilteredProducts = [];
         RefreshProductFilter();
         FlexibleList = new FlexibleListViewModel(
@@ -267,6 +276,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ObservableCollection<CategoryOptionViewModel> CategoryOptions { get; }
     public IReadOnlyList<ProductCategoryFilterViewModel> ProductCategoryFilters { get; }
     public IReadOnlyList<ProductCatalogSortOptionViewModel> CatalogSortOptions { get; }
+    public IReadOnlyList<ProductPriceTableOptionViewModel> ProductPriceTableOptions { get; }
     public ObservableCollection<ImportSourceViewModel> ImportSources { get; }
     public IReadOnlyList<ProductDescriptionOperationViewModel> BulkDescriptionOperations { get; }
     public FlexibleListViewModel FlexibleList { get; }
@@ -305,6 +315,59 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public int CatalogCount => Products.Count;
     public string CatalogCountText => $"{CatalogCount} produtos disponíveis";
+
+    public ProductPriceTableOptionViewModel SelectedProductPriceTableOption
+    {
+        get => _selectedProductPriceTableOption;
+        set
+        {
+            if (value is not null &&
+                SetProperty(ref _selectedProductPriceTableOption, value))
+            {
+                ProductPriceTableStatusMessage = string.Empty;
+                OnPropertyChanged(nameof(ProductPriceTableSuggestedFileName));
+            }
+        }
+    }
+
+    public bool IsExportingProductPriceTable
+    {
+        get => _isExportingProductPriceTable;
+        private set
+        {
+            if (SetProperty(ref _isExportingProductPriceTable, value))
+            {
+                OnPropertyChanged(nameof(CanExportProductPriceTable));
+                OnPropertyChanged(nameof(ProductPriceTableButtonText));
+            }
+        }
+    }
+
+    public bool CanExportProductPriceTable =>
+        FilteredProducts.Count > 0 && !IsExportingProductPriceTable;
+
+    public string ProductPriceTableButtonText =>
+        IsExportingProductPriceTable ? "Exportando..." : "Exportar PDF";
+
+    public string ProductPriceTableStatusMessage
+    {
+        get => _productPriceTableStatusMessage;
+        private set => SetProperty(ref _productPriceTableStatusMessage, value);
+    }
+
+    public string ProductPriceTableSuggestedFileName
+    {
+        get
+        {
+            var table = SelectedProductPriceTableOption.Kind ==
+                        ProductPriceTableKind.Cost
+                ? "custos"
+                : "vendas";
+            var scope = SelectedCatalogCategoryFilter.Value?.ToString().ToLowerInvariant() ??
+                        "todos";
+            return $"tabela-{table}-{scope}.pdf";
+        }
+    }
 
     public ProductListItemViewModel? SelectedCatalogProduct => _selectedCatalogProduct;
     public bool IsProductFormVisible => SelectedCatalogProduct is null;
@@ -1084,6 +1147,54 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(FilteredCatalogCountText));
         OnPropertyChanged(nameof(AreAllFilteredProductsSelected));
+        OnPropertyChanged(nameof(CanExportProductPriceTable));
+        OnPropertyChanged(nameof(ProductPriceTableSuggestedFileName));
+    }
+
+    public ProductPriceTableDocument BuildProductPriceTableDocument()
+    {
+        var isCost = SelectedProductPriceTableOption.Kind ==
+                     ProductPriceTableKind.Cost;
+        var rows = FilteredProducts
+            .Select(product => new ProductPriceTableRow(
+                product.Name,
+                product.ImageUrl,
+                isCost
+                    ? product.Component.Price
+                    : FlexibleListItemViewModel.CalculateSalePrice(
+                        product.Component.Price,
+                        _businessSettings.MarginFor(product.Component.Category))))
+            .ToList();
+        return new ProductPriceTableDocument(
+            isCost ? "Tabela de custo" : "Tabela de venda",
+            isCost ? "Custo" : "Venda",
+            SelectedCatalogCategoryFilter.Name,
+            CatalogSearchText.Trim(),
+            _businessSettings.CompanyName,
+            DateTimeOffset.Now,
+            rows);
+    }
+
+    public void BeginProductPriceTableExport()
+    {
+        IsExportingProductPriceTable = true;
+        ProductPriceTableStatusMessage =
+            "Preparando fotos e gerando a tabela...";
+    }
+
+    public void CompleteProductPriceTableExport(bool opened)
+    {
+        IsExportingProductPriceTable = false;
+        ProductPriceTableStatusMessage = opened
+            ? "Tabela exportada e aberta na tela."
+            : "Tabela exportada, mas não foi possível abri-la automaticamente.";
+    }
+
+    public void FailProductPriceTableExport()
+    {
+        IsExportingProductPriceTable = false;
+        ProductPriceTableStatusMessage =
+            "Não foi possível exportar a tabela em PDF.";
     }
 
     private void SortCatalogByDescription()

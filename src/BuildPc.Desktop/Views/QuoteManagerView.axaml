@@ -113,37 +113,37 @@
                     ColumnSpacing="12">
                 <StackPanel>
                   <TextBlock Text="TOTAL"
-                             FontSize="9"
+                             FontSize="11.25"
                              Foreground="{DynamicResource Brush.TextMuted}" />
                   <TextBlock Text="{Binding TotalText}"
-                             FontSize="13"
+                             FontSize="16.25"
                              FontWeight="SemiBold"
                              Foreground="{DynamicResource Brush.AccentLight}" />
                 </StackPanel>
                 <StackPanel Grid.Column="1">
                   <TextBlock Text="CUSTO"
-                             FontSize="9"
+                             FontSize="11.25"
                              Foreground="{DynamicResource Brush.TextMuted}" />
                   <TextBlock Text="{Binding CostText}"
-                             FontSize="13"
+                             FontSize="16.25"
                              FontWeight="SemiBold"
                              Foreground="{DynamicResource Brush.Error}" />
                 </StackPanel>
                 <StackPanel Grid.Column="2">
                   <TextBlock Text="LUCRO"
-                             FontSize="9"
+                             FontSize="11.25"
                              Foreground="{DynamicResource Brush.TextMuted}" />
                   <TextBlock Text="{Binding ProfitText}"
-                             FontSize="13"
+                             FontSize="16.25"
                              FontWeight="SemiBold"
                              Foreground="{DynamicResource Brush.Success}" />
                 </StackPanel>
                 <StackPanel Grid.Column="3">
                   <TextBlock Text="% LUCRO"
-                             FontSize="9"
+                             FontSize="11.25"
                              Foreground="{DynamicResource Brush.TextMuted}" />
                   <TextBlock Text="{Binding ProfitPercentText}"
-                             FontSize="13"
+                             FontSize="16.25"
                              FontWeight="SemiBold"
                              Foreground="{DynamicResource Brush.Success}" />
                 </StackPanel>

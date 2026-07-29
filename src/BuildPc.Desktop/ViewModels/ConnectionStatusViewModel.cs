@@ -18,6 +18,13 @@ public sealed class ConnectionStatusViewModel : ViewModelBase
         _isOnline = settings is not null;
     }
 
+    /// <summary>
+    /// Verdadeiro quando o programa usa o banco SQLite deste computador. Nesse
+    /// modo não existe servidor para estar fora do ar, então o rodapé não pode
+    /// alarmar com OFFLINE em vermelho.
+    /// </summary>
+    public bool IsLocalDatabase => _settings is null;
+
     public bool IsOnline
     {
         get => _isOnline;
@@ -31,8 +38,21 @@ public sealed class ConnectionStatusViewModel : ViewModelBase
         }
     }
 
-    public bool IsOffline => !IsOnline;
-    public string StatusText => IsOnline ? "ONLINE" : "OFFLINE";
+    public bool IsOffline => !IsLocalDatabase && !IsOnline;
+
+    public string StatusText =>
+        IsLocalDatabase
+            ? "LOCAL"
+            : IsOnline
+                ? "ONLINE"
+                : "OFFLINE";
+
+    public string StatusDescription =>
+        IsLocalDatabase
+            ? "Usando o banco de dados deste computador"
+            : IsOnline
+                ? "Conectado ao servidor de dados"
+                : "Sem conexão com o servidor de dados";
 
     public async Task RefreshAsync()
     {

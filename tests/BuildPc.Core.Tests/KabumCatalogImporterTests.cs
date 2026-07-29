@@ -375,6 +375,26 @@ public sealed class KabumCatalogImporterTests
                 return Task.CompletedTask;
             });
 
+    [Theory]
+    // Cada caso remove uma parte da estrutura que a loja pode reorganizar.
+    [InlineData("""{"props":{"pageProps":{}}}""")]
+    [InlineData("""{"props":{}}""")]
+    [InlineData("""{}""")]
+    [InlineData("""{"props":{"pageProps":{"data":123}}}""")]
+    [InlineData("""{"props":{"pageProps":{"data":"{}"}}}""")]
+    [InlineData("""{"props":{"pageProps":{"data":"{\"catalogServer\":{}}"}}}""")]
+    [InlineData("""{"props":{"pageProps":{"data":"{\"catalogServer\":{\"data\":5}}"}}}""")]
+    public void ParseCatalogHtml_ReportsUnexpectedStructureAsInvalidData(string nextDataJson)
+    {
+        var html =
+            $"<html><script id=\"__NEXT_DATA__\" type=\"application/json\">{nextDataJson}</script></html>";
+
+        // Precisa ser InvalidDataException: é o que a tela trata para avisar que
+        // a loja mudou o formato da página.
+        Assert.Throws<InvalidDataException>(() =>
+            KabumCatalogImporter.ParseCatalogHtml(html, ComponentCategory.Processor));
+    }
+
     private sealed class StatusHttpHandler(
         Func<Uri, (HttpStatusCode Status, string Body)> responseFactory,
         TimeSpan? retryAfter = null)

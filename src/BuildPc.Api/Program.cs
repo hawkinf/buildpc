@@ -10,7 +10,7 @@ if (TryGetSqliteBackupPaths(args, out var sourceDatabase, out var backupDatabase
 {
     SqliteSnapshotReader.CreateConsistentBackup(sourceDatabase, backupDatabase);
     Console.WriteLine($"Backup SQLite consistente criado em {backupDatabase}.");
-    return;
+    return 0;
 }
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,6 +25,20 @@ builder.Services.AddSingleton<PostgresBuildPcRepository>();
 var app = builder.Build();
 if (TryGetSqliteImportPath(args, out var sqlitePath))
 {
+    // A importação apaga produtos, orçamentos e configurações do PostgreSQL
+    // antes de gravar o snapshot. Repetir o comando por engano destruiria a
+    // base de produção, então a confirmação é obrigatória.
+    if (!args.Any(argument =>
+            string.Equals(argument, "--force", StringComparison.OrdinalIgnoreCase)))
+    {
+        Console.Error.WriteLine(
+            "A importação APAGA todos os produtos, orçamentos e configurações " +
+            "atuais do PostgreSQL antes de gravar o snapshot.");
+        Console.Error.WriteLine(
+            "Faça backup e repita o comando acrescentando --force para confirmar.");
+        return 1;
+    }
+
     var snapshot = SqliteSnapshotReader.Read(sqlitePath);
     app.Services
         .GetRequiredService<PostgresBuildPcRepository>()
@@ -32,7 +46,7 @@ if (TryGetSqliteImportPath(args, out var sqlitePath))
     Console.WriteLine(
         $"Migração concluída: {snapshot.Products.Count} produtos e " +
         $"{snapshot.Quotes.Count} orçamentos.");
-    return;
+    return 0;
 }
 
 var apiKey = builder.Configuration["BuildPc:ApiKey"];
@@ -227,6 +241,7 @@ app.MapDelete(
         Results.Ok(new BooleanResponse(repository.DeleteQuote(id))));
 
 app.Run();
+return 0;
 
 static bool KeysMatch(string supplied, string expected)
 {

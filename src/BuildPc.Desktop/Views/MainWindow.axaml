@@ -581,13 +581,21 @@
                     Orientation="Horizontal"
                     Spacing="8"
                     VerticalAlignment="Center"
-                    ToolTip.Tip="Estado da conexão autenticada com a API">
+                    ToolTip.Tip="{Binding ConnectionStatus.StatusDescription}">
+          <Border Width="9" Height="9" CornerRadius="5"
+                  Background="{DynamicResource Brush.TextMuted}"
+                  IsVisible="{Binding ConnectionStatus.IsLocalDatabase}" />
           <Border Width="9" Height="9" CornerRadius="5"
                   Background="{DynamicResource Brush.Success}"
                   IsVisible="{Binding ConnectionStatus.IsOnline}" />
           <Border Width="9" Height="9" CornerRadius="5"
                   Background="{DynamicResource Brush.Error}"
                   IsVisible="{Binding ConnectionStatus.IsOffline}" />
+          <TextBlock Text="LOCAL"
+                     FontSize="10"
+                     FontWeight="Bold"
+                     Foreground="{DynamicResource Brush.TextSecondary}"
+                     IsVisible="{Binding ConnectionStatus.IsLocalDatabase}" />
           <TextBlock Text="ONLINE"
                      FontSize="10"
                      FontWeight="Bold"

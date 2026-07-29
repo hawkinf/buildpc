@@ -6,7 +6,7 @@ namespace BuildPc.Core.Tests;
 public sealed class ConnectionStatusViewModelTests
 {
     [Fact]
-    public async Task LocalDatabaseIsReportedAsOfflineWithoutCallingServer()
+    public async Task LocalDatabaseIsReportedAsLocalWithoutCallingServer()
     {
         var calls = 0;
         var viewModel = new ConnectionStatusViewModel(
@@ -19,9 +19,15 @@ public sealed class ConnectionStatusViewModelTests
 
         await viewModel.RefreshAsync();
 
+        // Sem servidor configurado não há o que estar fora do ar: o rodapé não
+        // pode alarmar com OFFLINE em vermelho no modo de uso normal.
+        Assert.True(viewModel.IsLocalDatabase);
         Assert.False(viewModel.IsOnline);
-        Assert.True(viewModel.IsOffline);
-        Assert.Equal("OFFLINE", viewModel.StatusText);
+        Assert.False(viewModel.IsOffline);
+        Assert.Equal("LOCAL", viewModel.StatusText);
+        Assert.Equal(
+            "Usando o banco de dados deste computador",
+            viewModel.StatusDescription);
         Assert.Equal(0, calls);
     }
 

@@ -219,21 +219,34 @@ public sealed partial class KabumCatalogImporter
         var nextDataJson = WebUtility.HtmlDecode(match.Groups["json"].Value);
         using var nextData = JsonDocument.Parse(nextDataJson);
 
-        var catalogJson = nextData.RootElement
-            .GetProperty("props")
-            .GetProperty("pageProps")
-            .GetProperty("data")
-            .GetString();
+        // A loja pode reorganizar o JSON sem aviso. Sem estas verificações,
+        // GetProperty lançaria KeyNotFoundException, que escapa ao tratamento da
+        // tela e virava uma falha genérica em vez da mensagem correta.
+        if (!TryGetProperty(nextData.RootElement, "props", out var props) ||
+            !TryGetProperty(props, "pageProps", out var pageProps) ||
+            !TryGetProperty(pageProps, "data", out var data))
+        {
+            throw new InvalidDataException(
+                "A estrutura da página do catálogo mudou e os produtos não " +
+                "puderam ser localizados.");
+        }
 
+        var catalogJson = data.ValueKind == JsonValueKind.String
+            ? data.GetString()
+            : null;
         if (string.IsNullOrWhiteSpace(catalogJson))
         {
             throw new InvalidDataException("O catálogo recebido está vazio.");
         }
 
         using var catalog = JsonDocument.Parse(catalogJson);
-        var products = catalog.RootElement
-            .GetProperty("catalogServer")
-            .GetProperty("data");
+        if (!TryGetProperty(catalog.RootElement, "catalogServer", out var catalogServer) ||
+            !TryGetProperty(catalogServer, "data", out var products) ||
+            products.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidDataException(
+                "A lista de produtos não veio no formato esperado pela loja.");
+        }
 
         var components = new List<PcComponent>();
         var rawProductIds = new List<string>();
@@ -253,6 +266,20 @@ public sealed partial class KabumCatalogImporter
             components,
             rawProductIds.Count,
             string.Join("|", rawProductIds));
+    }
+
+    private static bool TryGetProperty(
+        JsonElement element,
+        string propertyName,
+        out JsonElement value)
+    {
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            return element.TryGetProperty(propertyName, out value);
+        }
+
+        value = default;
+        return false;
     }
 
     private static string ReadRawProductId(JsonElement product)

@@ -11,6 +11,7 @@ public sealed class ProductListItemViewModel : ViewModelBase
     private bool _isKept;
     private bool _isSelected;
     private bool _isBulkSelected;
+    private bool _isAlternate;
 
     private ProductListItemViewModel(
         PcComponent component,
@@ -35,7 +36,7 @@ public sealed class ProductListItemViewModel : ViewModelBase
         SupportedSocketsText = SetOrNotInformed(component.SupportedSockets);
         SupportedFormFactorsText = SetOrNotInformed(component.SupportedFormFactors);
         IsImported = !string.IsNullOrWhiteSpace(component.ImportSource);
-        IsAlternate = isAlternate;
+        _isAlternate = isAlternate;
         OriginText = IsImported
             ? "Importado"
             : component.IsUserDefined
@@ -67,7 +68,11 @@ public sealed class ProductListItemViewModel : ViewModelBase
     public string SupportedFormFactorsText { get; }
     public string OriginText { get; }
     public bool IsImported { get; }
-    public bool IsAlternate { get; }
+    public bool IsAlternate
+    {
+        get => _isAlternate;
+        private set => SetProperty(ref _isAlternate, value);
+    }
     public ICommand ToggleKeepCommand { get; }
     public ICommand SelectCommand { get; }
 
@@ -104,6 +109,8 @@ public sealed class ProductListItemViewModel : ViewModelBase
 
     public string KeepButtonText => IsKept ? "Mantido" : "Manter";
     public string KeepIcon => IsKept ? "Check" : "Pin";
+
+    public void SetAlternate(bool isAlternate) => IsAlternate = isAlternate;
 
     public static ProductListItemViewModel From(
         PcComponent component,

@@ -1073,9 +1073,12 @@ public sealed class MainWindowViewModel : ViewModelBase
                 .ThenBy(product => product.Name, StringComparer.CurrentCultureIgnoreCase)
         };
 
+        var visibleProducts = filtered.ToList();
         FilteredProducts.Clear();
-        foreach (var product in filtered)
+        for (var index = 0; index < visibleProducts.Count; index++)
         {
+            var product = visibleProducts[index];
+            product.SetAlternate(index % 2 == 1);
             FilteredProducts.Add(product);
         }
 

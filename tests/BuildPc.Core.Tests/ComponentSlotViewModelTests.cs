@@ -11,12 +11,15 @@ public sealed class ComponentSlotViewModelTests
         var slot = CreateSlot();
 
         Assert.Equal(["Alpha", "Beta", "Gamma"], slot.Options.Select(option => option.Name));
+        Assert.Equal([false, true, false], slot.Options.Select(option => option.IsAlternate));
 
         slot.SortByNameCommand.Execute(null);
         Assert.Equal(["Gamma", "Beta", "Alpha"], slot.Options.Select(option => option.Name));
+        Assert.Equal([false, true, false], slot.Options.Select(option => option.IsAlternate));
 
         slot.SortByPriceCommand.Execute(null);
         Assert.Equal([100m, 200m, 300m], slot.Options.Select(option => option.Price));
+        Assert.Equal([false, true, false], slot.Options.Select(option => option.IsAlternate));
 
         slot.SortByPriceCommand.Execute(null);
         Assert.Equal([300m, 200m, 100m], slot.Options.Select(option => option.Price));
@@ -31,6 +34,7 @@ public sealed class ComponentSlotViewModelTests
         slot.FilterText = "Gamma";
 
         Assert.Equal(["Gamma"], slot.Options.Select(option => option.Name));
+        Assert.False(slot.Options.Single().IsAlternate);
         Assert.Equal("Alpha", slot.Selected?.Name);
     }
 

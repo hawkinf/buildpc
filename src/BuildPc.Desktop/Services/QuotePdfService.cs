@@ -161,9 +161,15 @@ public sealed class QuotePdfService
         SetCellText(header.Cells[3], "UNITÁRIO", ParagraphAlignment.Right);
         SetCellText(header.Cells[4], "TOTAL", ParagraphAlignment.Right);
 
-        foreach (var item in quote.Items)
+        for (var index = 0; index < quote.Items.Count; index++)
         {
+            var item = quote.Items[index];
             var row = table.AddRow();
+            if (index % 2 == 1)
+            {
+                row.Shading.Color = Color.FromRgb(241, 245, 249);
+            }
+
             row.TopPadding = Unit.FromMillimeter(2.5);
             row.BottomPadding = Unit.FromMillimeter(2.5);
             SetCellText(row.Cells[0], item.Quantity.ToString(), ParagraphAlignment.Center);

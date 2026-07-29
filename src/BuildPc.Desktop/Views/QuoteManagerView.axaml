@@ -68,10 +68,12 @@
             </StackPanel>
           </Grid>
           <ScrollViewer Grid.Row="2">
-            <ItemsControl ItemsSource="{Binding Quote.Items}">
+            <ItemsControl ItemsSource="{Binding Items}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Border Classes="component-row" Margin="0,0,0,7" Padding="10">
+                  <Border Classes="component-row"
+                          Classes.alternate="{Binding IsAlternate}"
+                          Margin="0,0,0,7" Padding="10">
                     <Grid ColumnDefinitions="54,*,130">
                       <TextBlock Text="{Binding Quantity, StringFormat='{}{0}x'}"
                                  VerticalAlignment="Center" FontWeight="Bold" />

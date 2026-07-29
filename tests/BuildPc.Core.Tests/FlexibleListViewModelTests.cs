@@ -36,6 +36,7 @@ public sealed class FlexibleListViewModelTests
         viewModel.AddCommand.Execute(null);
 
         Assert.Equal(2, viewModel.Items.Count);
+        Assert.Equal([false, true], viewModel.Items.Select(item => item.IsAlternate));
         Assert.Equal(5, viewModel.TotalItems);
         Assert.Equal(5000m, viewModel.TotalCostValue);
         Assert.True(viewModel.HasItems);

@@ -5,6 +5,11 @@ namespace BuildPc.Desktop.ViewModels;
 public sealed class SavedQuoteListItemViewModel(SavedQuote quote) : ViewModelBase
 {
     public SavedQuote Quote { get; } = quote;
+    public IReadOnlyList<SavedQuoteItemListItemViewModel> Items { get; } =
+        quote.Items
+            .Select((item, index) =>
+                new SavedQuoteItemListItemViewModel(item, index % 2 == 1))
+            .ToList();
     public string NumberText => $"Orçamento #{Quote.Number:000000}";
     public string DateText => Quote.CreatedAt.LocalDateTime.ToString("dd/MM/yyyy HH:mm");
     public string ClientText => Quote.ClientName;

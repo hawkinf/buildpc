@@ -38,5 +38,41 @@ public sealed class ProductListItemViewModelTests
         Assert.Contains("AM5", item.SupportedSocketsText);
         Assert.Contains("AM4", item.SupportedSocketsText);
         Assert.True(item.IsImported);
+
+        item.SetAlternate(true);
+
+        Assert.True(item.IsAlternate);
     }
+
+    [Fact]
+    public void SavedQuoteItems_AreAlwaysAlternatedInDisplayedOrder()
+    {
+        var quote = new SavedQuote
+        {
+            Items =
+            [
+                QuoteItem("Primeiro"),
+                QuoteItem("Segundo"),
+                QuoteItem("Terceiro")
+            ]
+        };
+
+        var viewModel = new SavedQuoteListItemViewModel(quote);
+
+        Assert.Equal(
+            [false, true, false],
+            viewModel.Items.Select(item => item.IsAlternate));
+        Assert.Equal(
+            ["Primeiro", "Segundo", "Terceiro"],
+            viewModel.Items.Select(item => item.Name));
+    }
+
+    private static SavedQuoteItem QuoteItem(string name) =>
+        new()
+        {
+            Name = name,
+            CategoryName = "Teste",
+            Quantity = 1,
+            UnitPrice = 100m
+        };
 }

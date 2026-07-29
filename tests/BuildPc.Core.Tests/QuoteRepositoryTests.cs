@@ -79,6 +79,8 @@ public sealed class QuoteRepositoryTests
             Assert.Equal(200m, loaded.TotalCost);
             Assert.Equal(250m, loaded.TotalPrice);
             Assert.Equal(50m, loaded.TotalProfit);
+            Assert.Equal(100m, Assert.Single(loaded.Items).UnitCost);
+            Assert.Equal(125m, Assert.Single(loaded.Items).UnitPrice);
 
             var updated = repository.SaveQuote(
                 loaded,

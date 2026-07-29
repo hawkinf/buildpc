@@ -67,6 +67,35 @@ public sealed class ProductListItemViewModelTests
             viewModel.Items.Select(item => item.Name));
     }
 
+    [Fact]
+    public void SavedQuote_KeepsSaleCostAndProfitForTheManager()
+    {
+        var quote = new SavedQuote
+        {
+            TotalCost = 200m,
+            TotalPrice = 260m,
+            Items =
+            [
+                new SavedQuoteItem
+                {
+                    Name = "Produto",
+                    CategoryName = "Teste",
+                    Quantity = 2,
+                    UnitCost = 100m,
+                    UnitPrice = 130m
+                }
+            ]
+        };
+
+        var viewModel = new SavedQuoteListItemViewModel(quote);
+        var item = Assert.Single(viewModel.Items);
+
+        Assert.Equal(260m, item.TotalPrice);
+        Assert.Equal(200m, item.TotalCost);
+        Assert.Equal(60m, quote.TotalProfit);
+        Assert.Equal(30m, viewModel.ProfitPercent);
+    }
+
     private static SavedQuoteItem QuoteItem(string name) =>
         new()
         {

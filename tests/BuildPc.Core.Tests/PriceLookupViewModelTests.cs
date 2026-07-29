@@ -51,6 +51,17 @@ public sealed class PriceLookupViewModelTests
             viewModel.Items.Select(product => product.Name));
     }
 
+    [Fact]
+    public void SearchRequiresAllKeywordsLikeTheOtherProductFilters()
+    {
+        var viewModel = CreateViewModel();
+
+        viewModel.SearchText = "ssd alfa";
+
+        var product = Assert.Single(viewModel.Items);
+        Assert.Equal("SSD Alfa", product.Name);
+    }
+
     private static PriceLookupViewModel CreateViewModel() =>
         new(
             [

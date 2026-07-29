@@ -220,6 +220,30 @@
     <Setter Property="BoxShadow" Value="0 8 24 0 #78000000" />
   </Style>
 
+  <Style Selector="Border.price-preview">
+    <Setter Property="Background" Value="{DynamicResource Brush.CardBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.BorderStrong}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="BoxShadow" Value="0 12 34 0 #88000000" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="RenderTransform" Value="scale(0.96)" />
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform"
+                                       Duration="0:0:0.16" />
+        <DoubleTransition Property="Opacity"
+                          Duration="0:0:0.16" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="Border.price-preview.visible">
+    <Setter Property="RenderTransform" Value="scale(1)" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
   <Style Selector="Border.catalog-row">
     <Setter Property="Background" Value="{DynamicResource Brush.RowPrimary}" />
     <Setter Property="BorderBrush" Value="Transparent" />

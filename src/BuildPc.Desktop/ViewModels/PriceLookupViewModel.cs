@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using BuildPc.Core.Models;
+using BuildPc.Core.Services;
 
 namespace BuildPc.Desktop.ViewModels;
 
@@ -12,6 +13,7 @@ public sealed class PriceLookupViewModel : ViewModelBase
     private ProductCatalogSortMode _sortMode =
         ProductCatalogSortMode.DescriptionAscending;
     private bool _showSalePrice = true;
+    private string _searchText = string.Empty;
 
     public PriceLookupViewModel(
         IEnumerable<PcComponent> catalog,
@@ -50,6 +52,17 @@ public sealed class PriceLookupViewModel : ViewModelBase
 
     public bool IsCostActive => !_showSalePrice;
     public bool IsSaleActive => _showSalePrice;
+    public string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            if (SetProperty(ref _searchText, value ?? string.Empty))
+            {
+                RefreshItems();
+            }
+        }
+    }
     public string PriceColumnTitle =>
         _showSalePrice ? "PREÇO DE VENDA" : "CUSTO";
     public bool IsTitleSortActive =>
@@ -181,8 +194,9 @@ public sealed class PriceLookupViewModel : ViewModelBase
     private void RefreshItems()
     {
         var filtered = _products.Where(product =>
-            SelectedCategory.Value is null ||
-            product.Component.Category == SelectedCategory.Value);
+            (SelectedCategory.Value is null ||
+             product.Component.Category == SelectedCategory.Value) &&
+            ProductFilter.Matches(product.Component, SearchText));
         var sorted = _sortMode switch
         {
             ProductCatalogSortMode.DescriptionDescending => filtered
@@ -221,6 +235,8 @@ public sealed class PriceLookupItemViewModel : ViewModelBase
     private decimal _displayPriceValue;
     private string _displayPrice = string.Empty;
     private bool _isAlternate;
+    private bool _isPreviewOpen;
+    private bool _isPreviewVisible;
 
     public PriceLookupItemViewModel(
         PcComponent component,
@@ -230,6 +246,7 @@ public sealed class PriceLookupItemViewModel : ViewModelBase
         Name = component.Name;
         Brand = component.Brand;
         Category = categoryName;
+        Description = component.Description;
         ImageUrl = component.ImageUrl;
     }
 
@@ -237,6 +254,7 @@ public sealed class PriceLookupItemViewModel : ViewModelBase
     public string Name { get; }
     public string Brand { get; }
     public string Category { get; }
+    public string Description { get; }
     public string? ImageUrl { get; }
     public bool HasImage => !string.IsNullOrWhiteSpace(ImageUrl);
     public decimal DisplayPriceValue
@@ -253,6 +271,16 @@ public sealed class PriceLookupItemViewModel : ViewModelBase
     {
         get => _isAlternate;
         private set => SetProperty(ref _isAlternate, value);
+    }
+    public bool IsPreviewOpen
+    {
+        get => _isPreviewOpen;
+        internal set => SetProperty(ref _isPreviewOpen, value);
+    }
+    public bool IsPreviewVisible
+    {
+        get => _isPreviewVisible;
+        internal set => SetProperty(ref _isPreviewVisible, value);
     }
 
     public void SetDisplayPrice(decimal price)

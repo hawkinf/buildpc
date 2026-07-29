@@ -12,4 +12,9 @@ public sealed class SavedQuoteItemListItemViewModel(
     public string Name => Item.Name;
     public string CategoryName => Item.CategoryName;
     public decimal TotalPrice => Item.TotalPrice;
+    public decimal TotalCost => Item.UnitCost * Item.Quantity;
+    public string TotalPriceText =>
+        TotalPrice.ToString("C", MainWindowViewModel.BrazilianCulture);
+    public string TotalCostText =>
+        TotalCost.ToString("C", MainWindowViewModel.BrazilianCulture);
 }

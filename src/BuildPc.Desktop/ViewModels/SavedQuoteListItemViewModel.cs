@@ -17,4 +17,16 @@ public sealed class SavedQuoteListItemViewModel(SavedQuote quote) : ViewModelBas
     public string PhoneText => PhoneNumberFormatter.FormatBrazilian(Quote.ClientPhone);
     public string ItemsText => Quote.Items.Count == 1 ? "1 item" : $"{Quote.Items.Count} itens";
     public string TotalText => Quote.TotalPrice.ToString("C", MainWindowViewModel.BrazilianCulture);
+    public string CostText =>
+        Quote.TotalCost.ToString("C", MainWindowViewModel.BrazilianCulture);
+    public string ProfitText =>
+        Quote.TotalProfit.ToString("C", MainWindowViewModel.BrazilianCulture);
+    public decimal ProfitPercent => Quote.TotalCost <= 0
+        ? 0
+        : decimal.Round(
+            Quote.TotalProfit / Quote.TotalCost * 100m,
+            2,
+            MidpointRounding.AwayFromZero);
+    public string ProfitPercentText =>
+        $"{ProfitPercent.ToString("N2", MainWindowViewModel.BrazilianCulture)}%";
 }

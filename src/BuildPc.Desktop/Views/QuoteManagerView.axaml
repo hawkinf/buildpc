@@ -83,26 +83,74 @@
                         <TextBlock Text="{Binding CategoryName}" FontSize="9"
                                    Foreground="{DynamicResource Brush.TextSecondary}" />
                       </StackPanel>
-                      <TextBlock Grid.Column="2"
-                                 Text="{Binding TotalPrice, StringFormat='R$ {0:N2}'}"
-                                 TextAlignment="Right" VerticalAlignment="Center"
-                                 Foreground="{DynamicResource Brush.Warning}" FontWeight="Bold" />
+                      <StackPanel Grid.Column="2"
+                                  Spacing="2"
+                                  VerticalAlignment="Center">
+                        <TextBlock Text="{Binding TotalPriceText}"
+                                   TextAlignment="Right"
+                                   Foreground="{DynamicResource Brush.Warning}"
+                                   FontWeight="Bold" />
+                        <TextBlock Text="{Binding TotalCostText, StringFormat='Custo: {0}'}"
+                                   TextAlignment="Right"
+                                   FontSize="9"
+                                   Foreground="{DynamicResource Brush.TextSecondary}" />
+                      </StackPanel>
                     </Grid>
                   </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </ScrollViewer>
-          <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,14,0,0">
+          <Grid Grid.Row="3"
+                ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto"
+                RowDefinitions="Auto,Auto"
+                ColumnSpacing="10"
+                Margin="0,14,0,0">
             <StackPanel>
               <TextBlock Text="TOTAL" FontSize="9" Foreground="{DynamicResource Brush.TextMuted}" />
-              <TextBlock Text="{Binding TotalText}" FontSize="20" FontWeight="Bold"
+              <TextBlock Text="{Binding TotalText}" FontSize="17" FontWeight="Bold"
                          Foreground="{DynamicResource Brush.AccentLight}" />
-              <TextBlock Text="{Binding $parent[UserControl].DataContext.StatusMessage}"
-                         FontSize="9" TextWrapping="Wrap" MaxWidth="360"
-                         Foreground="{DynamicResource Brush.TextSecondary}" />
             </StackPanel>
-            <Button Grid.Column="1" Classes="primary" Click="ExportPdf_Click"
+            <StackPanel Grid.Column="1">
+              <TextBlock Text="CUSTO"
+                         FontSize="9"
+                         Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBlock Text="{Binding CostText}"
+                         FontSize="12"
+                         FontWeight="SemiBold" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="LUCRO"
+                         FontSize="9"
+                         Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBlock Text="{Binding ProfitText}"
+                         FontSize="12"
+                         FontWeight="SemiBold"
+                         Foreground="{DynamicResource Brush.Success}" />
+            </StackPanel>
+            <StackPanel Grid.Column="3">
+              <TextBlock Text="% LUCRO"
+                         FontSize="9"
+                         Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBlock Text="{Binding ProfitPercentText}"
+                         FontSize="12"
+                         FontWeight="SemiBold"
+                         Foreground="{DynamicResource Brush.Success}" />
+            </StackPanel>
+            <TextBlock Grid.Row="1"
+                       Grid.ColumnSpan="5"
+                       Text="{Binding $parent[UserControl].DataContext.StatusMessage}"
+                       Margin="0,4,0,0"
+                       FontSize="9"
+                       TextWrapping="Wrap"
+                       MaxWidth="420"
+                       Foreground="{DynamicResource Brush.TextSecondary}" />
+            <Button Grid.Column="5"
+                    Grid.RowSpan="2"
+                    Classes="primary"
+                    Click="ExportPdf_Click"
+                    MinHeight="36"
+                    Padding="12,8"
                     IsEnabled="{Binding $parent[UserControl].DataContext.HasSelection}">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <PathIcon Data="{StaticResource Icon.Pdf}" Width="16" Height="16"

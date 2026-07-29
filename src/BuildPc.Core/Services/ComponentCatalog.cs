@@ -4,6 +4,15 @@ namespace BuildPc.Core.Services;
 
 public static class ComponentCatalog
 {
+    /// <summary>
+    /// Identificadores do catálogo inicial. Só estes precisam de marca de
+    /// exclusão para não voltarem a ser semeados no próximo início.
+    /// </summary>
+    public static IReadOnlySet<string> DefaultIds { get; } =
+        CreateDefault()
+            .Select(component => component.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
     public static IReadOnlyList<PcComponent> CreateDefault() =>
     [
         Item("cpu-7600", ComponentCategory.Processor, "Ryzen 5 7600", "AMD", "6 núcleos • AM5 • 65 W", 1_349.90m, 65, socket: "AM5"),

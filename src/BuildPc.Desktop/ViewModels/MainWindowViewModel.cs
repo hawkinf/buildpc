@@ -17,7 +17,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private readonly BuildPcApplicationSettingsStore _applicationSettingsStore;
     private readonly Dictionary<string, string> _configuredImportSourceUrls;
     private readonly IDebouncer _catalogSearchDebounce;
-    private readonly string _productImagesDirectory;
+    private readonly ProductImageStore _productImages;
     private BuildPcApiSettings? _apiSettings;
     private bool _isApiKeyUnreadable;
     private BusinessSettings _businessSettings;
@@ -78,7 +78,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             "BuildPC");
         var databasePath = Path.Combine(dataDirectory, "catalogo.db");
         var legacyJsonPath = Path.Combine(dataDirectory, "produtos.json");
-        _productImagesDirectory = Path.Combine(dataDirectory, "imagens-produtos");
+        _productImages = new ProductImageStore(
+            Path.Combine(dataDirectory, "imagens-produtos"));
         var legacyApiSettingsPath = Path.Combine(dataDirectory, "servidor.json");
         _applicationSettingsStore = new BuildPcApplicationSettingsStore(
             BuildPcApplicationSettingsStore.DefaultPath);
@@ -1638,6 +1639,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        var removedImage = selected.Component.ImageUrl;
         try
         {
             if (!_catalogRepository.Delete(selected.Id))
@@ -1660,6 +1662,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        _productImages.DeleteIfUnused(removedImage);
         SelectCatalogProduct(null);
         SetEditingProductId(null);
         ClearProductForm();
@@ -1848,10 +1851,11 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void ConfirmBulkDelete()
     {
-        var selectedIds = Products
+        var selectedProducts = Products
             .Where(product => product.IsBulkSelected)
-            .Select(product => product.Id)
+            .Select(product => product.Component)
             .ToList();
+        var selectedIds = selectedProducts.Select(product => product.Id).ToList();
         if (selectedIds.Count == 0)
         {
             IsBulkDeleteConfirmationVisible = false;
@@ -1861,6 +1865,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         try
         {
             var deleted = _catalogRepository.DeleteMany(selectedIds);
+            _productImages.DeleteIfUnused(selectedProducts);
             IsBulkDeleteConfirmationVisible = false;
             RefreshCatalogCollections();
             BulkStatusMessage = deleted == 1
@@ -1947,7 +1952,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         string? imageUrl;
         try
         {
-            imageUrl = PersistProductImage(componentId, ProductImagePath);
+            imageUrl = _productImages.Persist(componentId, ProductImagePath);
         }
         catch (IOException)
         {
@@ -2015,6 +2020,10 @@ public sealed class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        // A foto anterior deixou de ser referenciada quando o produto passou a
+        // apontar para outra.
+        _productImages.DeleteIfUnused(existing?.ImageUrl, imageUrl);
+
         var savedId = component.Id;
         SetEditingProductId(null);
         RefreshCatalogCollections();
@@ -2040,50 +2049,6 @@ public sealed class MainWindowViewModel : ViewModelBase
         ProductDescription = string.Empty;
         ProductPrice = string.Empty;
         ProductImagePath = string.Empty;
-    }
-
-    private string? PersistProductImage(string componentId, string selectedPath)
-    {
-        if (string.IsNullOrWhiteSpace(selectedPath))
-        {
-            return null;
-        }
-
-        if (Uri.TryCreate(selectedPath, UriKind.Absolute, out var uri) &&
-            uri.Scheme is "http" or "https")
-        {
-            return uri.AbsoluteUri;
-        }
-
-        var sourcePath = uri?.IsFile == true ? uri.LocalPath : selectedPath;
-        if (!File.Exists(sourcePath))
-        {
-            throw new IOException("A foto selecionada não existe.");
-        }
-
-        var sourceInfo = new FileInfo(sourcePath);
-        if (sourceInfo.Length > 5 * 1024 * 1024)
-        {
-            throw new IOException("A foto selecionada deve ter no máximo 5 MB.");
-        }
-
-        Directory.CreateDirectory(_productImagesDirectory);
-        var fullSourcePath = Path.GetFullPath(sourcePath);
-        var fullImagesDirectory = Path.GetFullPath(_productImagesDirectory)
-            .TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        if (fullSourcePath.StartsWith(fullImagesDirectory, StringComparison.OrdinalIgnoreCase))
-        {
-            return fullSourcePath;
-        }
-
-        var extension = Path.GetExtension(sourcePath);
-        var safeId = string.Concat(componentId.Select(character =>
-            Path.GetInvalidFileNameChars().Contains(character) ? '_' : character));
-        var destinationPath = Path.Combine(
-            _productImagesDirectory,
-            $"{safeId}-{Guid.NewGuid():N}{extension}");
-        File.Copy(sourcePath, destinationPath, overwrite: false);
-        return destinationPath;
     }
 
     private void SetEditingProductId(string? id)

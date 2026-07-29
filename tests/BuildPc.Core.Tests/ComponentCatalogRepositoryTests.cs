@@ -381,6 +381,125 @@ public sealed class ComponentCatalogRepositoryTests
         }
     }
 
+    [Fact]
+    public void DeletedDefaultProduct_IsNotSeededAgainOnTheNextStart()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"buildpc-tests-{Guid.NewGuid():N}");
+        var filePath = Path.Combine(directory, "catalogo.db");
+        try
+        {
+            var repository = new ComponentCatalogRepository(filePath);
+            var defaultId = ComponentCatalog.DefaultIds.First();
+            Assert.Contains(repository.GetAll(), product => product.Id == defaultId);
+
+            Assert.True(repository.Delete(defaultId));
+
+            // Reabrir semeia o catálogo inicial; o item apagado deve continuar fora.
+            var reopened = new ComponentCatalogRepository(filePath);
+            Assert.DoesNotContain(reopened.GetAll(), product => product.Id == defaultId);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void DeletingImportedProducts_DoesNotLeaveMarkersBehind()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"buildpc-tests-{Guid.NewGuid():N}");
+        var filePath = Path.Combine(directory, "catalogo.db");
+        try
+        {
+            var repository = new ComponentCatalogRepository(filePath);
+            repository.ReplaceImported(
+                ComponentCategory.Processor,
+                "kabum",
+                [
+                    CreateProcessor("kabum-1", "Processador Um", 100m),
+                    CreateProcessor("kabum-2", "Processador Dois", 200m)
+                ]);
+
+            repository.DeleteMany(["kabum-1", "kabum-2"]);
+
+            // Marcas de exclusão só servem ao catálogo inicial; produtos
+            // importados não podem deixar linhas permanentes em app_metadata.
+            Assert.Equal(0, CountDeletionMarkers(filePath));
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void ExistingDatabase_HasItsObsoleteDeletionMarkersPruned()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"buildpc-tests-{Guid.NewGuid():N}");
+        var filePath = Path.Combine(directory, "catalogo.db");
+        try
+        {
+            _ = new ComponentCatalogRepository(filePath);
+            var defaultMarker = $"deleted_product:{ComponentCatalog.DefaultIds.First()}";
+            InsertMetadata(filePath, defaultMarker, "2026-01-01T00:00:00.0000000+00:00");
+            InsertMetadata(
+                filePath,
+                "deleted_product:kabum-999",
+                "2026-01-01T00:00:00.0000000+00:00");
+            Assert.Equal(2, CountDeletionMarkers(filePath));
+
+            _ = new ComponentCatalogRepository(filePath);
+
+            // Sobra apenas a marca útil, do catálogo inicial.
+            Assert.Equal(1, CountDeletionMarkers(filePath));
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    private static void InsertMetadata(string databasePath, string key, string value)
+    {
+        using var connection = new SqliteConnection(
+            new SqliteConnectionStringBuilder
+            {
+                DataSource = databasePath,
+                Pooling = false
+            }.ToString());
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            "INSERT OR REPLACE INTO app_metadata(key, value) VALUES ($key, $value);";
+        command.Parameters.AddWithValue("$key", key);
+        command.Parameters.AddWithValue("$value", value);
+        command.ExecuteNonQuery();
+    }
+
+    private static int CountDeletionMarkers(string databasePath)
+    {
+        using var connection = new SqliteConnection(
+            new SqliteConnectionStringBuilder
+            {
+                DataSource = databasePath,
+                Pooling = false
+            }.ToString());
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT COUNT(*) FROM app_metadata WHERE key LIKE 'deleted_product:%';";
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
     private static PcComponent CreateProcessor(string id, string name, decimal price) =>
         new()
         {

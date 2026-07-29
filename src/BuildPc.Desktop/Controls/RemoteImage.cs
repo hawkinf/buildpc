@@ -1,16 +1,29 @@
-using System.Collections.Concurrent;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using BuildPc.Desktop.Services;
 
 namespace BuildPc.Desktop.Controls;
 
 public sealed class RemoteImage : Image
 {
     private const int MaximumImageBytes = 5 * 1024 * 1024;
+
+    /// <summary>
+    /// Teto do cache compartilhado de imagens. Cobre com folga o que uma tela
+    /// de catálogo exibe, sem crescer indefinidamente durante a execução.
+    /// </summary>
+    private const long MaximumCacheBytes = 96L * 1024 * 1024;
+
     private static readonly HttpClient HttpClient = CreateHttpClient();
-    private static readonly ConcurrentDictionary<string, Task<byte[]?>> Cache =
+    private static readonly BoundedImageCache Cache = new(MaximumCacheBytes);
+
+    /// <summary>
+    /// Downloads em andamento, para várias linhas que mostram a mesma imagem
+    /// não dispararem requisições repetidas.
+    /// </summary>
+    private static readonly Dictionary<string, Task<byte[]?>> InFlight =
         new(StringComparer.OrdinalIgnoreCase);
 
     private Bitmap? _ownedBitmap;
@@ -41,11 +54,13 @@ public sealed class RemoteImage : Image
             return;
         }
 
-        Task<byte[]?> bytesTask;
+        string cacheKey;
+        Func<Task<byte[]?>> read;
         if (Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
             uri.Scheme is "http" or "https")
         {
-            bytesTask = Cache.GetOrAdd(uri.AbsoluteUri, DownloadAsync);
+            cacheKey = uri.AbsoluteUri;
+            read = () => DownloadAsync(cacheKey);
         }
         else
         {
@@ -55,12 +70,11 @@ public sealed class RemoteImage : Image
                 return;
             }
 
-            bytesTask = Cache.GetOrAdd(
-                $"local:{localPath}",
-                _ => ReadLocalAsync(localPath));
+            cacheKey = $"local:{localPath}";
+            read = () => ReadLocalAsync(localPath);
         }
 
-        var bytes = await bytesTask;
+        var bytes = await GetOrLoadAsync(cacheKey, read);
         if (bytes is null || version != _loadVersion)
         {
             return;
@@ -84,6 +98,51 @@ public sealed class RemoteImage : Image
                 ClearImage();
             }
         });
+    }
+
+    /// <summary>
+    /// Devolve os bytes do cache limitado, lendo apenas quando necessário e sem
+    /// duplicar leituras simultâneas da mesma imagem.
+    /// </summary>
+    private static async Task<byte[]?> GetOrLoadAsync(
+        string cacheKey,
+        Func<Task<byte[]?>> read)
+    {
+        if (Cache.TryGet(cacheKey, out var cached))
+        {
+            return cached;
+        }
+
+        Task<byte[]?> task;
+        lock (InFlight)
+        {
+            // Reconferir dentro do lock: outra linha pode ter concluído a
+            // leitura entre a consulta acima e aqui.
+            if (Cache.TryGet(cacheKey, out cached))
+            {
+                return cached;
+            }
+
+            if (!InFlight.TryGetValue(cacheKey, out task!))
+            {
+                task = read();
+                InFlight[cacheKey] = task;
+            }
+        }
+
+        try
+        {
+            var bytes = await task;
+            Cache.Set(cacheKey, bytes);
+            return bytes;
+        }
+        finally
+        {
+            lock (InFlight)
+            {
+                InFlight.Remove(cacheKey);
+            }
+        }
     }
 
     private static async Task<byte[]?> DownloadAsync(string url)

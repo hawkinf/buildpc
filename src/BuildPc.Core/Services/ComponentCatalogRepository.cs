@@ -26,6 +26,7 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
 
         InitializeDatabase();
         MigrateHardDriveCategory();
+        PruneUnnecessaryDeletionMarkers();
         SeedDefaultCatalog();
         MigrateLegacyJsonOnce(legacyJsonPath);
     }
@@ -110,11 +111,19 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
             if (command.ExecuteNonQuery() > 0)
             {
                 deleted++;
-                SetMetadata(
-                    connection,
-                    transaction,
-                    DeletedProductKey(componentId),
-                    DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+
+                // A marca de exclusão só existe para impedir que o catálogo
+                // inicial seja semeado outra vez. Gravá-la para produtos
+                // importados fazia app_metadata crescer sem limite: milhares de
+                // linhas permanentes a cada limpeza de importação.
+                if (ComponentCatalog.DefaultIds.Contains(componentId))
+                {
+                    SetMetadata(
+                        connection,
+                        transaction,
+                        DeletedProductKey(componentId),
+                        DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+                }
             }
         }
 
@@ -379,6 +388,49 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
         transaction.Commit();
     }
 
+    /// <summary>
+    /// Remove marcas de exclusão que não pertencem ao catálogo inicial. Bases
+    /// criadas antes desta correção acumularam uma linha permanente por produto
+    /// importado que já foi apagado.
+    /// </summary>
+    private void PruneUnnecessaryDeletionMarkers()
+    {
+        using var connection = OpenConnection();
+        var obsoleteKeys = new List<string>();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText =
+                "SELECT key FROM app_metadata WHERE key LIKE 'deleted_product:%';";
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var key = reader.GetString(0);
+                if (!ComponentCatalog.DefaultIds.Contains(
+                        key[DeletedProductKeyPrefix.Length..]))
+                {
+                    obsoleteKeys.Add(key);
+                }
+            }
+        }
+
+        if (obsoleteKeys.Count == 0)
+        {
+            return;
+        }
+
+        using var transaction = connection.BeginTransaction();
+        foreach (var key in obsoleteKeys)
+        {
+            using var delete = connection.CreateCommand();
+            delete.Transaction = transaction;
+            delete.CommandText = "DELETE FROM app_metadata WHERE key = $key;";
+            delete.Parameters.AddWithValue("$key", key);
+            delete.ExecuteNonQuery();
+        }
+
+        transaction.Commit();
+    }
+
     private void SeedDefaultCatalog()
     {
         using var connection = OpenConnection();
@@ -587,8 +639,10 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
     private static string ImportMetadataKey(ComponentCategory category, string source) =>
         $"last_import:{source.Trim().ToLowerInvariant()}:{(int)category}";
 
+    private const string DeletedProductKeyPrefix = "deleted_product:";
+
     private static string DeletedProductKey(string componentId) =>
-        $"deleted_product:{componentId.Trim().ToLowerInvariant()}";
+        $"{DeletedProductKeyPrefix}{componentId.Trim().ToLowerInvariant()}";
 
     private static void InsertOrUpdate(
         SqliteConnection connection,

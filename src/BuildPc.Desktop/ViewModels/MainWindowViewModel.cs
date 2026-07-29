@@ -35,6 +35,17 @@ public sealed class MainWindowViewModel : ViewModelBase
     private bool _isProductFormSuccess;
     private bool _isProductEditCostVisible;
     private bool _isImportingAll;
+    private bool _isImportConfirmationVisible;
+    private bool _isImportProgressVisible;
+    private bool _pendingImportAll;
+    private ImportSourceViewModel? _pendingImportSource;
+    private CancellationTokenSource? _importCancellation;
+    private string _importConfirmationTitle = string.Empty;
+    private string _importConfirmationMessage = string.Empty;
+    private string _importProgressTitle = string.Empty;
+    private string _importProgressCurrentItem = string.Empty;
+    private string _importProgressDetail = string.Empty;
+    private string _importProgressProductsText = string.Empty;
     private bool _isToolsMenuExpanded;
     private ProductListItemViewModel? _selectedCatalogProduct;
     private string? _editingProductId;
@@ -284,7 +295,10 @@ public sealed class MainWindowViewModel : ViewModelBase
         ShowCatalogSaleCommand = new RelayCommand(() => SetCatalogPriceMode(true));
         RemoveProductImageCommand = new RelayCommand(RemoveProductImage);
         CancelProductEditCommand = new RelayCommand(CancelProductEdit);
-        ImportAllCommand = new AsyncRelayCommand(ImportAllAsync);
+        ImportAllCommand = new RelayCommand(RequestImportAll);
+        ConfirmImportCommand = new AsyncRelayCommand(ConfirmImportAsync);
+        CancelImportConfirmationCommand = new RelayCommand(CancelImportConfirmation);
+        CancelCurrentImportCommand = new RelayCommand(CancelCurrentImport);
         RefreshSummary();
     }
 
@@ -333,6 +347,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand RemoveProductImageCommand { get; }
     public ICommand CancelProductEditCommand { get; }
     public ICommand ImportAllCommand { get; }
+    public ICommand ConfirmImportCommand { get; }
+    public ICommand CancelImportConfirmationCommand { get; }
+    public ICommand CancelCurrentImportCommand { get; }
 
     public bool IsAssemblyView => false;
     public bool IsFlexibleListView => _currentView == "flexible-list";
@@ -556,7 +573,76 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    public bool CanImportAll => !IsImportingAll;
+    public bool IsImportConfirmationVisible
+    {
+        get => _isImportConfirmationVisible;
+        private set
+        {
+            if (SetProperty(ref _isImportConfirmationVisible, value))
+            {
+                OnPropertyChanged(nameof(CanImportAll));
+            }
+        }
+    }
+
+    public bool IsImportProgressVisible
+    {
+        get => _isImportProgressVisible;
+        private set
+        {
+            if (SetProperty(ref _isImportProgressVisible, value))
+            {
+                OnPropertyChanged(nameof(CanImportAll));
+                OnPropertyChanged(nameof(CanCancelCurrentImport));
+            }
+        }
+    }
+
+    public string ImportConfirmationTitle
+    {
+        get => _importConfirmationTitle;
+        private set => SetProperty(ref _importConfirmationTitle, value);
+    }
+
+    public string ImportConfirmationMessage
+    {
+        get => _importConfirmationMessage;
+        private set => SetProperty(ref _importConfirmationMessage, value);
+    }
+
+    public string ImportProgressTitle
+    {
+        get => _importProgressTitle;
+        private set => SetProperty(ref _importProgressTitle, value);
+    }
+
+    public string ImportProgressCurrentItem
+    {
+        get => _importProgressCurrentItem;
+        private set => SetProperty(ref _importProgressCurrentItem, value);
+    }
+
+    public string ImportProgressDetail
+    {
+        get => _importProgressDetail;
+        private set => SetProperty(ref _importProgressDetail, value);
+    }
+
+    public string ImportProgressProductsText
+    {
+        get => _importProgressProductsText;
+        private set => SetProperty(ref _importProgressProductsText, value);
+    }
+
+    public bool CanCancelCurrentImport =>
+        IsImportProgressVisible &&
+        _importCancellation is { IsCancellationRequested: false };
+
+    public bool CanImportAll =>
+        !IsImportingAll &&
+        !IsImportConfirmationVisible &&
+        !IsImportProgressVisible;
+
     public string ImportAllButtonText =>
         IsImportingAll ? "Importando todas as categorias..." : "Importar todos";
 
@@ -1052,11 +1138,119 @@ public sealed class MainWindowViewModel : ViewModelBase
             sourceKey,
             catalog.Count(component => IsImported(component, category, sourceKey)),
             _catalogRepository.GetLastImport(category, sourceKey),
-            ImportSourceAsync);
+            RequestImportSourceAsync);
 
-    private async Task ImportAllAsync()
+    private void RequestImportAll()
+    {
+        if (IsImportProgressVisible)
+        {
+            return;
+        }
+
+        _pendingImportAll = true;
+        _pendingImportSource = null;
+        ImportConfirmationTitle = "Confirmar importação completa";
+        ImportConfirmationMessage =
+            "TODOS os produtos importados atuais serão apagados e substituídos " +
+            "pelos novos dados. Produtos manuais e itens marcados como “Manter” " +
+            "serão preservados. Confirma?";
+        IsImportConfirmationVisible = true;
+    }
+
+    private Task RequestImportSourceAsync(ImportSourceViewModel source)
+    {
+        if (IsImportProgressVisible)
+        {
+            return Task.CompletedTask;
+        }
+
+        _pendingImportAll = false;
+        _pendingImportSource = source;
+        ImportConfirmationTitle = $"Confirmar importação de {source.Title}";
+        ImportConfirmationMessage =
+            $"TODOS os produtos importados atuais da categoria “{source.Title}” " +
+            "serão apagados e substituídos pelos novos dados. Produtos manuais e " +
+            "itens marcados como “Manter” serão preservados. Confirma?";
+        IsImportConfirmationVisible = true;
+        return Task.CompletedTask;
+    }
+
+    private void CancelImportConfirmation()
+    {
+        IsImportConfirmationVisible = false;
+        _pendingImportAll = false;
+        _pendingImportSource = null;
+    }
+
+    private async Task ConfirmImportAsync()
+    {
+        var importAll = _pendingImportAll;
+        var source = _pendingImportSource;
+        IsImportConfirmationVisible = false;
+        _pendingImportAll = false;
+        _pendingImportSource = null;
+
+        if (!importAll && source is null)
+        {
+            return;
+        }
+
+        using var cancellation = new CancellationTokenSource();
+        _importCancellation = cancellation;
+        IsImportProgressVisible = true;
+        OnPropertyChanged(nameof(CanCancelCurrentImport));
+
+        try
+        {
+            if (importAll)
+            {
+                await ImportAllAsync(cancellation.Token);
+            }
+            else
+            {
+                await ImportSourceAsync(source!, cancellation.Token, 1, 1);
+            }
+        }
+        catch (OperationCanceledException)
+            when (cancellation.IsCancellationRequested)
+        {
+            foreach (var pendingSource in ImportSources.Where(item =>
+                         item.StatusMessage.StartsWith(
+                             "Aguardando",
+                             StringComparison.OrdinalIgnoreCase)))
+            {
+                pendingSource.StatusMessage =
+                    "Não importado porque a operação foi cancelada.";
+            }
+        }
+        finally
+        {
+            _importCancellation = null;
+            OnPropertyChanged(nameof(CanCancelCurrentImport));
+            IsImportProgressVisible = false;
+        }
+    }
+
+    private void CancelCurrentImport()
+    {
+        if (_importCancellation is not
+            {
+                IsCancellationRequested: false
+            } cancellation)
+        {
+            return;
+        }
+
+        ImportProgressDetail =
+            "Cancelamento solicitado. Interrompendo a importação atual...";
+        cancellation.Cancel();
+        OnPropertyChanged(nameof(CanCancelCurrentImport));
+    }
+
+    private async Task ImportAllAsync(CancellationToken cancellationToken)
     {
         IsImportingAll = true;
+        ImportProgressTitle = "Importando todas as categorias";
         foreach (var source in ImportSources)
         {
             source.IsBatchImporting = true;
@@ -1065,9 +1259,14 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         try
         {
-            foreach (var source in ImportSources)
+            for (var index = 0; index < ImportSources.Count; index++)
             {
-                await ImportSourceAsync(source);
+                cancellationToken.ThrowIfCancellationRequested();
+                await ImportSourceAsync(
+                    ImportSources[index],
+                    cancellationToken,
+                    index + 1,
+                    ImportSources.Count);
             }
         }
         finally
@@ -1081,13 +1280,27 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private async Task ImportSourceAsync(ImportSourceViewModel source)
+    private async Task ImportSourceAsync(
+        ImportSourceViewModel source,
+        CancellationToken cancellationToken,
+        int position,
+        int total)
     {
+        ImportProgressTitle = total > 1
+            ? "Importando todas as categorias"
+            : $"Importando {source.Title}";
+        ImportProgressCurrentItem = total > 1
+            ? $"Categoria {position} de {total} • {source.Title}"
+            : source.Title;
+        ImportProgressDetail = "Validando o link da categoria...";
+        ImportProgressProductsText = "Nenhum produto lido ainda.";
+
         var url = source.Url.Trim();
         if (!Uri.TryCreate(url, UriKind.Absolute, out var importUri) ||
             importUri.Scheme is not ("http" or "https"))
         {
             source.StatusMessage = "Informe um link completo e válido para importar esta categoria.";
+            ImportProgressDetail = source.StatusMessage;
             return;
         }
 
@@ -1096,9 +1309,23 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         try
         {
+            var progress = new Progress<KabumImportProgress>(current =>
+            {
+                ImportProgressDetail = current.Status;
+                ImportProgressProductsText = current.ProductCount == 1
+                    ? "1 produto encontrado."
+                    : $"{current.ProductCount} produtos encontrados.";
+            });
             var imported = await _kabumCatalogImporter.FetchAsync(
                 url,
-                source.Category);
+                source.Category,
+                cancellationToken,
+                progress);
+            cancellationToken.ThrowIfCancellationRequested();
+            ImportProgressDetail =
+                $"Salvando {imported.Count} produtos de {source.Title}...";
+            ImportProgressProductsText =
+                $"{imported.Count} produtos prontos para salvar.";
             var result = _catalogRepository.ReplaceImported(
                 source.Category,
                 source.SourceKey,
@@ -1109,6 +1336,15 @@ public sealed class MainWindowViewModel : ViewModelBase
             source.StatusMessage =
                 $"{result.Imported} importados • {result.Removed} anteriores removidos" +
                 $" • {result.Kept} mantidos.";
+            ImportProgressDetail = $"{source.Title} concluído.";
+            ImportProgressProductsText =
+                $"{result.Imported} produtos importados.";
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            source.StatusMessage = "Importação cancelada.";
+            throw;
         }
         catch (HttpRequestException)
         {

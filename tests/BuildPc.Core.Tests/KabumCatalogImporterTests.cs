@@ -199,6 +199,48 @@ public sealed class KabumCatalogImporterTests
         Assert.Single(products);
     }
 
+    [Fact]
+    public async Task FetchAsync_ReportsCurrentPageAndProductCount()
+    {
+        var updates = new List<KabumImportProgress>();
+        using var httpClient = new HttpClient(new TestHttpHandler(uri =>
+            PageNumber(uri) == 1
+                ? CatalogHtml(
+                    Product(21, "Processador AMD Ryzen 5"),
+                    Product(22, "Processador Intel Core i7"))
+                : CatalogHtml()));
+        var importer = new KabumCatalogImporter(httpClient);
+
+        var products = await importer.FetchAsync(
+            "https://www.kabum.com.br/hardware/processadores?page_size=60",
+            ComponentCategory.Processor,
+            progress: new RecordingProgress<KabumImportProgress>(updates.Add));
+
+        Assert.Equal(2, products.Count);
+        Assert.Contains(updates, update =>
+            update.PageNumber == 1 &&
+            update.ProductCount == 2 &&
+            update.Status.Contains("concluída", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(updates, update =>
+            update.PageNumber == 2 &&
+            update.Status.Contains("Baixando", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task FetchAsync_CancelsTheCurrentRequest()
+    {
+        using var httpClient = new HttpClient(new DelayedHttpHandler());
+        var importer = new KabumCatalogImporter(httpClient);
+        using var cancellation = new CancellationTokenSource(
+            TimeSpan.FromMilliseconds(30));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            importer.FetchAsync(
+                "https://www.kabum.com.br/hardware/processadores?page_size=60",
+                ComponentCategory.Processor,
+                cancellation.Token));
+    }
+
     private static object Product(int code, string name) =>
         new
         {
@@ -248,5 +290,21 @@ public sealed class KabumCatalogImporterTests
             {
                 Content = new StringContent(responseFactory(request.RequestUri!))
             });
+    }
+
+    private sealed class RecordingProgress<T>(Action<T> report) : IProgress<T>
+    {
+        public void Report(T value) => report(value);
+    }
+
+    private sealed class DelayedHttpHandler : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        }
     }
 }

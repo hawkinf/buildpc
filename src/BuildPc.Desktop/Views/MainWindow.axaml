@@ -817,17 +817,23 @@
 
       <ScrollViewer Grid.Row="1" Padding="30,24" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="18" MaxWidth="920" HorizontalAlignment="Left">
-          <Border Background="{DynamicResource Brush.InfoPanelBackground}" BorderBrush="{DynamicResource Brush.InfoBorder}" BorderThickness="1"
+          <Border Background="{DynamicResource Brush.WarningBackground}"
+                  BorderBrush="{DynamicResource Brush.Warning}"
+                  BorderThickness="1"
                   CornerRadius="12" Padding="18">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-              <Border Width="42" Height="42" CornerRadius="10" Background="{DynamicResource Brush.AccentSurface}">
-                <PathIcon Data="{StaticResource Icon.Info}" Width="20" Height="20"
-                          Foreground="{DynamicResource Brush.AccentLight}"
+              <Border Width="42" Height="42" CornerRadius="10"
+                      Background="{DynamicResource Brush.WarningBackground}">
+                <PathIcon Data="{StaticResource Icon.Warning}" Width="20" Height="20"
+                          Foreground="{DynamicResource Brush.Warning}"
                           HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <StackPanel Grid.Column="1" Spacing="4">
-                <TextBlock Text="Como funciona" FontSize="12" FontWeight="SemiBold" />
-                <TextBlock Text="Cada importação substitui os itens anteriores da categoria. Use “Manter” no catálogo para proteger um importado; produtos cadastrados manualmente nunca são removidos."
+                <TextBlock Text="Atenção antes de importar"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource Brush.Warning}" />
+                <TextBlock Text="Todos os produtos importados anteriores serão apagados e substituídos. Antes de começar, o programa pedirá sua confirmação. Produtos manuais e itens marcados como “Manter” serão preservados."
                            TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextBody}" FontSize="11" />
               </StackPanel>
             </Grid>
@@ -936,5 +942,156 @@
         </StackPanel>
       </Grid>
     </Border>
+
+    <!-- Confirmação destrutiva da importação. -->
+    <Grid Grid.RowSpan="2"
+          Grid.ColumnSpan="3"
+          ZIndex="1000"
+          Background="#A6000000"
+          IsVisible="{Binding IsImportConfirmationVisible}">
+      <Border Width="560"
+              Padding="26"
+              CornerRadius="14"
+              Background="{DynamicResource Brush.CardBackground}"
+              BorderBrush="{DynamicResource Brush.Warning}"
+              BorderThickness="1"
+              BoxShadow="0 16 44 0 #99000000"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+            <Border Width="48"
+                    Height="48"
+                    CornerRadius="12"
+                    Background="{DynamicResource Brush.WarningBackground}">
+              <PathIcon Data="{StaticResource Icon.Warning}"
+                        Width="24"
+                        Height="24"
+                        Foreground="{DynamicResource Brush.Warning}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1"
+                        Spacing="4"
+                        VerticalAlignment="Center">
+              <TextBlock Text="{Binding ImportConfirmationTitle}"
+                         FontSize="18"
+                         FontWeight="Bold" />
+              <TextBlock Text="Esta ação substitui dados do catálogo."
+                         FontSize="10"
+                         Foreground="{DynamicResource Brush.TextSecondary}" />
+            </StackPanel>
+          </Grid>
+          <TextBlock Text="{Binding ImportConfirmationMessage}"
+                     FontSize="13"
+                     LineHeight="20"
+                     TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,Auto,Auto"
+                ColumnSpacing="10">
+            <Button Grid.Column="1"
+                    Classes="secondary"
+                    Command="{Binding CancelImportConfirmationCommand}">
+              <TextBlock Text="Não, voltar" />
+            </Button>
+            <Button Grid.Column="2"
+                    Classes="primary"
+                    Command="{Binding ConfirmImportCommand}"
+                    Background="{DynamicResource Brush.Error}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <PathIcon Data="{StaticResource Icon.Download}"
+                          Width="16"
+                          Height="16"
+                          Foreground="White" />
+                <TextBlock Text="Sim, importar" Foreground="White" />
+              </StackPanel>
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- Janela modal de acompanhamento da importação. -->
+    <Grid Grid.RowSpan="2"
+          Grid.ColumnSpan="3"
+          ZIndex="1001"
+          Background="#A6000000"
+          IsVisible="{Binding IsImportProgressVisible}">
+      <Border Width="620"
+              Padding="28"
+              CornerRadius="14"
+              Background="{DynamicResource Brush.CardBackground}"
+              BorderBrush="{DynamicResource Brush.BorderStrong}"
+              BorderThickness="1"
+              BoxShadow="0 16 44 0 #99000000"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="18">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+            <Border Width="48"
+                    Height="48"
+                    CornerRadius="12"
+                    Background="{DynamicResource Brush.AccentSurface}">
+              <PathIcon Data="{StaticResource Icon.Download}"
+                        Width="24"
+                        Height="24"
+                        Foreground="{DynamicResource Brush.AccentLight}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1"
+                        Spacing="4"
+                        VerticalAlignment="Center">
+              <TextBlock Text="{Binding ImportProgressTitle}"
+                         FontSize="18"
+                         FontWeight="Bold" />
+              <TextBlock Text="Acompanhe abaixo o que está sendo importado."
+                         FontSize="10"
+                         Foreground="{DynamicResource Brush.TextSecondary}" />
+            </StackPanel>
+          </Grid>
+
+          <Border Background="{DynamicResource Brush.PanelBackground}"
+                  BorderBrush="{DynamicResource Brush.Border}"
+                  BorderThickness="1"
+                  CornerRadius="10"
+                  Padding="16">
+            <StackPanel Spacing="10">
+              <TextBlock Text="{Binding ImportProgressCurrentItem}"
+                         FontSize="14"
+                         FontWeight="SemiBold"
+                         Foreground="{DynamicResource Brush.AccentPale}" />
+              <ProgressBar IsIndeterminate="True"
+                           Height="7" />
+              <TextBlock Text="{Binding ImportProgressDetail}"
+                         FontSize="12"
+                         TextWrapping="Wrap" />
+              <TextBlock Text="{Binding ImportProgressProductsText}"
+                         FontSize="10"
+                         Foreground="{DynamicResource Brush.TextSecondary}" />
+            </StackPanel>
+          </Border>
+
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="O cancelamento preserva a última versão concluída do catálogo."
+                       FontSize="10"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       VerticalAlignment="Center" />
+            <Button Grid.Column="1"
+                    Classes="secondary"
+                    Command="{Binding CancelCurrentImportCommand}"
+                    IsEnabled="{Binding CanCancelCurrentImport}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <PathIcon Data="{StaticResource Icon.Warning}"
+                          Width="15"
+                          Height="15"
+                          Foreground="{DynamicResource Brush.Error}" />
+                <TextBlock Text="Cancelar importação"
+                           Foreground="{DynamicResource Brush.Error}" />
+              </StackPanel>
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Grid>
   </Grid>
 </Window>

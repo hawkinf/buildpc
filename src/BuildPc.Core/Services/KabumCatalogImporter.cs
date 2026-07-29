@@ -13,7 +13,8 @@ public sealed partial class KabumCatalogImporter(HttpClient httpClient)
     public async Task<IReadOnlyList<PcComponent>> FetchAsync(
         string catalogUrl,
         ComponentCategory category,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IProgress<KabumImportProgress>? progress = null)
     {
         var components = new Dictionary<string, PcComponent>(
             StringComparer.OrdinalIgnoreCase);
@@ -21,6 +22,11 @@ public sealed partial class KabumCatalogImporter(HttpClient httpClient)
 
         for (var pageNumber = 1; pageNumber <= MaximumPages; pageNumber++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            progress?.Report(new(
+                pageNumber,
+                components.Count,
+                $"Baixando a página {pageNumber}..."));
             var pageUrl = WithPageNumber(catalogUrl, pageNumber);
             using var response = await SendAsync(pageUrl, cancellationToken);
             if (pageNumber > 1 &&
@@ -46,6 +52,11 @@ public sealed partial class KabumCatalogImporter(HttpClient httpClient)
             {
                 components[component.Id] = component;
             }
+
+            progress?.Report(new(
+                pageNumber,
+                components.Count,
+                $"Página {pageNumber} concluída • {components.Count} produtos encontrados."));
         }
 
         if (components.Count == 0)
@@ -536,3 +547,8 @@ public sealed partial class KabumCatalogImporter(HttpClient httpClient)
     [GeneratedRegex(@"\s+([,.;:!?])", RegexOptions.CultureInvariant)]
     private static partial Regex SpaceBeforePunctuationRegex();
 }
+
+public sealed record KabumImportProgress(
+    int PageNumber,
+    int ProductCount,
+    string Status);

@@ -6,9 +6,38 @@ using BuildPc.Core.Models;
 
 namespace BuildPc.Core.Services;
 
-public sealed partial class KabumCatalogImporter(HttpClient httpClient)
+public sealed partial class KabumCatalogImporter
 {
     private const int MaximumPages = 200;
+
+    /// <summary>Tentativas por página antes de desistir dela.</summary>
+    private const int MaximumAttemptsPerPage = 4;
+
+    /// <summary>
+    /// Pausa entre páginas. Duzentas requisições em rajada fazem a loja
+    /// responder com 429 e derrubar a importação inteira.
+    /// </summary>
+    private static readonly TimeSpan DelayBetweenPages =
+        TimeSpan.FromMilliseconds(350);
+
+    private readonly HttpClient _httpClient;
+    private readonly Func<TimeSpan, CancellationToken, Task> _delay;
+
+    public KabumCatalogImporter(HttpClient httpClient)
+        : this(httpClient, Task.Delay)
+    {
+    }
+
+    /// <param name="delay">
+    /// Injetável para os testes não esperarem de verdade pelos backoffs.
+    /// </param>
+    internal KabumCatalogImporter(
+        HttpClient httpClient,
+        Func<TimeSpan, CancellationToken, Task> delay)
+    {
+        _httpClient = httpClient;
+        _delay = delay;
+    }
 
     public async Task<IReadOnlyList<PcComponent>> FetchAsync(
         string catalogUrl,
@@ -23,12 +52,37 @@ public sealed partial class KabumCatalogImporter(HttpClient httpClient)
         for (var pageNumber = 1; pageNumber <= MaximumPages; pageNumber++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (pageNumber > 1)
+            {
+                await _delay(DelayBetweenPages, cancellationToken);
+            }
+
             progress?.Report(new(
                 pageNumber,
                 components.Count,
                 $"Baixando a página {pageNumber}..."));
             var pageUrl = WithPageNumber(catalogUrl, pageNumber);
-            using var response = await SendAsync(pageUrl, cancellationToken);
+
+            using var response = await SendWithRetryAsync(
+                pageUrl,
+                pageNumber,
+                components.Count,
+                progress,
+                cancellationToken);
+            if (response is null)
+            {
+                // A página falhou mesmo após as tentativas. Se já houver
+                // produtos, é melhor entregar o que foi lido do que perder a
+                // categoria inteira.
+                if (components.Count > 0)
+                {
+                    break;
+                }
+
+                throw new HttpRequestException(
+                    "A loja não respondeu à primeira página do catálogo.");
+            }
+
             if (pageNumber > 1 &&
                 response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
             {
@@ -67,6 +121,67 @@ public sealed partial class KabumCatalogImporter(HttpClient httpClient)
         return components.Values.ToList();
     }
 
+    /// <summary>
+    /// Baixa uma página repetindo em falhas temporárias, com espera crescente e
+    /// respeitando <c>Retry-After</c>. Devolve <c>null</c> quando as tentativas
+    /// se esgotam.
+    /// </summary>
+    private async Task<HttpResponseMessage?> SendWithRetryAsync(
+        string pageUrl,
+        int pageNumber,
+        int productCount,
+        IProgress<KabumImportProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            HttpResponseMessage? response = null;
+            TimeSpan? retryAfter = null;
+            try
+            {
+                response = await SendAsync(pageUrl, cancellationToken);
+                if (!IsTransientFailure(response.StatusCode))
+                {
+                    return response;
+                }
+
+                retryAfter = response.Headers.RetryAfter?.Delta;
+                response.Dispose();
+            }
+            catch (HttpRequestException)
+            {
+                response?.Dispose();
+                if (attempt >= MaximumAttemptsPerPage)
+                {
+                    return null;
+                }
+            }
+
+            if (attempt >= MaximumAttemptsPerPage)
+            {
+                return null;
+            }
+
+            var wait = retryAfter ?? TimeSpan.FromMilliseconds(700 * (1 << (attempt - 1)));
+            progress?.Report(new(
+                pageNumber,
+                productCount,
+                $"A loja recusou a página {pageNumber}. Nova tentativa em " +
+                $"{Math.Ceiling(wait.TotalSeconds)}s ({attempt} de " +
+                $"{MaximumAttemptsPerPage - 1})..."));
+            await _delay(wait, cancellationToken);
+        }
+    }
+
+    private static bool IsTransientFailure(HttpStatusCode statusCode) =>
+        statusCode is HttpStatusCode.TooManyRequests
+            or HttpStatusCode.RequestTimeout
+            or HttpStatusCode.InternalServerError
+            or HttpStatusCode.BadGateway
+            or HttpStatusCode.ServiceUnavailable
+            or HttpStatusCode.GatewayTimeout;
+
     private async Task<HttpResponseMessage> SendAsync(
         string catalogUrl,
         CancellationToken cancellationToken)
@@ -75,7 +190,7 @@ public sealed partial class KabumCatalogImporter(HttpClient httpClient)
         request.Headers.UserAgent.ParseAdd(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138.0 Safari/537.36");
         request.Headers.AcceptLanguage.ParseAdd("pt-BR,pt;q=0.9");
-        return await httpClient.SendAsync(request, cancellationToken);
+        return await _httpClient.SendAsync(request, cancellationToken);
     }
 
     public static IReadOnlyList<PcComponent> ParseCatalogHtml(

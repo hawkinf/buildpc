@@ -280,6 +280,126 @@ public sealed class KabumCatalogImporterTests
         return int.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
     }
 
+    [Fact]
+    public async Task FetchAsync_RetriesTransientFailuresBeforeGivingUpOnAPage()
+    {
+        var attempts = 0;
+        var handler = new StatusHttpHandler(uri =>
+        {
+            if (PageNumber(uri) != 1)
+            {
+                return (HttpStatusCode.NotFound, string.Empty);
+            }
+
+            // As duas primeiras tentativas da página 1 são recusadas.
+            return ++attempts <= 2
+                ? (HttpStatusCode.TooManyRequests, string.Empty)
+                : (HttpStatusCode.OK, CatalogHtml(Product(1, "Processador Um")));
+        });
+        var waits = new List<TimeSpan>();
+        var importer = CreateImporter(handler, waits);
+
+        var products = await importer.FetchAsync(
+            "https://www.kabum.com.br/hardware/processadores",
+            ComponentCategory.Processor);
+
+        Assert.Equal(3, attempts);
+        Assert.Single(products);
+        // Espera crescente entre as tentativas.
+        Assert.Equal(
+            [TimeSpan.FromMilliseconds(700), TimeSpan.FromMilliseconds(1400)],
+            waits.Take(2));
+    }
+
+    [Fact]
+    public async Task FetchAsync_HonorsRetryAfterHeader()
+    {
+        var attempts = 0;
+        var handler = new StatusHttpHandler(
+            uri => PageNumber(uri) != 1
+                ? (HttpStatusCode.NotFound, string.Empty)
+                : ++attempts == 1
+                    ? (HttpStatusCode.ServiceUnavailable, string.Empty)
+                    : (HttpStatusCode.OK, CatalogHtml(Product(1, "Processador Um"))),
+            retryAfter: TimeSpan.FromSeconds(5));
+        var waits = new List<TimeSpan>();
+        var importer = CreateImporter(handler, waits);
+
+        await importer.FetchAsync(
+            "https://www.kabum.com.br/hardware/processadores",
+            ComponentCategory.Processor);
+
+        Assert.Equal(TimeSpan.FromSeconds(5), waits[0]);
+    }
+
+    [Fact]
+    public async Task FetchAsync_KeepsProductsAlreadyReadWhenALaterPageKeepsFailing()
+    {
+        var handler = new StatusHttpHandler(uri => PageNumber(uri) switch
+        {
+            1 => (HttpStatusCode.OK, CatalogHtml(Product(1, "Processador Um"))),
+            2 => (HttpStatusCode.OK, CatalogHtml(Product(2, "Processador Dois"))),
+            // A página 3 nunca responde: a categoria não pode ser perdida.
+            _ => (HttpStatusCode.InternalServerError, string.Empty)
+        });
+        var importer = CreateImporter(handler, []);
+
+        var products = await importer.FetchAsync(
+            "https://www.kabum.com.br/hardware/processadores",
+            ComponentCategory.Processor);
+
+        Assert.Equal(2, products.Count);
+    }
+
+    [Fact]
+    public async Task FetchAsync_FailsWhenTheFirstPageNeverResponds()
+    {
+        var handler = new StatusHttpHandler(
+            _ => (HttpStatusCode.ServiceUnavailable, string.Empty));
+        var importer = CreateImporter(handler, []);
+
+        await Assert.ThrowsAsync<HttpRequestException>(() =>
+            importer.FetchAsync(
+                "https://www.kabum.com.br/hardware/processadores",
+                ComponentCategory.Processor));
+    }
+
+    private static KabumCatalogImporter CreateImporter(
+        HttpMessageHandler handler,
+        List<TimeSpan> waits) =>
+        new(
+            new HttpClient(handler),
+            (wait, _) =>
+            {
+                waits.Add(wait);
+                return Task.CompletedTask;
+            });
+
+    private sealed class StatusHttpHandler(
+        Func<Uri, (HttpStatusCode Status, string Body)> responseFactory,
+        TimeSpan? retryAfter = null)
+        : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var (status, body) = responseFactory(request.RequestUri!);
+            var response = new HttpResponseMessage(status)
+            {
+                Content = new StringContent(body)
+            };
+            if (retryAfter is not null)
+            {
+                response.Headers.RetryAfter =
+                    new System.Net.Http.Headers.RetryConditionHeaderValue(
+                        retryAfter.Value);
+            }
+
+            return Task.FromResult(response);
+        }
+    }
+
     private sealed class TestHttpHandler(Func<Uri, string> responseFactory)
         : HttpMessageHandler
     {

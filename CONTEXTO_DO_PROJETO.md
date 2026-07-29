@@ -253,6 +253,14 @@ Regras da importação:
 - o limite de segurança é 200 páginas;
 - a leitura para quando encontra uma página vazia, erro de paginação ou página
   repetida;
+- há uma pausa de 350 ms entre páginas para não disparar o limite da loja;
+- falhas temporárias (429, 408, 500, 502, 503, 504 e erros de rede) são
+  repetidas até 4 tentativas por página, com espera crescente e respeitando o
+  cabeçalho `Retry-After`;
+- se uma página continuar falhando, os produtos já lidos são gravados em vez de
+  perder a categoria inteira. Só a falha da primeira página aborta a categoria;
+- o Nginx aceita corpo de até 64 MB, porque uma categoria grande é enviada em um
+  único JSON para `POST /imports/replace`;
 - produtos repetidos são consolidados pelo ID;
 - mouse e teclado compartilham a página da loja, mas o importador separa os
   produtos por nome e rejeita combos/acessórios incompatíveis;

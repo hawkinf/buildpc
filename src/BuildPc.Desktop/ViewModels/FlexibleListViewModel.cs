@@ -19,6 +19,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
     private bool _isStatusSuccess;
     private bool _isSensitiveTotalsVisible;
     private bool _isDirty;
+    private bool _isClearConfirmationVisible;
     private SavedQuote? _savedQuote;
 
     public FlexibleListViewModel(
@@ -43,7 +44,9 @@ public sealed class FlexibleListViewModel : ViewModelBase
             _ => DraftSelectionChanged(),
             SellingPriceFor);
         AddCommand = new RelayCommand(Add);
-        ClearCommand = new RelayCommand(Clear);
+        RequestClearCommand = new RelayCommand(RequestClear);
+        ConfirmClearCommand = new RelayCommand(Clear);
+        CancelClearCommand = new RelayCommand(CancelClear);
         SaveQuoteCommand = new RelayCommand(SaveQuote);
     }
 
@@ -52,7 +55,9 @@ public sealed class FlexibleListViewModel : ViewModelBase
     public ComponentSlotViewModel ProductPicker { get; }
     public IReadOnlyList<int> QuantityOptions { get; } = Enumerable.Range(1, 100).ToList();
     public ICommand AddCommand { get; }
-    public ICommand ClearCommand { get; }
+    public ICommand RequestClearCommand { get; }
+    public ICommand ConfirmClearCommand { get; }
+    public ICommand CancelClearCommand { get; }
     public ICommand SaveQuoteCommand { get; }
 
     public CategoryOptionViewModel SelectedCategory
@@ -80,6 +85,19 @@ public sealed class FlexibleListViewModel : ViewModelBase
     public bool CanAdd => ProductPicker.Selected is not null;
     public bool HasItems => Items.Count > 0;
     public bool IsEmpty => Items.Count == 0;
+
+    public bool IsClearConfirmationVisible
+    {
+        get => _isClearConfirmationVisible;
+        private set => SetProperty(ref _isClearConfirmationVisible, value);
+    }
+
+    public string ClearConfirmationMessage =>
+        SavedQuote is null
+            ? "Descartar esta montagem? Os itens e os dados do cliente serão " +
+              "perdidos e o orçamento não está gravado."
+            : $"Fechar o orçamento #{SavedQuote.Number:000000} e limpar a " +
+              "montagem? O orçamento gravado continua na lista de Orçamentos.";
     public bool IsSensitiveTotalsVisible
     {
         get => _isSensitiveTotalsVisible;
@@ -275,12 +293,31 @@ public sealed class FlexibleListViewModel : ViewModelBase
         RefreshSummary();
     }
 
+    /// <summary>
+    /// Limpar descarta um orçamento inteiro, então passa pela mesma confirmação
+    /// exigida das outras ações destrutivas do programa.
+    /// </summary>
+    private void RequestClear()
+    {
+        if (HasItems || !string.IsNullOrWhiteSpace(ClientName))
+        {
+            OnPropertyChanged(nameof(ClearConfirmationMessage));
+            IsClearConfirmationVisible = true;
+        }
+    }
+
+    private void CancelClear() => IsClearConfirmationVisible = false;
+
     private void Clear()
     {
+        IsClearConfirmationVisible = false;
         Items.Clear();
         ClientName = string.Empty;
         ClientPhone = string.Empty;
         Notes = string.Empty;
+        ProductPicker.Selected = null;
+        ProductPicker.FilterText = string.Empty;
+        Quantity = 1;
         SavedQuote = null;
         IsDirty = false;
         StatusMessage = string.Empty;
@@ -295,6 +332,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
     {
         ArgumentNullException.ThrowIfNull(quote);
 
+        IsClearConfirmationVisible = false;
         Items.Clear();
         foreach (var savedItem in quote.Items)
         {

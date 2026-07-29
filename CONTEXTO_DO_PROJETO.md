@@ -32,7 +32,7 @@ dotnet build BuildPc.sln --no-restore
 dotnet test BuildPc.sln --no-build
 ```
 
-No estado documentado, a solução compila sem avisos e possui 106 testes
+No estado documentado, a solução compila sem avisos e possui 121 testes
 aprovados.
 
 ## O que o programa faz
@@ -100,6 +100,12 @@ Comportamento:
   preço total no corpo da tela;
 - os botões de olho, gravação e exportação ficam no cabeçalho da Montagem,
   junto de “Limpar montagem”;
+- “Limpar montagem” exige confirmação, como as demais ações destrutivas. A
+  mensagem avisa quando o orçamento ainda não foi gravado e, quando já foi,
+  lembra que ele continua na lista de Orçamentos;
+- atalhos: `Ctrl+S` grava, `Ctrl+P` exporta, `Ctrl+L` limpa e `Esc` fecha a
+  confirmação. Funcionam mesmo com o foco em um campo de texto, por
+  tunelamento do evento;
 - o rodapé interno da Montagem fica reservado aos avisos de gravação e aos
   totais sensíveis revelados pelo olho;
 - a exportação gera uma prévia PDF e abre o visualizador do sistema; é no

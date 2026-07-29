@@ -273,6 +273,71 @@ public sealed class FlexibleListViewModelTests
     }
 
     [Fact]
+    public void Clear_OnlyWipesTheAssemblyAfterConfirmation()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, "Processador", 1000m);
+        var viewModel = CreateViewModel(processor);
+        viewModel.ProductPicker.Selected = processor;
+        viewModel.AddCommand.Execute(null);
+        viewModel.ClientName = "Cliente";
+
+        viewModel.RequestClearCommand.Execute(null);
+
+        // Pedir para limpar não descarta nada por si só.
+        Assert.True(viewModel.IsClearConfirmationVisible);
+        Assert.Single(viewModel.Items);
+        Assert.Equal("Cliente", viewModel.ClientName);
+
+        viewModel.CancelClearCommand.Execute(null);
+
+        Assert.False(viewModel.IsClearConfirmationVisible);
+        Assert.Single(viewModel.Items);
+
+        viewModel.RequestClearCommand.Execute(null);
+        viewModel.ConfirmClearCommand.Execute(null);
+
+        Assert.False(viewModel.IsClearConfirmationVisible);
+        Assert.Empty(viewModel.Items);
+        Assert.Equal(string.Empty, viewModel.ClientName);
+        Assert.Null(viewModel.SavedQuote);
+        Assert.False(viewModel.IsDirty);
+    }
+
+    [Fact]
+    public void RequestClear_DoesNothingWhenThereIsNothingToLose()
+    {
+        var viewModel = CreateViewModel(
+            Product("cpu", ComponentCategory.Processor, "Processador", 1000m));
+
+        viewModel.RequestClearCommand.Execute(null);
+
+        Assert.False(viewModel.IsClearConfirmationVisible);
+    }
+
+    [Fact]
+    public void ClearConfirmationMessage_MentionsTheSavedQuoteWhenThereIsOne()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, "Processador", 1000m);
+        var viewModel = CreateViewModel(processor);
+        viewModel.ProductPicker.Selected = processor;
+        viewModel.AddCommand.Execute(null);
+
+        Assert.Contains("não está gravado", viewModel.ClearConfirmationMessage);
+
+        viewModel.LoadQuote(new SavedQuote
+        {
+            Id = Guid.NewGuid(),
+            Number = 31,
+            CreatedAt = DateTimeOffset.Now,
+            ClientName = "Lia",
+            ClientPhone = "(11) 95555-0000",
+            Items = []
+        });
+
+        Assert.Contains("#000031", viewModel.ClearConfirmationMessage);
+    }
+
+    [Fact]
     public void LoadQuote_RestoresTheAgreedValuesAndIsReadyToExport()
     {
         var processor = Product("cpu", ComponentCategory.Processor, "Processador", 1000m);

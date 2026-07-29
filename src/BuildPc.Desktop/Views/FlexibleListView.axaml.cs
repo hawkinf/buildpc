@@ -26,6 +26,14 @@ public partial class FlexibleListView : UserControl
                 handledEventsToo: true);
             eyeButton.PointerCaptureLost += (_, _) => HideSensitiveTotals();
         }
+
+        // Tunelamento: os atalhos precisam funcionar mesmo com o foco dentro de
+        // um campo de texto da montagem.
+        AddHandler(
+            KeyDownEvent,
+            Root_KeyDown,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
     }
 
     private void SensitiveTotals_PointerPressed(object? sender, PointerPressedEventArgs e)
@@ -52,6 +60,46 @@ public partial class FlexibleListView : UserControl
         if (DataContext is FlexibleListViewModel viewModel)
         {
             viewModel.SetSensitiveTotalsVisible(false);
+        }
+    }
+
+    /// <summary>
+    /// Atalhos da Montagem: Ctrl+S grava, Ctrl+P exporta, Ctrl+L limpa e Esc
+    /// fecha a confirmação aberta.
+    /// </summary>
+    private void Root_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (DataContext is not FlexibleListViewModel viewModel)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Escape && viewModel.IsClearConfirmationVisible)
+        {
+            viewModel.CancelClearCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case Key.S:
+                viewModel.SaveQuoteCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case Key.P:
+                ExportPdf_Click(sender, e);
+                e.Handled = true;
+                break;
+            case Key.L:
+                viewModel.RequestClearCommand.Execute(null);
+                e.Handled = true;
+                break;
         }
     }
 

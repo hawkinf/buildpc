@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -97,5 +98,33 @@ public sealed partial class MainWindow : Window
         {
             viewModel.FailProductPriceTableExport();
         }
+    }
+
+    private async void CatalogProduct_DoubleTapped(
+        object? sender,
+        TappedEventArgs e)
+    {
+        if (sender is not Control
+            {
+                DataContext: ProductListItemViewModel product
+            } ||
+            DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        product.SelectCommand.Execute(null);
+        viewModel.EditProductCommand.Execute(null);
+        if (!viewModel.IsEditingProduct)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        var editor = new ProductEditWindow
+        {
+            DataContext = viewModel
+        };
+        await editor.ShowDialog(this);
     }
 }

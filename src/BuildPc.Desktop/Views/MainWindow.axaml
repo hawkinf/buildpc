@@ -39,7 +39,7 @@
                   Command="{Binding ShowProductsCommand}">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <PathIcon Data="{StaticResource Icon.Products}" Width="18" Height="18" />
-              <TextBlock Text="Produtos" VerticalAlignment="Center" />
+              <TextBlock Text="Listagem de Produtos" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
 
@@ -449,14 +449,14 @@
       <views:PricingSettingsView DataContext="{Binding PricingSettings}" />
     </Grid>
 
-    <!-- Cadastro e catálogo -->
+    <!-- Listagem de produtos e catálogo local -->
     <Grid Grid.Column="1" Grid.ColumnSpan="2" RowDefinitions="Auto,*"
           IsVisible="{Binding IsProductsView}">
       <Border Grid.Row="0" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="30,20">
         <Grid ColumnDefinitions="*,Auto">
           <StackPanel Spacing="4">
-            <TextBlock Text="Produtos" FontSize="22" FontWeight="Bold" />
-            <TextBlock Text="Cadastre componentes e disponibilize-os imediatamente na montagem."
+            <TextBlock Text="Listagem de Produtos" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="Consulte e gerencie os produtos disponíveis no Catálogo Local."
                        Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="12" />
           </StackPanel>
           <Border Grid.Column="1" Background="{DynamicResource Brush.AccentSurface}" CornerRadius="8" Padding="12,7"
@@ -909,7 +909,8 @@
                                 ToolTip.Tip="Marcar para alteração em massa" />
                       <Button Grid.Column="1" Classes="catalog-item"
                               Command="{Binding SelectCommand}"
-                              ToolTip.Tip="Clique para ver, editar ou excluir">
+                              DoubleTapped="CatalogProduct_DoubleTapped"
+                              ToolTip.Tip="Clique para ver os detalhes ou clique duas vezes para editar">
                         <Border Classes="catalog-row"
                                 Classes.alternate="{Binding IsAlternate}"
                                 Classes.selected="{Binding IsSelected}">

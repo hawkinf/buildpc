@@ -491,7 +491,13 @@
               <Border x:Name="flexibleSelectedProductRow"
                       Classes="component-row" Classes.alternate="{Binding IsAlternate}"
                       Margin="0,0,0,8">
-                <Grid ColumnDefinitions="84,100,1.15*,*,76,154,28,44"
+                <!--
+                  Foto, ordem e lixeira tem largura fixa porque sao icones.
+                  Categoria, quantidade e valor passaram a ter minimo e
+                  proporcao, para cederem espaco a titulo e descricao quando a
+                  janela encolhe em vez de cortar o texto.
+                -->
+                <Grid ColumnDefinitions="84,0.7*,1.3*,1.2*,0.6*,1.1*,28,44"
                       ColumnSpacing="10"
                       MinWidth="0">
                   <Border Classes="product-image"
@@ -510,7 +516,7 @@
                     </Grid>
                   </Border>
                   <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center"
-                              MinWidth="0">
+                              MinWidth="84">
                     <TextBlock Text="{Binding CategoryName}" FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource Brush.AccentPale}" />
                     <TextBlock Text="{Binding Brand}" FontSize="9"

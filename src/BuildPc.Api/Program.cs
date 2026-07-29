@@ -1,7 +1,6 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.RateLimiting;
 using BuildPc.Api.Database;
+using BuildPc.Api.Security;
 using Microsoft.AspNetCore.RateLimiting;
 using BuildPc.Core.Models;
 using BuildPc.Core.Services;
@@ -73,12 +72,9 @@ if (TryGetSqliteImportPath(args, out var sqlitePath))
     return 0;
 }
 
-var apiKey = builder.Configuration["BuildPc:ApiKey"];
-if (string.IsNullOrWhiteSpace(apiKey))
-{
-    throw new InvalidOperationException(
-        "A chave de acesso 'BuildPc:ApiKey' não foi configurada.");
-}
+// Aceita a chave em uso e, durante uma rotação, a anterior. Sem isso, trocar a
+// chave exigiria atualizar servidor e clientes no mesmo instante.
+var apiKeyValidator = ApiKeyValidator.FromConfiguration(builder.Configuration);
 
 app.UseExceptionHandler(errorApp =>
 {
@@ -115,8 +111,13 @@ app.Use(async (context, next) =>
     }
 
     var suppliedKey = context.Request.Headers["X-BuildPc-Key"].ToString();
-    if (!KeysMatch(suppliedKey, apiKey))
+    if (!apiKeyValidator.IsValid(suppliedKey))
     {
+        // Uma tentativa recusada é exatamente o que interessa auditar.
+        AuditLog.Record(
+            app.Logger,
+            context,
+            StatusCodes.Status401Unauthorized);
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
         await Results.Problem(
                 statusCode: StatusCodes.Status401Unauthorized,
@@ -127,6 +128,11 @@ app.Use(async (context, next) =>
     }
 
     await next(context);
+
+    if (AuditLog.ShouldAudit(context))
+    {
+        AuditLog.Record(app.Logger, context, context.Response.StatusCode);
+    }
 });
 
 app.MapGet("/health", () => Results.Ok(new
@@ -296,18 +302,6 @@ app.MapDelete(
 
 app.Run();
 return 0;
-
-static bool KeysMatch(string supplied, string expected)
-{
-    if (string.IsNullOrEmpty(supplied))
-    {
-        return false;
-    }
-
-    var suppliedHash = SHA256.HashData(Encoding.UTF8.GetBytes(supplied));
-    var expectedHash = SHA256.HashData(Encoding.UTF8.GetBytes(expected));
-    return CryptographicOperations.FixedTimeEquals(suppliedHash, expectedHash);
-}
 
 static bool TryGetSqliteImportPath(
     IReadOnlyList<string> arguments,

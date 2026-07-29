@@ -17,5 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\BuildPc.Core\BuildPc.Core.csproj" />
     <ProjectReference Include="..\..\src\BuildPc.Desktop\BuildPc.Desktop.csproj" />
+    <!-- Cobre a validação da chave e a auditoria da API. -->
+    <ProjectReference Include="..\..\src\BuildPc.Api\BuildPc.Api.csproj" />
   </ItemGroup>
 </Project>

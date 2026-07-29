@@ -9,7 +9,9 @@ public sealed class PricingSettingsViewModel : ViewModelBase
 {
     private readonly IReadOnlyList<CategoryOptionViewModel> _categories;
     private readonly Action<BusinessSettings> _save;
+    private readonly Action<AppThemeMode> _applyTheme;
     private CategoryOptionViewModel? _selectedCategory;
+    private ThemeModeOptionViewModel _selectedThemeOption;
     private string _newMarginText = string.Empty;
     private string _globalMarginText;
     private string _companyName;
@@ -26,10 +28,22 @@ public sealed class PricingSettingsViewModel : ViewModelBase
     public PricingSettingsViewModel(
         BusinessSettings settings,
         IReadOnlyList<CategoryOptionViewModel> categories,
-        Action<BusinessSettings> save)
+        Action<BusinessSettings> save,
+        Action<AppThemeMode> applyTheme)
     {
         _categories = categories;
         _save = save;
+        _applyTheme = applyTheme;
+        ThemeOptions =
+        [
+            new(AppThemeMode.System, "Sistema", "Acompanha automaticamente o tema do Windows"),
+            new(AppThemeMode.Light, "Claro", "Mantém o programa sempre no modo claro"),
+            new(AppThemeMode.Dark, "Escuro", "Mantém o programa sempre no modo escuro")
+        ];
+        _selectedThemeOption =
+            ThemeOptions.FirstOrDefault(option => option.Mode == settings.ThemeMode) ??
+            ThemeOptions[0];
+        _applyTheme(_selectedThemeOption.Mode);
         _globalMarginText = Format(Math.Max(
             BusinessSettings.MinimumMarginPercent,
             settings.GlobalMarginPercent));
@@ -58,11 +72,25 @@ public sealed class PricingSettingsViewModel : ViewModelBase
     }
 
     public ObservableCollection<CategoryMarginViewModel> CategoryMargins { get; }
+    public IReadOnlyList<ThemeModeOptionViewModel> ThemeOptions { get; }
     public IReadOnlyList<CategoryOptionViewModel> AvailableCategories =>
         _categories.Where(category =>
             CategoryMargins.All(margin => margin.Category != category.Value)).ToList();
     public ICommand AddMarginCommand { get; }
     public ICommand SaveCommand { get; }
+
+    public ThemeModeOptionViewModel SelectedThemeOption
+    {
+        get => _selectedThemeOption;
+        set
+        {
+            if (value is not null && SetProperty(ref _selectedThemeOption, value))
+            {
+                _applyTheme(value.Mode);
+                ClearStatus();
+            }
+        }
+    }
 
     public CategoryOptionViewModel? SelectedCategory
     {
@@ -164,7 +192,8 @@ public sealed class PricingSettingsViewModel : ViewModelBase
             CompanyWebsite = CompanyWebsite.Trim(),
             CompanyAddress = CompanyAddress.Trim(),
             LogoPath = LogoPath.Trim(),
-            AdditionalQuoteInfo = AdditionalQuoteInfo.Trim()
+            AdditionalQuoteInfo = AdditionalQuoteInfo.Trim(),
+            ThemeMode = SelectedThemeOption.Mode
         };
         _save(settings);
         IsSuccess = true;

@@ -24,7 +24,8 @@ public sealed class QuoteRepositoryTests
                 },
                 CompanyName = "Empresa Teste",
                 CompanyPhone = "(11) 99999-9999",
-                AdditionalQuoteInfo = "Proposta válida por 7 dias."
+                AdditionalQuoteInfo = "Proposta válida por 7 dias.",
+                ThemeMode = AppThemeMode.Light
             };
             repository.SaveSettings(settings);
 
@@ -32,6 +33,7 @@ public sealed class QuoteRepositoryTests
             Assert.Equal(25m, loadedSettings.GlobalMarginPercent);
             Assert.Equal(18.5m, loadedSettings.MarginFor(ComponentCategory.GraphicsCard));
             Assert.Equal(25m, loadedSettings.MarginFor(ComponentCategory.Memory));
+            Assert.Equal(AppThemeMode.Light, loadedSettings.ThemeMode);
 
             var saved = repository.SaveQuote(
                 null,

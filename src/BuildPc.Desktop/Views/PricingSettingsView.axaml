@@ -16,8 +16,34 @@
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Visible">
       <Grid ColumnDefinitions="430,*" ColumnSpacing="18" MaxWidth="1120"
-            HorizontalAlignment="Left">
+        HorizontalAlignment="Left">
         <StackPanel Spacing="18">
+          <Border Classes="card">
+            <StackPanel Spacing="12">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Aparência" FontSize="16" FontWeight="Bold" />
+                <TextBlock Text="Escolha como o programa deve acompanhar as cores do Windows."
+                           Foreground="{DynamicResource Brush.TextSecondary}" FontSize="10"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <ComboBox ItemsSource="{Binding ThemeOptions}"
+                        SelectedItem="{Binding SelectedThemeOption, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Description}" FontSize="9"
+                                 Foreground="{DynamicResource Brush.TextSecondary}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <TextBlock Text="A alteração é aplicada imediatamente. Use “Salvar configurações” para mantê-la."
+                         FontSize="9" TextWrapping="Wrap"
+                         Foreground="{DynamicResource Brush.TextMuted}" />
+            </StackPanel>
+          </Border>
+
           <Border Classes="card">
             <StackPanel Spacing="14">
               <StackPanel Spacing="3">

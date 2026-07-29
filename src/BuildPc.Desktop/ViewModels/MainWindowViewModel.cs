@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Windows.Input;
 using BuildPc.Core.Models;
 using BuildPc.Core.Services;
+using BuildPc.Desktop.Services;
 using Microsoft.Data.Sqlite;
 
 namespace BuildPc.Desktop.ViewModels;
@@ -134,7 +135,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         PricingSettings = new PricingSettingsViewModel(
             _businessSettings,
             CategoryOptions,
-            SaveBusinessSettings);
+            SaveBusinessSettings,
+            ApplicationThemeService.Apply);
         BulkDescriptionOperations =
         [
             new("Substituir descrição", BulkDescriptionMode.Replace),
@@ -709,6 +711,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         _quoteRepository.SaveSettings(settings);
         _businessSettings = settings;
+        ApplicationThemeService.Apply(settings.ThemeMode);
         FlexibleList.ApplySettings(settings);
     }
 

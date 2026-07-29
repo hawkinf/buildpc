@@ -14,6 +14,7 @@ public sealed record BusinessSettings
     public string CompanyAddress { get; init; } = string.Empty;
     public string LogoPath { get; init; } = string.Empty;
     public string AdditionalQuoteInfo { get; init; } = string.Empty;
+    public AppThemeMode ThemeMode { get; init; } = AppThemeMode.System;
 
     public decimal MarginFor(ComponentCategory category)
     {

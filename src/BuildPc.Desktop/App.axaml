@@ -1,0 +1,21 @@
+<Application
+    x:Class="BuildPc.Desktop.App"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:BuildPc.Desktop.Converters"
+    RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://BuildPc.Desktop/Resources/Colors.axaml" />
+        <ResourceInclude Source="avares://BuildPc.Desktop/Resources/Icons.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+      <converters:IconResourceConverter x:Key="IconResourceConverter" />
+      <converters:SubtractConverter x:Key="SubtractConverter" />
+    </ResourceDictionary>
+  </Application.Resources>
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://BuildPc.Desktop/Styles/Controls.axaml" />
+  </Application.Styles>
+</Application>

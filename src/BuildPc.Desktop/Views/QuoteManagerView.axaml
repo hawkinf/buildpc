@@ -1,0 +1,113 @@
+<UserControl
+    x:Class="BuildPc.Desktop.Views.QuoteManagerView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Grid RowDefinitions="Auto,*">
+    <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="30,20">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Gerenciador de orçamentos" FontSize="22" FontWeight="Bold" />
+          <TextBlock Text="Consulte os orçamentos gravados e gere novamente seus PDFs."
+                     Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="12" />
+        </StackPanel>
+        <Button Grid.Column="1" Classes="secondary" Click="Refresh_Click">
+          <TextBlock Text="Atualizar lista" />
+        </Button>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1" ColumnDefinitions="390,*" ColumnSpacing="18" Margin="30,22,46,28">
+      <Border Classes="card">
+        <Grid RowDefinitions="Auto,*">
+          <TextBlock Text="ORÇAMENTOS GRAVADOS" FontSize="10" FontWeight="Bold"
+                     Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,0,12" />
+          <ListBox Grid.Row="1" ItemsSource="{Binding Quotes}"
+                   SelectedItem="{Binding SelectedQuote, Mode=TwoWay}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Border Classes="catalog-row" Margin="0,0,0,6" Padding="12">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="3">
+                      <TextBlock Text="{Binding NumberText}" FontWeight="Bold"
+                                 Foreground="{DynamicResource Brush.AccentPale}" />
+                      <TextBlock Text="{Binding ClientText}" FontSize="11" />
+                      <TextBlock Text="{Binding DateText}" FontSize="9"
+                                 Foreground="{DynamicResource Brush.TextSecondary}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="3">
+                      <TextBlock Text="{Binding TotalText}" FontWeight="Bold"
+                                 Foreground="{DynamicResource Brush.Warning}"
+                                 TextAlignment="Right" />
+                      <TextBlock Text="{Binding ItemsText}" FontSize="9"
+                                 Foreground="{DynamicResource Brush.TextSecondary}"
+                                 TextAlignment="Right" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Border>
+
+      <Border Grid.Column="1" Classes="card">
+        <Grid DataContext="{Binding SelectedQuote}" RowDefinitions="Auto,Auto,*,Auto">
+          <StackPanel>
+            <TextBlock Text="{Binding NumberText}" FontSize="20" FontWeight="Bold" />
+            <TextBlock Text="{Binding DateText}" Foreground="{DynamicResource Brush.TextSecondary}" />
+          </StackPanel>
+          <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,18,0,14">
+            <StackPanel>
+              <TextBlock Text="CLIENTE" FontSize="9" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBlock Text="{Binding ClientText}" FontSize="14" FontWeight="SemiBold" />
+            </StackPanel>
+            <StackPanel Grid.Column="1">
+              <TextBlock Text="TELEFONE" FontSize="9" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBlock Text="{Binding PhoneText}" FontSize="14" />
+            </StackPanel>
+          </Grid>
+          <ScrollViewer Grid.Row="2">
+            <ItemsControl ItemsSource="{Binding Quote.Items}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="component-row" Margin="0,0,0,7" Padding="10">
+                    <Grid ColumnDefinitions="54,*,130">
+                      <TextBlock Text="{Binding Quantity, StringFormat='{}{0}x'}"
+                                 VerticalAlignment="Center" FontWeight="Bold" />
+                      <StackPanel Grid.Column="1">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding CategoryName}" FontSize="9"
+                                   Foreground="{DynamicResource Brush.TextSecondary}" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="2"
+                                 Text="{Binding TotalPrice, StringFormat='R$ {0:N2}'}"
+                                 TextAlignment="Right" VerticalAlignment="Center"
+                                 Foreground="{DynamicResource Brush.Warning}" FontWeight="Bold" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,14,0,0">
+            <StackPanel>
+              <TextBlock Text="TOTAL" FontSize="9" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBlock Text="{Binding TotalText}" FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource Brush.AccentLight}" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="primary" Click="ExportPdf_Click"
+                    IsEnabled="{Binding $parent[UserControl].DataContext.HasSelection}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <PathIcon Data="{StaticResource Icon.Pdf}" Width="16" Height="16"
+                          Foreground="White" />
+                <TextBlock Text="Exportar PDF" Foreground="White" />
+              </StackPanel>
+            </Button>
+          </Grid>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

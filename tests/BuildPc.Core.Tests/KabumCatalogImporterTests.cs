@@ -1,0 +1,227 @@
+using System.Text.Json;
+using System.Net;
+using BuildPc.Core.Models;
+using BuildPc.Core.Services;
+
+namespace BuildPc.Core.Tests;
+
+public sealed class KabumCatalogImporterTests
+{
+    [Fact]
+    public void ParseCatalogHtml_UsesOfferPriceAndNormalizesSocket()
+    {
+        var catalogJson = JsonSerializer.Serialize(new
+        {
+            catalogServer = new
+            {
+                data = new[]
+                {
+                    new
+                    {
+                        code = 123456,
+                        name = "Processador Intel Core i7, LGA 1700",
+                        tagDescription = "Processador importado",
+                        manufacturer = new { name = "Intel" },
+                        thumbnail = "https://images.example.com/processador_m.jpg",
+                        image = "https://images.example.com/processador_original.jpg",
+                        price = 1_299.90m,
+                        priceWithDiscount = 1_199.90m,
+                        offer = new { priceWithDiscount = 999.90m }
+                    }
+                }
+            }
+        });
+        var nextDataJson = JsonSerializer.Serialize(new
+        {
+            props = new
+            {
+                pageProps = new
+                {
+                    data = catalogJson
+                }
+            }
+        });
+        var html =
+            $"<html><script id=\"__NEXT_DATA__\" type=\"application/json\">{nextDataJson}</script></html>";
+
+        var products = KabumCatalogImporter.ParseCatalogHtml(
+            html,
+            BuildPc.Core.Models.ComponentCategory.Processor);
+
+        var processor = Assert.Single(products);
+        Assert.Equal("kabum-123456", processor.Id);
+        Assert.Equal("Intel", processor.Brand);
+        Assert.Equal("LGA1700", processor.Socket);
+        Assert.Equal(999.90m, processor.Price);
+        Assert.Equal("https://images.example.com/processador_m.jpg", processor.ImageUrl);
+    }
+
+    [Fact]
+    public void ParseCatalogHtml_HardDriveModeExcludesSsdsAndAccessories()
+    {
+        var html = CatalogHtml(
+            Product(1, "HD Seagate Barracuda 2 TB 7200 RPM"),
+            Product(2, "SSD Kingston NV3 1 TB"),
+            Product(3, "Case Disco Rígido HD Externo 2.5 USB 3.0"));
+
+        var products = KabumCatalogImporter.ParseCatalogHtml(
+            html,
+            ComponentCategory.HardDrive);
+
+        var hardDrive = Assert.Single(products);
+        Assert.Equal("kabum-1", hardDrive.Id);
+        Assert.Equal(ComponentCategory.HardDrive, hardDrive.Category);
+    }
+
+    [Fact]
+    public void ParseCatalogHtml_CoolersExcludeFansAndThermalPaste()
+    {
+        var html = CatalogHtml(
+            Product(1, "Water Cooler Corsair H100 240mm"),
+            Product(2, "Ventoinha Cooler Master 120mm"),
+            Product(3, "Pasta Térmica para Cooler 5g"));
+
+        var products = KabumCatalogImporter.ParseCatalogHtml(
+            html,
+            ComponentCategory.Cooler);
+
+        var cooler = Assert.Single(products);
+        Assert.Equal("kabum-1", cooler.Id);
+    }
+
+    [Fact]
+    public void ParseCatalogHtml_SeparatesMousesAndKeyboardsFromCombos()
+    {
+        var html = CatalogHtml(
+            Product(1, "Mouse Gamer Logitech G203 RGB"),
+            Product(2, "Teclado Mecânico Redragon Kumara"),
+            Product(3, "Combo Teclado e Mouse Logitech MK120"),
+            Product(4, "Mousepad Gamer Grande"));
+
+        var mouses = KabumCatalogImporter.ParseCatalogHtml(
+            html,
+            ComponentCategory.Mouse);
+        var keyboards = KabumCatalogImporter.ParseCatalogHtml(
+            html,
+            ComponentCategory.Keyboard);
+
+        Assert.Equal("kabum-1", Assert.Single(mouses).Id);
+        Assert.Equal("kabum-2", Assert.Single(keyboards).Id);
+    }
+
+    [Fact]
+    public void ParseCatalogHtml_MonitorsExcludeAccessories()
+    {
+        var html = CatalogHtml(
+            Product(1, "Monitor Gamer LG UltraGear 27 polegadas"),
+            Product(2, "Suporte Articulado para Monitor 17 a 32 polegadas"));
+
+        var monitors = KabumCatalogImporter.ParseCatalogHtml(
+            html,
+            ComponentCategory.Monitor);
+
+        Assert.Equal("kabum-1", Assert.Single(monitors).Id);
+    }
+
+    [Fact]
+    public async Task FetchAsync_ImportsEveryPageAndRemovesDuplicates()
+    {
+        var requestedPages = new List<int>();
+        using var httpClient = new HttpClient(new TestHttpHandler(uri =>
+        {
+            var page = PageNumber(uri);
+            requestedPages.Add(page);
+            return page switch
+            {
+                1 => CatalogHtml(
+                    Product(1, "Processador AMD Ryzen 5"),
+                    Product(2, "Processador Intel Core i5")),
+                2 => CatalogHtml(
+                    Product(2, "Processador Intel Core i5"),
+                    Product(3, "Processador AMD Ryzen 7")),
+                _ => CatalogHtml()
+            };
+        }));
+        var importer = new KabumCatalogImporter(httpClient);
+
+        var products = await importer.FetchAsync(
+            "https://www.kabum.com.br/hardware/processadores" +
+            "?page_number=9&page_size=2&sort=most_searched",
+            ComponentCategory.Processor);
+
+        Assert.Equal([1, 2, 3], requestedPages);
+        Assert.Equal(3, products.Count);
+        Assert.Equal(3, products.Select(product => product.Id).Distinct().Count());
+    }
+
+    [Fact]
+    public async Task FetchAsync_StopsWhenStoreRepeatsLastPage()
+    {
+        var requestedPages = new List<int>();
+        var repeatedPage = CatalogHtml(Product(10, "Processador AMD Ryzen 9"));
+        using var httpClient = new HttpClient(new TestHttpHandler(uri =>
+        {
+            requestedPages.Add(PageNumber(uri));
+            return repeatedPage;
+        }));
+        var importer = new KabumCatalogImporter(httpClient);
+
+        var products = await importer.FetchAsync(
+            "https://www.kabum.com.br/hardware/processadores?page_size=60",
+            ComponentCategory.Processor);
+
+        Assert.Equal([1, 2], requestedPages);
+        Assert.Single(products);
+    }
+
+    private static object Product(int code, string name) =>
+        new
+        {
+            code,
+            name,
+            tagDescription = "Produto importado",
+            manufacturer = new { name = "Teste" },
+            priceWithDiscount = 100m
+        };
+
+    private static string CatalogHtml(params object[] products)
+    {
+        var catalogJson = JsonSerializer.Serialize(new
+        {
+            catalogServer = new { data = products }
+        });
+        var nextDataJson = JsonSerializer.Serialize(new
+        {
+            props = new
+            {
+                pageProps = new { data = catalogJson }
+            }
+        });
+        return $"<html><script id=\"__NEXT_DATA__\" type=\"application/json\">{nextDataJson}</script></html>";
+    }
+
+    private static int PageNumber(Uri uri)
+    {
+        var value = uri.Query
+            .TrimStart('?')
+            .Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => part.Split('=', 2))
+            .Single(part => string.Equals(
+                Uri.UnescapeDataString(part[0]),
+                "page_number",
+                StringComparison.OrdinalIgnoreCase))[1];
+        return int.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private sealed class TestHttpHandler(Func<Uri, string> responseFactory)
+        : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(responseFactory(request.RequestUri!))
+            });
+    }
+}

@@ -1,0 +1,430 @@
+<UserControl
+    x:Class="BuildPc.Desktop.Views.FlexibleListView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:BuildPc.Desktop.Controls">
+
+  <Grid RowDefinitions="Auto,*,Auto">
+    <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="30,20">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Montagem" FontSize="22" FontWeight="Bold" />
+          <TextBlock Text="Escolha uma categoria e adicione quantos produtos precisar."
+                     Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="12" />
+        </StackPanel>
+        <Button Grid.Column="1" Classes="secondary" Command="{Binding ClearCommand}"
+                IsEnabled="{Binding HasItems}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <PathIcon Data="{StaticResource Icon.Clear}" Width="16" Height="16"
+                      Foreground="{DynamicResource Brush.TextSecondary}" />
+            <TextBlock Text="Limpar montagem" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
+
+    <ScrollViewer Grid.Row="1"
+                  Padding="30,22,58,22"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Visible">
+      <ScrollViewer.Styles>
+        <Style Selector="ScrollBar:vertical">
+          <Setter Property="Width" Value="18" />
+          <Setter Property="MinWidth" Value="18" />
+          <Setter Property="AllowAutoHide" Value="False" />
+        </Style>
+        <Style Selector="ScrollBar:vertical /template/ Thumb">
+          <Setter Property="MinHeight" Value="56" />
+          <Setter Property="Background" Value="{DynamicResource Brush.Accent}" />
+        </Style>
+      </ScrollViewer.Styles>
+      <StackPanel Spacing="18" MinWidth="0" Margin="0,0,36,0">
+        <Border Classes="card" Padding="20">
+          <StackPanel Spacing="15">
+            <Grid ColumnDefinitions="170,*,80,112" ColumnSpacing="12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="1. Categoria" FontSize="11"
+                           Foreground="{DynamicResource Brush.TextLabel}" />
+                <ComboBox ItemsSource="{Binding Categories}"
+                          SelectedItem="{Binding SelectedCategory, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+
+              <StackPanel Grid.Column="1" Spacing="6" DataContext="{Binding ProductPicker}">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="2. Produto" FontSize="11"
+                             Foreground="{DynamicResource Brush.TextLabel}" />
+                  <TextBlock Grid.Column="1" Text="{Binding $parent[UserControl].DataContext.CategoryProductsText}"
+                             FontSize="9" Foreground="{DynamicResource Brush.TextMuted}"
+                             VerticalAlignment="Center" />
+                </Grid>
+                <Grid>
+                  <Button x:Name="flexibleProductSelector"
+                          Classes="component-selector"
+                          Height="44" MinHeight="44"
+                          Command="{Binding TogglePickerCommand}">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding SelectedOptionText}"
+                                 TextTrimming="CharacterEllipsis"
+                                 VerticalAlignment="Center" />
+                      <PathIcon Grid.Column="1" Data="{StaticResource Icon.ChevronDown}"
+                                Width="16" Height="16" Margin="10,0,0,0"
+                                Foreground="{DynamicResource Brush.TextSecondary}" />
+                    </Grid>
+                  </Button>
+
+                  <Popup IsOpen="{Binding IsPickerOpen, Mode=TwoWay}"
+                         PlacementTarget="{Binding #flexibleProductSelector}"
+                         Placement="Bottom"
+                         IsLightDismissEnabled="True"
+                         VerticalOffset="4">
+                    <Border Classes="component-picker"
+                            Width="{Binding #flexibleProductSelector.Bounds.Width}"
+                            MinWidth="680">
+                      <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="7">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+                          <PathIcon Data="{StaticResource Icon.Filter}" Width="13" Height="13"
+                                    Foreground="{DynamicResource Brush.AccentLight}"
+                                    VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1"
+                                     Text="FILTRAR • curingas: * e ? • excluir: -termo*"
+                                     FontSize="9" FontWeight="Bold"
+                                     Foreground="{DynamicResource Brush.TextMuted}"
+                                     VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="2" Text="{Binding FilteredOptionsText}"
+                                     FontSize="9" Foreground="{DynamicResource Brush.TextSecondary}" />
+                        </Grid>
+                        <TextBox Grid.Row="1"
+                                 Text="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 PlaceholderText="Digite para localizar o produto"
+                                 MinHeight="34" Padding="10,5" />
+                        <Border Grid.Row="2"
+                                Background="{DynamicResource Brush.PanelBackground}"
+                                CornerRadius="5" Padding="4,3">
+                          <Grid ColumnDefinitions="*,135">
+                            <Button Classes="list-header"
+                                    Classes.active="{Binding IsNameSortActive}"
+                                    Command="{Binding SortByNameCommand}"
+                                    HorizontalContentAlignment="Left">
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="DESCRIÇÃO" FontSize="9" FontWeight="Bold" />
+                                <PathIcon Data="{Binding NameSortIcon, Converter={StaticResource IconResourceConverter}}"
+                                          IsVisible="{Binding IsNameSortActive}"
+                                          Width="13" Height="13" />
+                              </StackPanel>
+                            </Button>
+                            <Button Grid.Column="1" Classes="list-header"
+                                    Classes.active="{Binding IsPriceSortActive}"
+                                    Command="{Binding SortByPriceCommand}"
+                                    HorizontalContentAlignment="Stretch">
+                              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <TextBlock Text="PREÇO" FontSize="9" FontWeight="Bold"
+                                           HorizontalAlignment="Right" />
+                                <PathIcon Grid.Column="1"
+                                          Data="{Binding PriceSortIcon, Converter={StaticResource IconResourceConverter}}"
+                                          IsVisible="{Binding IsPriceSortActive}"
+                                          Width="13" Height="13" />
+                              </Grid>
+                            </Button>
+                          </Grid>
+                        </Border>
+                        <ListBox Grid.Row="3" Classes="component-options"
+                                 ItemsSource="{Binding Options}"
+                                 SelectedItem="{Binding SelectedOption, Mode=TwoWay}"
+                                 MaxHeight="360">
+                          <ListBox.ItemTemplate>
+                            <DataTemplate>
+                              <Border Classes="option-row"
+                                      Classes.alternate="{Binding IsAlternate}"
+                                      Margin="0,0,22,0">
+                                <Grid ColumnDefinitions="Auto,*,135" ColumnSpacing="9">
+                                  <Border Width="42" Height="42" CornerRadius="6"
+                                          Background="White"
+                                          IsVisible="{Binding HasImage}"
+                                          VerticalAlignment="Center">
+                                    <controls:RemoteImage Url="{Binding ImageUrl}"
+                                                          Stretch="Uniform"
+                                                          Margin="3" />
+                                  </Border>
+                                  <StackPanel Grid.Column="1" Spacing="1">
+                                    <controls:HighlightedTextBlock
+                                        SourceText="{Binding Name}"
+                                        Query="{Binding FilterText}"
+                                        HighlightForeground="{DynamicResource Brush.MatchForeground}"
+                                        HighlightBackground="{DynamicResource Brush.MatchBackground}"
+                                        FontSize="12" FontWeight="SemiBold"
+                                        Foreground="{DynamicResource Brush.AccentPale}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Brand}" FontSize="9"
+                                               Foreground="{DynamicResource Brush.TextBody}" />
+                                    <controls:HighlightedTextBlock
+                                        SourceText="{Binding Description}"
+                                        Query="{Binding FilterText}"
+                                        HighlightForeground="{DynamicResource Brush.MatchForeground}"
+                                        HighlightBackground="{DynamicResource Brush.MatchBackground}"
+                                        FontSize="10"
+                                        Foreground="{DynamicResource Brush.TextSecondary}"
+                                        TextTrimming="CharacterEllipsis" />
+                                  </StackPanel>
+                                  <TextBlock Grid.Column="2"
+                                             Text="{Binding Price, StringFormat='R$ {0:N2}'}"
+                                             FontSize="11" Foreground="{DynamicResource Brush.Warning}"
+                                             FontWeight="SemiBold" VerticalAlignment="Center"
+                                             Margin="10,0,0,0" TextAlignment="Right" />
+                                </Grid>
+                              </Border>
+                            </DataTemplate>
+                          </ListBox.ItemTemplate>
+                        </ListBox>
+                      </Grid>
+                    </Border>
+                  </Popup>
+                </Grid>
+              </StackPanel>
+
+              <StackPanel Grid.Column="2" Spacing="6">
+                <TextBlock Text="Quantidade" FontSize="11"
+                           Foreground="{DynamicResource Brush.TextLabel}" />
+                <ComboBox Classes="quantity-selector"
+                          Height="44" MinHeight="44"
+                          ItemsSource="{Binding QuantityOptions}"
+                          SelectedItem="{Binding Quantity, Mode=TwoWay}" />
+              </StackPanel>
+
+              <Button Grid.Column="3" Classes="primary"
+                      Command="{Binding AddCommand}"
+                      IsEnabled="{Binding CanAdd}"
+                      VerticalAlignment="Bottom"
+                      Height="44" MinHeight="44">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <PathIcon Data="{StaticResource Icon.Add}" Width="17" Height="17"
+                            Foreground="White" />
+                  <TextBlock Text="Adicionar" Foreground="White" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <Grid ColumnDefinitions="*,230,1.2*" ColumnSpacing="12">
+            <StackPanel Spacing="5">
+              <TextBlock Text="Nome do cliente *" FontSize="10"
+                         Foreground="{DynamicResource Brush.TextLabel}" />
+              <TextBox Text="{Binding ClientName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="Nome para o orçamento" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="5">
+              <TextBlock Text="Telefone *" FontSize="10"
+                         Foreground="{DynamicResource Brush.TextLabel}" />
+              <TextBox Text="{Binding ClientPhone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="(00) 00000-0000" />
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="5">
+              <TextBlock Text="Observações deste orçamento" FontSize="10"
+                         Foreground="{DynamicResource Brush.TextLabel}" />
+              <TextBox Text="{Binding Notes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="Informações específicas para este cliente" />
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+          <Border Classes="card">
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Width="38" Height="38" CornerRadius="9"
+                      Background="{DynamicResource Brush.AccentSurface}">
+                <PathIcon Data="{StaticResource Icon.Components}" Width="19" Height="19"
+                          Foreground="{DynamicResource Brush.AccentLight}"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                <TextBlock Text="{Binding ItemsText}" FontWeight="Bold" FontSize="15" />
+                <TextBlock Text="{Binding LinesText}" Foreground="{DynamicResource Brush.TextSecondary}"
+                           FontSize="10" />
+              </StackPanel>
+            </Grid>
+          </Border>
+          <Border Grid.Column="1" Classes="card">
+            <Grid ColumnDefinitions="Auto,*">
+              <Border Width="38" Height="38" CornerRadius="9"
+                      Background="{DynamicResource Brush.WarningBackground}">
+                <PathIcon Data="{StaticResource Icon.Currency}" Width="19" Height="19"
+                          Foreground="{DynamicResource Brush.Warning}"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                <TextBlock Text="{Binding TotalPrice}" FontWeight="Bold" FontSize="15" />
+                <TextBlock Text="Preço total do orçamento" Foreground="{DynamicResource Brush.TextSecondary}"
+                           FontSize="10" />
+              </StackPanel>
+            </Grid>
+          </Border>
+        </Grid>
+
+        <Border Classes="card" IsVisible="{Binding IsEmpty}" Padding="28">
+          <StackPanel HorizontalAlignment="Center" Spacing="8">
+            <PathIcon Data="{StaticResource Icon.FlexibleList}" Width="34" Height="34"
+                      Foreground="{DynamicResource Brush.TextMuted}" />
+            <TextBlock Text="Sua montagem ainda está vazia" FontSize="14" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="Selecione uma categoria e um produto acima para começar."
+                       Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Classes="component-row" Classes.alternate="{Binding IsAlternate}"
+                      Margin="0,0,0,8">
+                <Grid ColumnDefinitions="84,100,1.15*,*,76,154,44"
+                      ColumnSpacing="10"
+                      MinWidth="0">
+                  <Border Classes="product-image"
+                          Classes.has-image="{Binding HasImage}"
+                          ZIndex="10"
+                          Width="76" Height="76" CornerRadius="10"
+                          Background="{DynamicResource Brush.AccentSurface}">
+                    <Grid>
+                      <PathIcon Data="{Binding Icon, Converter={StaticResource IconResourceConverter}}"
+                                Width="28" Height="28"
+                                Foreground="{DynamicResource Brush.AccentPale}"
+                                HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      <controls:RemoteImage Url="{Binding ImageUrl}"
+                                            Stretch="Uniform"
+                                            Margin="5" />
+                    </Grid>
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center"
+                              MinWidth="0">
+                    <TextBlock Text="{Binding CategoryName}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.AccentPale}" />
+                    <TextBlock Text="{Binding Brand}" FontSize="9"
+                               Foreground="{DynamicResource Brush.TextBody}" />
+                  </StackPanel>
+
+                  <StackPanel Grid.Column="2" Spacing="4" MinWidth="0">
+                    <TextBlock Text="Título" FontSize="9"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <TextBox Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True" TextWrapping="Wrap"
+                             MinHeight="58" MaxHeight="58"
+                             MinWidth="0"
+                             Padding="9,6" FontSize="11" />
+                  </StackPanel>
+
+                  <StackPanel Grid.Column="3" Spacing="4" MinWidth="0">
+                    <TextBlock Text="Descrição" FontSize="9"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <TextBox Text="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True" TextWrapping="Wrap"
+                             MinHeight="58" MaxHeight="58"
+                             MinWidth="0"
+                             Padding="9,6" FontSize="10" />
+                  </StackPanel>
+
+                  <StackPanel Grid.Column="4" Spacing="4">
+                    <TextBlock Text="Quantidade" FontSize="9"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <ComboBox Classes="quantity-selector"
+                            ItemsSource="{Binding QuantityOptions}"
+                            SelectedItem="{Binding Quantity, Mode=TwoWay}" />
+                  </StackPanel>
+
+                  <StackPanel Grid.Column="5" Spacing="4">
+                    <TextBlock Text="Valor de venda" FontSize="9"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <Grid>
+                      <TextBox Text="{Binding SellingPriceText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                               Padding="30,5,9,5" MinHeight="36" Height="36"
+                               FontSize="11" TextAlignment="Right" />
+                      <TextBlock Text="R$" Margin="10,0,0,0"
+                                 HorizontalAlignment="Left" VerticalAlignment="Center"
+                                 FontSize="10" Foreground="{DynamicResource Brush.TextSecondary}"
+                                 IsHitTestVisible="False" />
+                    </Grid>
+                    <TextBlock Text="{Binding CostUnitPrice}"
+                               IsVisible="{Binding IsCostVisible}"
+                               FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Warning}"
+                               TextAlignment="Right" />
+                  </StackPanel>
+
+                  <Button Grid.Column="6" Classes="secondary"
+                          Command="{Binding RemoveCommand}"
+                          Padding="8" MinWidth="36"
+                          VerticalAlignment="Center"
+                          ToolTip.Tip="Remover produto">
+                    <PathIcon Data="{StaticResource Icon.Clear}" Width="15" Height="15"
+                              Foreground="{DynamicResource Brush.Error}" />
+                  </Button>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Row="2" Background="{DynamicResource Brush.SidebarBackground}"
+            BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,0,0"
+            Padding="30,13,46,13">
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="12">
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="{Binding SaveStateText}" FontSize="10"
+                     Foreground="{DynamicResource Brush.TextSecondary}" />
+          <TextBlock Text="{Binding StatusMessage}" FontSize="10"
+                     Foreground="{DynamicResource Brush.TextLabel}" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="20"
+                    VerticalAlignment="Center"
+                    IsVisible="{Binding IsSensitiveTotalsVisible}">
+          <StackPanel>
+            <TextBlock Text="CUSTO" FontSize="8" Foreground="{DynamicResource Brush.TextMuted}" />
+            <TextBlock Text="{Binding TotalCost}" FontWeight="Bold" />
+          </StackPanel>
+          <StackPanel>
+            <TextBlock Text="LUCRO" FontSize="8" Foreground="{DynamicResource Brush.TextMuted}" />
+            <TextBlock Text="{Binding TotalProfit}" FontWeight="Bold"
+                       Foreground="{DynamicResource Brush.Success}" />
+            <TextBlock Text="{Binding TotalProfitPercent}" FontSize="9"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource Brush.Success}" />
+          </StackPanel>
+        </StackPanel>
+
+        <Button x:Name="sensitiveTotalsButton"
+                Grid.Column="2" Classes="secondary" Padding="10"
+                ToolTip.Tip="Mantenha pressionado para ver custo e lucro">
+          <PathIcon Data="{StaticResource Icon.Eye}" Width="18" Height="18"
+                    Foreground="{DynamicResource Brush.AccentLight}" />
+        </Button>
+
+        <Button Grid.Column="3" Classes="secondary"
+                Command="{Binding SaveQuoteCommand}" IsEnabled="{Binding HasItems}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <PathIcon Data="{StaticResource Icon.Save}" Width="16" Height="16" />
+            <TextBlock Text="Gravar orçamento" />
+          </StackPanel>
+        </Button>
+
+        <Button Grid.Column="4" Classes="primary" Click="ExportPdf_Click"
+                IsEnabled="{Binding CanExport}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <PathIcon Data="{StaticResource Icon.Pdf}" Width="16" Height="16"
+                      Foreground="White" />
+            <TextBlock Text="Exportar PDF" Foreground="White" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

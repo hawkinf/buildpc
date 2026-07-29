@@ -1,0 +1,155 @@
+<UserControl
+    x:Class="BuildPc.Desktop.Views.PricingSettingsView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Grid RowDefinitions="Auto,*">
+    <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="30,20">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Configurações" FontSize="22" FontWeight="Bold" />
+        <TextBlock Text="Defina margens de lucro e os dados exibidos nos orçamentos."
+                   Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="12" />
+      </StackPanel>
+    </Border>
+
+    <ScrollViewer Grid.Row="1" Padding="30,22,46,28"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Visible">
+      <Grid ColumnDefinitions="430,*" ColumnSpacing="18" MaxWidth="1120"
+            HorizontalAlignment="Left">
+        <StackPanel Spacing="18">
+          <Border Classes="card">
+            <StackPanel Spacing="14">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Composição de preços" FontSize="16" FontWeight="Bold" />
+                <TextBlock Text="Categorias sem exceção usam automaticamente a margem global."
+                           Foreground="{DynamicResource Brush.TextSecondary}" FontSize="10"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Spacing="5">
+                <TextBlock Text="Margem de lucro global (%)" FontSize="11"
+                           Foreground="{DynamicResource Brush.TextLabel}" />
+                <TextBlock Text="Mínimo obrigatório: 15%" FontSize="9"
+                           Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox Text="{Binding GlobalMarginText, Mode=TwoWay}"
+                         PlaceholderText="Ex.: 25,00" />
+              </StackPanel>
+              <Border Classes="input-group">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="Adicionar margem diferenciada" FontSize="12"
+                             FontWeight="SemiBold" />
+                  <Grid ColumnDefinitions="*,110,Auto" ColumnSpacing="8">
+                    <ComboBox ItemsSource="{Binding AvailableCategories}"
+                              SelectedItem="{Binding SelectedCategory, Mode=TwoWay}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBox Grid.Column="1" Text="{Binding NewMarginText, Mode=TwoWay}"
+                             PlaceholderText="Margem %" />
+                    <Button Grid.Column="2" Classes="primary"
+                            Command="{Binding AddMarginCommand}">
+                      <TextBlock Text="Adicionar" Foreground="White" />
+                    </Button>
+                  </Grid>
+                </StackPanel>
+              </Border>
+              <ItemsControl ItemsSource="{Binding CategoryMargins}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="component-row" Margin="0,0,0,7" Padding="10">
+                      <Grid ColumnDefinitions="*,110,40" ColumnSpacing="8">
+                        <TextBlock Text="{Binding CategoryName}" VerticalAlignment="Center"
+                                   FontWeight="SemiBold" />
+                        <TextBox Grid.Column="1" Text="{Binding MarginText, Mode=TwoWay}"
+                                 TextAlignment="Right" />
+                        <Button Grid.Column="2" Classes="secondary"
+                                Command="{Binding RemoveCommand}" Padding="7"
+                                ToolTip.Tip="Usar novamente a margem global">
+                          <PathIcon Data="{StaticResource Icon.Clear}" Width="14" Height="14"
+                                    Foreground="{DynamicResource Brush.Error}" />
+                        </Button>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Spacing="18">
+          <Border Classes="card">
+            <StackPanel Spacing="14">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Dados da empresa no orçamento" FontSize="16" FontWeight="Bold" />
+                <TextBlock Text="Esses dados e a logomarca serão incluídos no PDF."
+                           Foreground="{DynamicResource Brush.TextSecondary}" FontSize="10" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto">
+                <StackPanel Spacing="5">
+                  <TextBlock Text="Nome da empresa" FontSize="10" />
+                  <TextBox Text="{Binding CompanyName, Mode=TwoWay}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="5">
+                  <TextBlock Text="CPF / CNPJ" FontSize="10" />
+                  <TextBox Text="{Binding CompanyDocument, Mode=TwoWay}" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Spacing="5" Margin="0,10,0,0">
+                  <TextBlock Text="Telefone" FontSize="10" />
+                  <TextBox Text="{Binding CompanyPhone, Mode=TwoWay}" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="5" Margin="0,10,0,0">
+                  <TextBlock Text="E-mail" FontSize="10" />
+                  <TextBox Text="{Binding CompanyEmail, Mode=TwoWay}" />
+                </StackPanel>
+                <StackPanel Grid.Row="2" Spacing="5" Margin="0,10,0,0">
+                  <TextBlock Text="Site" FontSize="10" />
+                  <TextBox Text="{Binding CompanyWebsite, Mode=TwoWay}" />
+                </StackPanel>
+                <StackPanel Grid.Row="2" Grid.Column="1" Spacing="5" Margin="0,10,0,0">
+                  <TextBlock Text="Endereço" FontSize="10" />
+                  <TextBox Text="{Binding CompanyAddress, Mode=TwoWay}" />
+                </StackPanel>
+              </Grid>
+              <StackPanel Spacing="5">
+                <TextBlock Text="Logomarca" FontSize="10" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                  <TextBox Text="{Binding LogoPath, Mode=TwoWay}" IsReadOnly="True"
+                           PlaceholderText="Selecione PNG ou JPEG" />
+                  <Button Grid.Column="1" Classes="secondary" Click="BrowseLogo_Click">
+                    <TextBlock Text="Selecionar imagem" />
+                  </Button>
+                </Grid>
+              </StackPanel>
+              <StackPanel Spacing="5">
+                <TextBlock Text="Dados adicionais / condições do orçamento" FontSize="10" />
+                <TextBox Text="{Binding AdditionalQuoteInfo, Mode=TwoWay}"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         MinHeight="100"
+                         PlaceholderText="Validade, formas de pagamento, garantia e observações..." />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                         Foreground="{DynamicResource Brush.TextLabel}"
+                         VerticalAlignment="Center" />
+              <Button Grid.Column="1" Classes="primary" Command="{Binding SaveCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <PathIcon Data="{StaticResource Icon.Save}" Width="16" Height="16"
+                            Foreground="White" />
+                  <TextBlock Text="Salvar configurações" Foreground="White" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </Border>
+        </StackPanel>
+      </Grid>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

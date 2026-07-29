@@ -1,0 +1,1061 @@
+<Window
+    x:Class="BuildPc.Desktop.Views.MainWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:BuildPc.Desktop.Controls"
+    xmlns:views="clr-namespace:BuildPc.Desktop.Views"
+    Title="BuildPC — Monte seu computador"
+    Icon="/Assets/Brand/buildpc.ico"
+    Width="1440"
+    Height="900"
+    MinWidth="1280"
+    MinHeight="720"
+    WindowStartupLocation="CenterScreen">
+
+  <Grid ColumnDefinitions="230,*,320">
+    <!-- Navegação -->
+    <Border Grid.Column="0" Background="{DynamicResource Brush.SidebarBackground}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,1,0">
+      <Grid RowDefinitions="Auto,*,Auto" Margin="22,26">
+        <StackPanel Orientation="Horizontal" Spacing="11">
+          <Image Source="/Assets/Brand/buildpc.png"
+                 Width="38" Height="38"
+                 Stretch="Uniform" />
+          <StackPanel VerticalAlignment="Center" Spacing="-3">
+            <TextBlock Text="BUILDPC" FontSize="17" FontWeight="Bold" />
+            <TextBlock Text="PC configurator" FontSize="11" Foreground="{DynamicResource Brush.TextSubtle}" />
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Margin="0,42,0,0" Spacing="8">
+          <Button Classes="nav" Classes.active="{Binding IsFlexibleListView}"
+                  Command="{Binding ShowFlexibleListCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <PathIcon Data="{StaticResource Icon.Assembly}" Width="18" Height="18" />
+              <TextBlock Text="Montagem" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <Button Classes="nav" Classes.active="{Binding IsProductsView}"
+                  Command="{Binding ShowProductsCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <PathIcon Data="{StaticResource Icon.Products}" Width="18" Height="18" />
+              <TextBlock Text="Produtos" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <Button Classes="nav" Classes.active="{Binding IsImportsView}"
+                  Command="{Binding ShowImportsCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <PathIcon Data="{StaticResource Icon.Imports}" Width="18" Height="18" />
+              <TextBlock Text="Importações" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <Button Classes="nav" Classes.active="{Binding IsQuotesView}"
+                  Command="{Binding ShowQuotesCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <PathIcon Data="{StaticResource Icon.Quotes}" Width="18" Height="18" />
+              <TextBlock Text="Orçamentos" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <Button Classes="nav" Classes.active="{Binding IsSettingsView}"
+                  Command="{Binding ShowSettingsCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <PathIcon Data="{StaticResource Icon.Settings}" Width="18" Height="18" />
+              <TextBlock Text="Configurações" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+        </StackPanel>
+
+        <Border Grid.Row="2" Background="{DynamicResource Brush.PanelBackground}" BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1" CornerRadius="9" Padding="12">
+          <StackPanel Spacing="3">
+            <TextBlock Text="CATÁLOGO LOCAL" Foreground="{DynamicResource Brush.TextMuted}" FontSize="9" FontWeight="Bold" />
+            <TextBlock Text="{Binding CatalogCountText}" FontSize="11" Foreground="{DynamicResource Brush.TextStrong}" />
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- Conteúdo principal -->
+    <Grid Grid.Column="1" RowDefinitions="Auto,*" IsVisible="{Binding IsAssemblyView}">
+      <Border Grid.Row="0" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="28,20">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Monte o seu PC" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="Escolha os componentes e acompanhe custo e compatibilidade em tempo real."
+                       Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="12" />
+          </StackPanel>
+          <Button Grid.Column="1" Classes="secondary" Command="{Binding ClearCommand}"
+                  VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <PathIcon Data="{StaticResource Icon.Clear}" Width="16" Height="16"
+                        Foreground="{DynamicResource Brush.TextSecondary}" />
+              <TextBlock Text="Limpar montagem" />
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
+
+      <ScrollViewer Grid.Row="1" Padding="28,22" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="18">
+          <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+            <Border Grid.Column="0" Classes="card">
+              <Grid ColumnDefinitions="Auto,*">
+                <Border Width="38" Height="38" CornerRadius="9" Background="{DynamicResource Brush.AccentSurface}">
+                  <PathIcon Data="{StaticResource Icon.Components}" Width="19" Height="19"
+                            Foreground="{DynamicResource Brush.AccentLight}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                  <TextBlock Text="{Binding ProgressText}" FontWeight="Bold" FontSize="15" />
+                  <TextBlock Text="Componentes escolhidos" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="10" />
+                </StackPanel>
+              </Grid>
+            </Border>
+            <Border Grid.Column="1" Classes="card">
+              <Grid ColumnDefinitions="Auto,*">
+                <Border Width="38" Height="38" CornerRadius="9" Background="{DynamicResource Brush.SuccessBackground}">
+                  <PathIcon Data="{StaticResource Icon.Power}" Width="18" Height="18"
+                            Foreground="{DynamicResource Brush.Success}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                  <TextBlock Text="{Binding EstimatedPower}" FontWeight="Bold" FontSize="15" />
+                  <TextBlock Text="Consumo estimado" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="10" />
+                </StackPanel>
+              </Grid>
+            </Border>
+            <Border Grid.Column="2" Classes="card">
+              <Grid ColumnDefinitions="Auto,*">
+                <Border Width="38" Height="38" CornerRadius="9" Background="{DynamicResource Brush.WarningBackground}">
+                  <PathIcon Data="{StaticResource Icon.Currency}" Width="19" Height="19"
+                            Foreground="{DynamicResource Brush.Warning}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                  <TextBlock Text="{Binding TotalCost}" FontWeight="Bold" FontSize="15" />
+                  <TextBlock Text="Custo da configuração" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="10" />
+                </StackPanel>
+              </Grid>
+            </Border>
+          </Grid>
+
+          <ItemsControl ItemsSource="{Binding Slots}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Classes="component-row"
+                        Classes.alternate="{Binding IsAlternate}"
+                        Margin="0,0,0,8">
+                  <Grid ColumnDefinitions="210,*,64,125" ColumnSpacing="10">
+                    <Grid Grid.Column="0" ColumnDefinitions="Auto,*">
+                      <Border Width="43" Height="43" CornerRadius="10" Background="{DynamicResource Brush.AccentSurface}">
+                        <PathIcon Data="{Binding Icon, Converter={StaticResource IconResourceConverter}}"
+                                  Width="23" Height="23"
+                                  Foreground="{DynamicResource Brush.AccentPale}"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Margin="12,1,6,0" Spacing="1">
+                        <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.AccentPale}" />
+                        <TextBlock Text="{Binding Subtitle}" FontSize="10"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Grid>
+
+                    <Grid Grid.Column="1" VerticalAlignment="Center">
+                      <Button x:Name="componentSelectorButton"
+                              Classes="component-selector"
+                              Command="{Binding TogglePickerCommand}">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Text="{Binding SelectedOptionText}"
+                                     FontSize="11"
+                                     TextTrimming="CharacterEllipsis"
+                                     VerticalAlignment="Center" />
+                          <PathIcon Grid.Column="1"
+                                    Data="{DynamicResource Icon.ChevronDown}"
+                                    Width="16" Height="16"
+                                    Margin="10,0,0,0"
+                                    Foreground="{DynamicResource Brush.TextSecondary}" />
+                        </Grid>
+                      </Button>
+
+                      <Popup IsOpen="{Binding IsPickerOpen, Mode=TwoWay}"
+                             PlacementTarget="{Binding #componentSelectorButton}"
+                             Placement="Bottom"
+                             IsLightDismissEnabled="True"
+                             VerticalOffset="4">
+                        <Border Classes="component-picker"
+                                Width="{Binding #componentSelectorButton.Bounds.Width}"
+                                MinWidth="680">
+                          <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="7">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+                              <PathIcon Data="{StaticResource Icon.Filter}" Width="13" Height="13"
+                                        Foreground="{DynamicResource Brush.AccentLight}"
+                                        VerticalAlignment="Center" />
+                              <TextBlock Grid.Column="1"
+                                         Text="FILTRAR • curingas: * e ? • excluir: -termo*"
+                                         FontSize="9" FontWeight="Bold"
+                                         Foreground="{DynamicResource Brush.TextMuted}"
+                                         VerticalAlignment="Center" />
+                              <TextBlock Grid.Column="2"
+                                         Text="{Binding FilteredOptionsText}"
+                                         FontSize="9"
+                                         Foreground="{DynamicResource Brush.TextSecondary}" />
+                            </Grid>
+                            <TextBox Grid.Row="1"
+                                     Text="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     PlaceholderText="Ex.: Ryzen* -note* ou *DDR5*"
+                                     MinHeight="34" Padding="10,5" />
+                            <Border Grid.Row="2"
+                                    Background="{DynamicResource Brush.PanelBackground}"
+                                    CornerRadius="5" Padding="4,3">
+                              <Grid ColumnDefinitions="*,135">
+                                <Button Classes="list-header"
+                                        Classes.active="{Binding IsNameSortActive}"
+                                        Command="{Binding SortByNameCommand}"
+                                        ToolTip.Tip="Ordenar alfabeticamente; clique novamente para inverter"
+                                        HorizontalContentAlignment="Left">
+                                  <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="DESCRIÇÃO" FontSize="9" FontWeight="Bold" />
+                                    <PathIcon Data="{Binding NameSortIcon, Converter={StaticResource IconResourceConverter}}"
+                                              IsVisible="{Binding IsNameSortActive}"
+                                              Width="13" Height="13" />
+                                  </StackPanel>
+                                </Button>
+                                <Button Grid.Column="1"
+                                        Classes="list-header"
+                                        Classes.active="{Binding IsPriceSortActive}"
+                                        Command="{Binding SortByPriceCommand}"
+                                        ToolTip.Tip="Ordenar por preço; clique novamente para inverter"
+                                        HorizontalContentAlignment="Stretch">
+                                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                    <TextBlock Text="PREÇO" FontSize="9" FontWeight="Bold"
+                                               HorizontalAlignment="Right" />
+                                    <PathIcon Grid.Column="1"
+                                              Data="{Binding PriceSortIcon, Converter={StaticResource IconResourceConverter}}"
+                                              IsVisible="{Binding IsPriceSortActive}"
+                                              Width="13" Height="13" />
+                                  </Grid>
+                                </Button>
+                              </Grid>
+                            </Border>
+                            <ListBox Grid.Row="3"
+                                     Classes="component-options"
+                                     ItemsSource="{Binding Options}"
+                                     SelectedItem="{Binding SelectedOption, Mode=TwoWay}"
+                                     MaxHeight="360">
+                              <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                  <Border Classes="option-row"
+                                          Classes.alternate="{Binding IsAlternate}">
+                                    <Grid ColumnDefinitions="Auto,*,135" ColumnSpacing="9">
+                                      <Border Width="42" Height="42" CornerRadius="6"
+                                              Background="White"
+                                              IsVisible="{Binding HasImage}"
+                                              VerticalAlignment="Center">
+                                        <controls:RemoteImage Url="{Binding ImageUrl}"
+                                                              Stretch="Uniform"
+                                                              Margin="3" />
+                                      </Border>
+                                      <StackPanel Grid.Column="1" Spacing="1">
+                                        <controls:HighlightedTextBlock
+                                            SourceText="{Binding Name}"
+                                            Query="{Binding FilterText}"
+                                            HighlightForeground="{DynamicResource Brush.MatchForeground}"
+                                            HighlightBackground="{DynamicResource Brush.MatchBackground}"
+                                            FontSize="12" FontWeight="SemiBold"
+                                            Foreground="{DynamicResource Brush.AccentPale}"
+                                            TextTrimming="CharacterEllipsis" />
+                                        <controls:HighlightedTextBlock
+                                            SourceText="{Binding Brand}"
+                                            Query="{Binding FilterText}"
+                                            HighlightForeground="{DynamicResource Brush.MatchForeground}"
+                                            HighlightBackground="{DynamicResource Brush.MatchBackground}"
+                                            FontSize="9"
+                                            Foreground="{DynamicResource Brush.TextBody}" />
+                                        <controls:HighlightedTextBlock
+                                            SourceText="{Binding Description}"
+                                            Query="{Binding FilterText}"
+                                            HighlightForeground="{DynamicResource Brush.MatchForeground}"
+                                            HighlightBackground="{DynamicResource Brush.MatchBackground}"
+                                            FontSize="10"
+                                            Foreground="{DynamicResource Brush.TextSecondary}"
+                                            TextTrimming="CharacterEllipsis" />
+                                        <controls:HighlightedTextBlock
+                                            SourceText="{Binding Specifications}"
+                                            Query="{Binding FilterText}"
+                                            HighlightForeground="{DynamicResource Brush.MatchForeground}"
+                                            HighlightBackground="{DynamicResource Brush.MatchBackground}"
+                                            IsVisible="{Binding HasSpecifications}"
+                                            FontSize="9"
+                                            Foreground="{DynamicResource Brush.AccentLight}"
+                                            TextTrimming="CharacterEllipsis" />
+                                      </StackPanel>
+                                      <TextBlock Grid.Column="2"
+                                                 Text="{Binding Price, StringFormat='R$ {0:N2}'}"
+                                                 FontSize="11" Foreground="{DynamicResource Brush.Warning}"
+                                                 FontWeight="SemiBold" VerticalAlignment="Center"
+                                                 Margin="10,0,0,0"
+                                                 TextAlignment="Right" />
+                                    </Grid>
+                                  </Border>
+                                </DataTemplate>
+                              </ListBox.ItemTemplate>
+                            </ListBox>
+                          </Grid>
+                        </Border>
+                      </Popup>
+                    </Grid>
+
+                    <StackPanel Grid.Column="2" Spacing="3">
+                      <TextBlock Text="QTD." FontSize="9" Foreground="{DynamicResource Brush.TextMuted}"
+                                 FontWeight="Bold" />
+                      <ComboBox ItemsSource="{Binding QuantityOptions}"
+                                Classes="quantity-selector"
+                                SelectedItem="{Binding Quantity, Mode=TwoWay}"
+                                IsEnabled="{Binding HasSelection}"
+                                HorizontalContentAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="3" Spacing="3" VerticalAlignment="Center">
+                      <TextBlock Text="TOTAL" FontSize="9" Foreground="{DynamicResource Brush.TextMuted}"
+                                 FontWeight="Bold" TextAlignment="Right" />
+                      <TextBlock Text="{Binding SelectedPrice}" FontSize="12"
+                                 Foreground="{DynamicResource Brush.Warning}"
+                                 FontWeight="SemiBold" TextAlignment="Right" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+
+    <!-- Resumo -->
+    <Border Grid.Column="2" Background="{DynamicResource Brush.SidebarBackground}" BorderBrush="{DynamicResource Brush.Border}"
+            BorderThickness="1,0,0,0" IsVisible="{Binding IsAssemblyView}">
+      <Grid RowDefinitions="Auto,*,Auto" Margin="22,24">
+        <StackPanel Spacing="12">
+          <TextBlock Text="RESUMO DA MONTAGEM" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource Brush.TextBodyMuted}" />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Progresso" FontSize="11" Foreground="{DynamicResource Brush.TextSecondary}" />
+            <TextBlock Grid.Column="1" Text="{Binding ProgressText}" FontSize="11" />
+          </Grid>
+          <ProgressBar Minimum="0" Maximum="100" Value="{Binding ProgressValue}"
+                       Height="5" Foreground="{DynamicResource Brush.Accent}" Background="{DynamicResource Brush.Border}" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" Margin="0,22,0,14">
+          <StackPanel Spacing="18">
+            <ItemsControl ItemsSource="{Binding SelectedItems}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,13">
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="{Binding Category}" FontSize="9" Foreground="{DynamicResource Brush.TextMuted}" />
+                      <TextBlock Text="{Binding Name}" FontSize="11"
+                                 Foreground="{DynamicResource Brush.AccentPale}"
+                                 TextTrimming="CharacterEllipsis" MaxWidth="195" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding Price}" FontSize="11"
+                               Foreground="{DynamicResource Brush.Warning}"
+                               FontWeight="SemiBold" VerticalAlignment="Bottom" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border Background="{DynamicResource Brush.PanelBackground}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                    CornerRadius="10" Padding="14">
+              <StackPanel Spacing="10">
+                <TextBlock Text="{Binding CompatibilityTitle}" FontSize="12" FontWeight="SemiBold" />
+                <ItemsControl ItemsSource="{Binding Issues}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7" Margin="0,0,0,7">
+                        <PathIcon Classes="issue-icon"
+                                  Classes.error="{Binding IsError}"
+                                  Classes.warning="{Binding IsWarning}"
+                                  Classes.success="{Binding IsSuccess}"
+                                  Data="{Binding Icon, Converter={StaticResource IconResourceConverter}}"
+                                  Width="13" Height="13"
+                                  VerticalAlignment="Top"
+                                  Margin="0,1,0,0" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Message}"
+                                   TextWrapping="Wrap" FontSize="10"
+                                   Foreground="{DynamicResource Brush.TextBody}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Spacing="12">
+          <Border BorderBrush="{DynamicResource Brush.BorderStrong}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel>
+                <TextBlock Text="TOTAL ESTIMADO" FontSize="10" Foreground="{DynamicResource Brush.TextSecondary}" FontWeight="Bold" />
+                <TextBlock Text="Valores do catálogo local" FontSize="9" Foreground="{DynamicResource Brush.TextDim}" />
+              </StackPanel>
+              <TextBlock Grid.Column="1" Text="{Binding TotalCost}" FontSize="21"
+                         FontWeight="Bold" Foreground="{DynamicResource Brush.AccentLight}" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+          <Button Classes="primary" Command="{Binding BalancedPresetCommand}"
+                  HorizontalContentAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <PathIcon Data="{StaticResource Icon.Balanced}" Width="17" Height="17"
+                        Foreground="White" />
+              <TextBlock Text="Preencher configuração equilibrada"
+                         Foreground="White" />
+            </StackPanel>
+          </Button>
+          <TextBlock Text="Preços ilustrativos — atualize o catálogo conforme seus fornecedores."
+                     TextWrapping="Wrap" TextAlignment="Center" FontSize="9" Foreground="{DynamicResource Brush.TextDim}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Montagem -->
+    <Grid Grid.Column="1" Grid.ColumnSpan="2"
+          IsVisible="{Binding IsFlexibleListView}">
+      <views:FlexibleListView DataContext="{Binding FlexibleList}" />
+    </Grid>
+
+    <!-- Orçamentos -->
+    <Grid Grid.Column="1" Grid.ColumnSpan="2"
+          IsVisible="{Binding IsQuotesView}">
+      <views:QuoteManagerView DataContext="{Binding QuoteManager}" />
+    </Grid>
+
+    <!-- Configurações -->
+    <Grid Grid.Column="1" Grid.ColumnSpan="2"
+          IsVisible="{Binding IsSettingsView}">
+      <views:PricingSettingsView DataContext="{Binding PricingSettings}" />
+    </Grid>
+
+    <!-- Cadastro e catálogo -->
+    <Grid Grid.Column="1" Grid.ColumnSpan="2" RowDefinitions="Auto,*"
+          IsVisible="{Binding IsProductsView}">
+      <Border Grid.Row="0" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="30,20">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Produtos" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="Cadastre componentes e disponibilize-os imediatamente na montagem."
+                       Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="12" />
+          </StackPanel>
+          <Border Grid.Column="1" Background="{DynamicResource Brush.AccentSurface}" CornerRadius="8" Padding="12,7"
+                  VerticalAlignment="Center">
+            <TextBlock Text="{Binding CatalogCountText}" Foreground="{DynamicResource Brush.AccentBadge}"
+                       FontSize="11" FontWeight="SemiBold" />
+          </Border>
+        </Grid>
+      </Border>
+
+      <Grid Grid.Row="1" ColumnDefinitions="520,*" ColumnSpacing="22" Margin="30,22">
+        <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Disabled">
+          <Grid>
+          <StackPanel Spacing="16" IsVisible="{Binding IsProductFormVisible}">
+            <Border Classes="card">
+              <StackPanel Spacing="16">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="{Binding ProductFormTitle}" FontSize="16" FontWeight="Bold" />
+                  <TextBlock Text="Os campos com * são obrigatórios."
+                             Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" />
+                </StackPanel>
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                  <StackPanel Grid.Column="0" Spacing="6">
+                    <TextBlock Text="Categoria *" FontSize="11" Foreground="{DynamicResource Brush.TextLabel}" />
+                    <ComboBox ItemsSource="{Binding CategoryOptions}"
+                              SelectedItem="{Binding SelectedProductCategory, Mode=TwoWay}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6">
+                    <TextBlock Text="Marca *" FontSize="11" Foreground="{DynamicResource Brush.TextLabel}" />
+                    <TextBox Text="{Binding ProductBrand, Mode=TwoWay}"
+                             PlaceholderText="Ex.: AMD" />
+                  </StackPanel>
+                </Grid>
+
+                <StackPanel Spacing="6">
+                  <TextBlock Text="Nome do produto *" FontSize="11" Foreground="{DynamicResource Brush.TextLabel}" />
+                  <TextBox Text="{Binding ProductName, Mode=TwoWay}"
+                           PlaceholderText="Ex.: Ryzen 7 7700" />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                  <TextBlock Text="Descrição *" FontSize="11" Foreground="{DynamicResource Brush.TextLabel}" />
+                  <TextBox Text="{Binding ProductDescription, Mode=TwoWay}"
+                           PlaceholderText="Ex.: 8 núcleos • AM5 • 65 W"
+                           AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                  <TextBlock Text="Custo *" FontSize="11"
+                             Foreground="{DynamicResource Brush.TextLabel}" />
+                  <TextBox Text="{Binding ProductPrice, Mode=TwoWay}"
+                           PlaceholderText="Ex.: 1299,90" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Classes="input-group">
+              <Grid ColumnDefinitions="96,*" ColumnSpacing="14">
+                <Border Width="96" Height="96" CornerRadius="10"
+                        Background="White">
+                  <Grid>
+                    <PathIcon Data="{StaticResource Icon.Products}" Width="30" Height="30"
+                              Foreground="{DynamicResource Brush.TextMuted}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <controls:RemoteImage Url="{Binding ProductImagePath}"
+                                          Stretch="Uniform" Margin="4" />
+                  </Grid>
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                  <TextBlock Text="Foto do produto" FontSize="13" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding ProductImagePath}"
+                             TextTrimming="CharacterEllipsis" MaxLines="1"
+                             FontSize="9" Foreground="{DynamicResource Brush.TextSecondary}" />
+                  <WrapPanel Orientation="Horizontal">
+                    <Button Classes="secondary" Click="SelectProductImage_Click"
+                            Margin="0,0,8,0">
+                      <TextBlock Text="Adicionar / trocar foto" />
+                    </Button>
+                    <Button Classes="secondary"
+                            Command="{Binding RemoveProductImageCommand}"
+                            IsEnabled="{Binding HasProductImage}">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <PathIcon Data="{StaticResource Icon.Clear}" Width="13" Height="13"
+                                  Foreground="{DynamicResource Brush.Error}" />
+                        <TextBlock Text="Remover" Foreground="{DynamicResource Brush.Error}" />
+                      </StackPanel>
+                    </Button>
+                  </WrapPanel>
+                </StackPanel>
+              </Grid>
+            </Border>
+
+            <TextBlock Text="{Binding ProductFormMessage}" TextWrapping="Wrap"
+                       IsVisible="{Binding IsProductFormError}"
+                       Foreground="{DynamicResource Brush.Error}" FontSize="11" />
+            <TextBlock Text="{Binding ProductFormMessage}" TextWrapping="Wrap"
+                       IsVisible="{Binding IsProductFormSuccess}"
+                       Foreground="{DynamicResource Brush.Success}" FontSize="11" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+              <Button Classes="secondary" Command="{Binding CancelProductEditCommand}"
+                      HorizontalContentAlignment="Center">
+                <TextBlock Text="Cancelar" />
+              </Button>
+              <Button Grid.Column="1" Classes="primary"
+                      Command="{Binding SaveProductCommand}"
+                      HorizontalContentAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <PathIcon Data="{StaticResource Icon.Save}" Width="17" Height="17"
+                            Foreground="White" />
+                  <TextBlock Text="{Binding ProductSaveButtonText}" Foreground="White" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </StackPanel>
+
+          <StackPanel Spacing="16" IsVisible="{Binding IsProductDetailVisible}">
+            <WrapPanel Orientation="Horizontal">
+              <Button Classes="secondary"
+                      Command="{Binding NewProductCommand}"
+                      Margin="0,0,8,0">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <PathIcon Data="{StaticResource Icon.Add}" Width="16" Height="16"
+                            Foreground="{DynamicResource Brush.AccentLight}" />
+                  <TextBlock Text="Cadastrar novo produto" />
+                </StackPanel>
+              </Button>
+              <Button Classes="secondary"
+                      Command="{Binding EditProductCommand}"
+                      Margin="0,0,8,0">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <PathIcon Data="{StaticResource Icon.Settings}" Width="16" Height="16"
+                            Foreground="{DynamicResource Brush.AccentLight}" />
+                  <TextBlock Text="Editar" />
+                </StackPanel>
+              </Button>
+              <Button Classes="secondary"
+                      Command="{Binding RequestDeleteProductCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <PathIcon Data="{StaticResource Icon.Clear}" Width="16" Height="16"
+                            Foreground="{DynamicResource Brush.Error}" />
+                  <TextBlock Text="Excluir" Foreground="{DynamicResource Brush.Error}" />
+                </StackPanel>
+              </Button>
+            </WrapPanel>
+
+            <Border Classes="input-group"
+                    IsVisible="{Binding IsDeleteConfirmationVisible}">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Excluir este produto definitivamente?"
+                           FontWeight="SemiBold" Foreground="{DynamicResource Brush.Error}" />
+                <TextBlock Text="Ele será removido do catálogo e das opções de montagem."
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource Brush.TextSecondary}" FontSize="10" />
+                <WrapPanel Orientation="Horizontal">
+                  <Button Classes="secondary"
+                          Command="{Binding ConfirmDeleteProductCommand}"
+                          Margin="0,0,8,0">
+                    <TextBlock Text="Confirmar exclusão"
+                               Foreground="{DynamicResource Brush.Error}" />
+                  </Button>
+                  <Button Classes="secondary"
+                          Command="{Binding CancelDeleteProductCommand}">
+                    <TextBlock Text="Cancelar" />
+                  </Button>
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="16">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                  <Border Width="96" Height="96" CornerRadius="13"
+                          Background="{DynamicResource Brush.AccentSurface}">
+                    <Grid>
+                      <PathIcon Data="{Binding SelectedCatalogProduct.Icon, Converter={StaticResource IconResourceConverter}}"
+                                Width="28" Height="28"
+                                Foreground="{DynamicResource Brush.AccentPale}"
+                                HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      <controls:RemoteImage Url="{Binding SelectedCatalogProduct.ImageUrl}"
+                                            Stretch="Uniform"
+                                            Margin="5" />
+                    </Grid>
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding SelectedCatalogProduct.Name}"
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource Brush.AccentPale}"
+                               TextWrapping="Wrap" />
+                    <WrapPanel Orientation="Horizontal">
+                      <Border Background="{DynamicResource Brush.BadgeBackground}"
+                              CornerRadius="5" Padding="7,3" Margin="0,0,7,0">
+                        <TextBlock Text="{Binding SelectedCatalogProduct.Category}"
+                                   Foreground="{DynamicResource Brush.AccentPale}" FontSize="9" />
+                      </Border>
+                      <Border Background="{DynamicResource Brush.PanelBackground}"
+                              CornerRadius="5" Padding="7,3">
+                        <TextBlock Text="{Binding SelectedCatalogProduct.OriginText}"
+                                   Foreground="{DynamicResource Brush.TextBody}" FontSize="9" />
+                      </Border>
+                    </WrapPanel>
+                  </StackPanel>
+                </Grid>
+
+                <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,0,0"
+                        Padding="0,14,0,0">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="MARCA" FontSize="9" FontWeight="Bold"
+                                 Foreground="{DynamicResource Brush.TextMuted}" />
+                      <TextBlock Text="{Binding SelectedCatalogProduct.Brand}"
+                                 Foreground="{DynamicResource Brush.TextStrong}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="2">
+                      <TextBlock Text="CUSTO" FontSize="9" FontWeight="Bold"
+                                 Foreground="{DynamicResource Brush.TextMuted}"
+                                 TextAlignment="Right" />
+                      <TextBlock Text="{Binding SelectedCatalogProduct.Price}"
+                                 FontSize="17" FontWeight="Bold"
+                                 Foreground="{DynamicResource Brush.Warning}"
+                                 TextAlignment="Right" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+
+                <StackPanel Spacing="5">
+                  <TextBlock Text="DESCRIÇÃO" FontSize="9" FontWeight="Bold"
+                             Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBlock Text="{Binding SelectedCatalogProduct.Description}"
+                             TextWrapping="Wrap"
+                             Foreground="{DynamicResource Brush.TextBody}" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Classes="input-group">
+              <StackPanel Spacing="14">
+                <TextBlock Text="Características" FontSize="14" FontWeight="SemiBold" />
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto"
+                      ColumnSpacing="14" RowSpacing="14">
+                  <StackPanel Spacing="3">
+                    <TextBlock Text="Potência / consumo" FontSize="9"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <TextBlock Text="{Binding SelectedCatalogProduct.PowerText}"
+                               Foreground="{DynamicResource Brush.TextStrong}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="3">
+                    <TextBlock Text="Soquete" FontSize="9"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <TextBlock Text="{Binding SelectedCatalogProduct.SocketText}"
+                               Foreground="{DynamicResource Brush.TextStrong}" />
+                  </StackPanel>
+                  <StackPanel Grid.Row="1" Spacing="3">
+                    <TextBlock Text="Tipo de memória" FontSize="9"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <TextBlock Text="{Binding SelectedCatalogProduct.MemoryTypeText}"
+                               Foreground="{DynamicResource Brush.TextStrong}" />
+                  </StackPanel>
+                  <StackPanel Grid.Row="1" Grid.Column="1" Spacing="3">
+                    <TextBlock Text="Formato" FontSize="9"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <TextBlock Text="{Binding SelectedCatalogProduct.FormFactorText}"
+                               Foreground="{DynamicResource Brush.TextStrong}" />
+                  </StackPanel>
+                  <StackPanel Grid.Row="2" Spacing="3">
+                    <TextBlock Text="Soquetes suportados" FontSize="9"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <TextBlock Text="{Binding SelectedCatalogProduct.SupportedSocketsText}"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource Brush.TextStrong}" />
+                  </StackPanel>
+                  <StackPanel Grid.Row="2" Grid.Column="1" Spacing="3">
+                    <TextBlock Text="Formatos suportados" FontSize="9"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <TextBlock Text="{Binding SelectedCatalogProduct.SupportedFormFactorsText}"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource Brush.TextStrong}" />
+                  </StackPanel>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Button Classes="primary"
+                    Command="{Binding SelectedCatalogProduct.ToggleKeepCommand}"
+                    IsVisible="{Binding SelectedCatalogProduct.IsImported}"
+                    HorizontalContentAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <PathIcon Data="{Binding SelectedCatalogProduct.KeepIcon, Converter={StaticResource IconResourceConverter}}"
+                          Width="17" Height="17" Foreground="White" />
+                <TextBlock Text="{Binding SelectedCatalogProduct.KeepButtonText}"
+                           Foreground="White" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+          </Grid>
+        </ScrollViewer>
+
+        <Border Grid.Column="1" Classes="card" Padding="0">
+          <Grid RowDefinitions="Auto,Auto,*">
+            <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="18,16">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="Catálogo local" FontSize="15" FontWeight="Bold" />
+                  <TextBlock Text="Produtos disponíveis para suas configurações"
+                             Foreground="{DynamicResource Brush.TextSecondary}" FontSize="10" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding FilteredCatalogCountText}"
+                           Foreground="{DynamicResource Brush.AccentLight}"
+                           FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+
+            <Border Grid.Row="1" BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="0,0,0,1" Padding="18,12">
+              <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="180,*,Auto" ColumnSpacing="8">
+                  <ComboBox ItemsSource="{Binding ProductCategoryFilters}"
+                            SelectedItem="{Binding SelectedCatalogCategoryFilter, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Name}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBox Grid.Column="1"
+                           Text="{Binding CatalogSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                           PlaceholderText="Palavras-chave: nvme 256 adata" />
+                  <TextBlock Grid.Column="2" Text="{Binding BulkSelectedText}"
+                             HorizontalAlignment="Right" VerticalAlignment="Center"
+                             FontSize="9" Foreground="{DynamicResource Brush.TextSecondary}" />
+                </Grid>
+
+                <Border Classes="input-group" Padding="10"
+                        IsVisible="{Binding IsBulkDeleteConfirmationVisible}">
+                  <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                    <TextBlock Text="{Binding BulkSelectedText, StringFormat='Apagar {0}?'}"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.Error}" FontWeight="SemiBold" />
+                    <Button Grid.Column="1" Classes="secondary"
+                            Command="{Binding ConfirmBulkDeleteCommand}">
+                      <TextBlock Text="Confirmar" Foreground="{DynamicResource Brush.Error}" />
+                    </Button>
+                    <Button Grid.Column="2" Classes="secondary"
+                            Command="{Binding CancelBulkDeleteCommand}">
+                      <TextBlock Text="Cancelar" />
+                    </Button>
+                  </Grid>
+                </Border>
+
+                <Grid ColumnDefinitions="24,Auto,*,115" ColumnSpacing="8">
+                  <CheckBox IsChecked="{Binding AreAllFilteredProductsSelected, Mode=TwoWay}"
+                            VerticalAlignment="Center"
+                            ToolTip.Tip="Marcar ou desmarcar todos os produtos visíveis" />
+                  <Button Grid.Column="1" Classes="secondary"
+                          Command="{Binding RequestBulkDeleteCommand}"
+                          IsEnabled="{Binding HasBulkSelection}"
+                          Padding="7" MinWidth="32"
+                          ToolTip.Tip="Apagar produtos marcados">
+                    <PathIcon Data="{StaticResource Icon.Clear}" Width="14" Height="14"
+                              Foreground="{DynamicResource Brush.Error}" />
+                  </Button>
+                  <Button Grid.Column="2" Classes="list-header"
+                          Classes.active="{Binding IsCatalogDescriptionSortActive}"
+                          Command="{Binding SortCatalogByDescriptionCommand}"
+                          HorizontalContentAlignment="Left">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="DESCRIÇÃO" FontSize="9" FontWeight="Bold" />
+                      <PathIcon Data="{Binding CatalogDescriptionSortIcon,
+                                              Converter={StaticResource IconResourceConverter}}"
+                                IsVisible="{Binding IsCatalogDescriptionSortActive}"
+                                Width="12" Height="12" />
+                    </StackPanel>
+                  </Button>
+                  <Button Grid.Column="3" Classes="list-header"
+                          Classes.active="{Binding IsCatalogCostSortActive}"
+                          Command="{Binding SortCatalogByCostCommand}"
+                          HorizontalContentAlignment="Right">
+                    <StackPanel Orientation="Horizontal" Spacing="6"
+                                HorizontalAlignment="Right">
+                      <TextBlock Text="CUSTO" FontSize="9" FontWeight="Bold" />
+                      <PathIcon Data="{Binding CatalogCostSortIcon,
+                                              Converter={StaticResource IconResourceConverter}}"
+                                IsVisible="{Binding IsCatalogCostSortActive}"
+                                Width="12" Height="12" />
+                    </StackPanel>
+                  </Button>
+                </Grid>
+
+              </StackPanel>
+            </Border>
+
+            <ScrollViewer Grid.Row="2" Padding="18,12" HorizontalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding FilteredProducts}"
+                            HorizontalAlignment="Stretch">
+                <ItemsControl.Styles>
+                  <Style Selector="ContentPresenter">
+                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                  </Style>
+                </ItemsControl.Styles>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"
+                          Width="{Binding $parent[ScrollViewer].Viewport.Width,
+                                          Converter={StaticResource SubtractConverter},
+                                          ConverterParameter=36}">
+                      <CheckBox IsChecked="{Binding IsBulkSelected, Mode=TwoWay}"
+                                VerticalAlignment="Center"
+                                ToolTip.Tip="Marcar para alteração em massa" />
+                      <Button Grid.Column="1" Classes="catalog-item"
+                              Command="{Binding SelectCommand}"
+                              ToolTip.Tip="Clique para ver, editar ou excluir">
+                        <Border Classes="catalog-row"
+                                Classes.alternate="{Binding IsAlternate}"
+                                Classes.selected="{Binding IsSelected}">
+                          <Grid ColumnDefinitions="Auto,*,115" ColumnSpacing="12">
+                          <Border Width="48" Height="48" CornerRadius="7"
+                                  Background="White"
+                                  IsVisible="{Binding HasImage}"
+                                  VerticalAlignment="Center">
+                            <controls:RemoteImage Url="{Binding ImageUrl}"
+                                                  Stretch="Uniform"
+                                                  Margin="3" />
+                          </Border>
+                          <StackPanel Grid.Column="1" Spacing="3">
+                            <TextBlock Text="{Binding Name}"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Brush.AccentPale}"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxLines="1" />
+                            <WrapPanel Orientation="Horizontal">
+                              <TextBlock Text="{Binding Brand}"
+                                         Foreground="{DynamicResource Brush.TextBody}"
+                                         FontSize="10" Margin="0,0,8,0" />
+                              <Border Background="{DynamicResource Brush.BadgeBackground}"
+                                      CornerRadius="5" Padding="6,2" Margin="0,0,6,0">
+                                <TextBlock Text="{Binding Category}"
+                                           Foreground="{DynamicResource Brush.AccentPale}"
+                                           FontSize="9" />
+                              </Border>
+                              <Border Background="{DynamicResource Brush.PanelBackground}"
+                                      CornerRadius="5" Padding="6,2">
+                                <TextBlock Text="{Binding OriginText}"
+                                           Foreground="{DynamicResource Brush.TextBody}"
+                                           FontSize="9" />
+                              </Border>
+                            </WrapPanel>
+                            <TextBlock Text="{Binding Description}"
+                                       Foreground="{DynamicResource Brush.TextSecondary}"
+                                       FontSize="10"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxLines="1" />
+                          </StackPanel>
+                          <StackPanel Grid.Column="2"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Stretch"
+                                      Spacing="3">
+                            <TextBlock Text="CUSTO" FontSize="8" FontWeight="Bold"
+                                       Foreground="{DynamicResource Brush.TextMuted}"
+                                       TextAlignment="Right" />
+                            <TextBlock Text="{Binding Price}"
+                                       Foreground="{DynamicResource Brush.Warning}"
+                                       FontSize="11" FontWeight="SemiBold"
+                                       TextAlignment="Right" />
+                          </StackPanel>
+                          </Grid>
+                        </Border>
+                      </Button>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Grid>
+        </Border>
+      </Grid>
+    </Grid>
+
+    <!-- Importações -->
+    <Grid Grid.Column="1" Grid.ColumnSpan="2" RowDefinitions="Auto,*"
+          IsVisible="{Binding IsImportsView}">
+      <Border Grid.Row="0" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="30,20">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Importações" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="Atualize seu catálogo local usando lojas e fornecedores externos."
+                       Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="12" />
+          </StackPanel>
+          <Button Grid.Column="1" Classes="primary"
+                  Command="{Binding ImportAllCommand}"
+                  IsEnabled="{Binding CanImportAll}"
+                  VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <PathIcon Data="{StaticResource Icon.Download}" Width="17" Height="17"
+                        Foreground="White" />
+              <TextBlock Text="{Binding ImportAllButtonText}" Foreground="White" />
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
+
+      <ScrollViewer Grid.Row="1" Padding="30,24" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="18" MaxWidth="920" HorizontalAlignment="Left">
+          <Border Background="{DynamicResource Brush.InfoPanelBackground}" BorderBrush="{DynamicResource Brush.InfoBorder}" BorderThickness="1"
+                  CornerRadius="12" Padding="18">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+              <Border Width="42" Height="42" CornerRadius="10" Background="{DynamicResource Brush.AccentSurface}">
+                <PathIcon Data="{StaticResource Icon.Info}" Width="20" Height="20"
+                          Foreground="{DynamicResource Brush.AccentLight}"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="4">
+                <TextBlock Text="Como funciona" FontSize="12" FontWeight="SemiBold" />
+                <TextBlock Text="Cada importação substitui os itens anteriores da categoria. Use “Manter” no catálogo para proteger um importado; produtos cadastrados manualmente nunca são removidos."
+                           TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextBody}" FontSize="11" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <ItemsControl ItemsSource="{Binding ImportSources}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" ItemWidth="450" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Classes="card" Width="434" MinHeight="290" Margin="0,0,16,16" Padding="20">
+                  <Grid RowDefinitions="Auto,*,Auto">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                      <Border Width="52" Height="52" CornerRadius="13" Background="{DynamicResource Brush.AccentSurface}"
+                              VerticalAlignment="Top">
+                        <PathIcon Data="{Binding Icon, Converter={StaticResource IconResourceConverter}}"
+                                  Width="27" Height="27"
+                                  Foreground="{DynamicResource Brush.AccentPale}"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" />
+                        <TextBlock Text="{Binding Subtitle}" Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="10" />
+                      </StackPanel>
+                    </Grid>
+
+                    <StackPanel Grid.Row="1" Spacing="9" Margin="0,14,0,14">
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="LINK DA CATEGORIA" FontSize="9" FontWeight="Bold"
+                                   Foreground="{DynamicResource Brush.TextMuted}" />
+                        <TextBox Text="{Binding Url, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 PlaceholderText="Cole aqui o link da categoria"
+                                 FontSize="9" MinHeight="36" Padding="9,5" />
+                      </StackPanel>
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Border Background="{DynamicResource Brush.SuccessBackground}" CornerRadius="6" Padding="8,4">
+                          <TextBlock Text="{Binding ImportedCountText}"
+                                     Foreground="{DynamicResource Brush.Success}" FontSize="10" />
+                        </Border>
+                        <Border Background="{DynamicResource Brush.WarningBackground}" CornerRadius="6" Padding="8,4">
+                          <TextBlock Text="KaBuM! • preços à vista"
+                                     Foreground="{DynamicResource Brush.Warning}" FontSize="10" />
+                        </Border>
+                      </StackPanel>
+                      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                        <PathIcon Data="{StaticResource Icon.History}" Width="13" Height="13"
+                                  Foreground="{DynamicResource Brush.AccentLight}"
+                                  VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding LastImportText}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   FontSize="10" />
+                      </Grid>
+                      <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                                 Foreground="{DynamicResource Brush.TextLabel}" FontSize="10" />
+                    </StackPanel>
+
+                    <Button Grid.Row="2" Classes="primary"
+                            Command="{Binding ImportCommand}"
+                            IsEnabled="{Binding CanImport}"
+                            HorizontalContentAlignment="Center">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="{StaticResource Icon.Download}" Width="17" Height="17"
+                                  Foreground="White" />
+                        <TextBlock Text="{Binding ButtonText}" Foreground="White" />
+                      </StackPanel>
+                    </Button>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock Text="Os preços e a disponibilidade pertencem à loja de origem e podem mudar a qualquer momento."
+                     Foreground="{DynamicResource Brush.TextDim}" FontSize="10" TextWrapping="Wrap" />
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</Window>

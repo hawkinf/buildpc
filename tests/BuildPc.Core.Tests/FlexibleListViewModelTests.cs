@@ -273,6 +273,30 @@ public sealed class FlexibleListViewModelTests
     }
 
     [Fact]
+    public void Quantity_AcceptsValuesAboveTheOldHundredLimit()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, "Processador", 10m);
+        var viewModel = CreateViewModel(processor);
+
+        viewModel.Quantity = 250;
+        viewModel.ProductPicker.Selected = processor;
+        viewModel.AddCommand.Execute(null);
+
+        var item = Assert.Single(viewModel.Items);
+        Assert.Equal(250, item.Quantity);
+        Assert.Equal(2500m, viewModel.TotalCostValue);
+
+        item.Quantity = 1500;
+        Assert.Equal(1500, item.Quantity);
+
+        // O teto alto continua existindo só para conter erro de digitação.
+        item.Quantity = 999_999;
+        Assert.Equal(QuantityRange.Maximum, item.Quantity);
+        item.Quantity = 0;
+        Assert.Equal(QuantityRange.Minimum, item.Quantity);
+    }
+
+    [Fact]
     public void Clear_OnlyWipesTheAssemblyAfterConfirmation()
     {
         var processor = Product("cpu", ComponentCategory.Processor, "Processador", 1000m);

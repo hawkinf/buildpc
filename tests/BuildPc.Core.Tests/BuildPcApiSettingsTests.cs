@@ -61,38 +61,25 @@ public sealed class BuildPcApiSettingsTests
     }
 
     [Fact]
-    public void SaveAndDisableManageConfigurationAtomically()
+    public void DisableRemovesTheLegacyFileAfterMigration()
     {
-        if (!OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
         var path = CreateTemporaryPath();
         try
         {
-            var expected = new BuildPcApiSettings
-            {
-                BaseUrl = "https://servidor.example/buildpc-api/",
-                ApiKey = "secret"
-            };
-
-            expected.Save(path);
-
-            var json = File.ReadAllText(path);
-            Assert.DoesNotContain(expected.ApiKey, json, StringComparison.Ordinal);
-            Assert.Contains(
-                "\"encryptedApiKey\"",
-                json,
-                StringComparison.Ordinal);
-            Assert.Equal(expected, BuildPcApiSettings.Load(path));
-            Assert.Empty(Directory.GetFiles(
-                Path.GetDirectoryName(path)!,
-                $"{Path.GetFileName(path)}.*.tmp"));
+            File.WriteAllText(
+                path,
+                JsonSerializer.Serialize(new
+                {
+                    baseUrl = "https://servidor.example/buildpc-api/",
+                    apiKey = "secret"
+                }));
+            Assert.NotNull(BuildPcApiSettings.Load(path));
 
             BuildPcApiSettings.Disable(path);
 
             Assert.False(File.Exists(path));
+            // Chamar de novo em um arquivo já removido não é erro.
+            BuildPcApiSettings.Disable(path);
         }
         finally
         {

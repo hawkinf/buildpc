@@ -30,7 +30,7 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
     {
         Component = component;
         _categoryName = categoryName;
-        _quantity = Math.Clamp(quantity, 1, 100);
+        _quantity = QuantityRange.Clamp(quantity);
         _name = component.Name;
         _description = component.Description;
         _unitPriceValue = component.Price;
@@ -102,7 +102,6 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
         _ => "Products"
     };
 
-    public IReadOnlyList<int> QuantityOptions { get; } = Enumerable.Range(1, 100).ToList();
     public ICommand RemoveCommand { get; }
 
     public string Name
@@ -235,7 +234,7 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
         get => _quantity;
         set
         {
-            if (SetProperty(ref _quantity, Math.Clamp(value, 1, 100)))
+            if (SetProperty(ref _quantity, QuantityRange.Clamp(value)))
             {
                 OnPropertyChanged(nameof(TotalPrice));
                 _changed();

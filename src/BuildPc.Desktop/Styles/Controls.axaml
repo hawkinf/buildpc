@@ -88,11 +88,16 @@
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
   </Style>
 
-  <Style Selector="ComboBox.quantity-selector">
+  <!--
+    A quantidade passou de ComboBox com cem entradas para NumericUpDown, que
+    aceita qualquer valor digitado sem o limite artificial de 100.
+  -->
+  <Style Selector="NumericUpDown.quantity-selector">
     <Setter Property="MinHeight" Value="36" />
     <Setter Property="Height" Value="36" />
     <Setter Property="Padding" Value="8,4" />
     <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Right" />
   </Style>
 
   <Style Selector="Button.component-selector:pointerover">

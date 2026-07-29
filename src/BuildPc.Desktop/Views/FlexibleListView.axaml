@@ -244,10 +244,14 @@
               <StackPanel Grid.Column="2" Spacing="6">
                 <TextBlock Text="Quantidade" FontSize="11"
                            Foreground="{DynamicResource Brush.TextLabel}" />
-                <ComboBox Classes="quantity-selector"
-                          Height="44" MinHeight="44"
-                          ItemsSource="{Binding QuantityOptions}"
-                          SelectedItem="{Binding Quantity, Mode=TwoWay}" />
+                <NumericUpDown Classes="quantity-selector"
+                               Height="44" MinHeight="44"
+                               Value="{Binding Quantity, Mode=TwoWay}"
+                               Minimum="1" Maximum="9999"
+                               Increment="1"
+                               FormatString="0"
+                               ParsingNumberStyle="Integer"
+                               ShowButtonSpinner="True" />
               </StackPanel>
 
               <Button Grid.Column="3" Classes="primary"
@@ -356,9 +360,13 @@
                   <StackPanel Grid.Column="4" Spacing="4">
                     <TextBlock Text="Quantidade" FontSize="9"
                                Foreground="{DynamicResource Brush.TextMuted}" />
-                    <ComboBox Classes="quantity-selector"
-                            ItemsSource="{Binding QuantityOptions}"
-                            SelectedItem="{Binding Quantity, Mode=TwoWay}" />
+                    <NumericUpDown Classes="quantity-selector"
+                                   Value="{Binding Quantity, Mode=TwoWay}"
+                                   Minimum="1" Maximum="9999"
+                                   Increment="1"
+                                   FormatString="0"
+                                   ParsingNumberStyle="Integer"
+                                   ShowButtonSpinner="True" />
                   </StackPanel>
 
                   <StackPanel Grid.Column="5" Spacing="4">

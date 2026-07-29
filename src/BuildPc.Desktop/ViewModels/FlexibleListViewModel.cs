@@ -53,7 +53,6 @@ public sealed class FlexibleListViewModel : ViewModelBase
     public ObservableCollection<CategoryOptionViewModel> Categories { get; }
     public ObservableCollection<FlexibleListItemViewModel> Items { get; }
     public ComponentSlotViewModel ProductPicker { get; }
-    public IReadOnlyList<int> QuantityOptions { get; } = Enumerable.Range(1, 100).ToList();
     public ICommand AddCommand { get; }
     public ICommand RequestClearCommand { get; }
     public ICommand ConfirmClearCommand { get; }
@@ -79,7 +78,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
     public int Quantity
     {
         get => _quantity;
-        set => SetProperty(ref _quantity, Math.Clamp(value, 1, 100));
+        set => SetProperty(ref _quantity, QuantityRange.Clamp(value));
     }
 
     public bool CanAdd => ProductPicker.Selected is not null;

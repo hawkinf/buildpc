@@ -51,25 +51,11 @@ public sealed partial class MainWindow : Window
         }
 
         var document = viewModel.BuildProductPriceTableDocument();
-        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            Title = $"Exportar {document.Title.ToLowerInvariant()}",
-            SuggestedFileName = viewModel.ProductPriceTableSuggestedFileName,
-            DefaultExtension = "pdf",
-            FileTypeChoices =
-            [
-                new FilePickerFileType("Documento PDF") { Patterns = ["*.pdf"] }
-            ]
-        });
-        if (file is null)
-        {
-            return;
-        }
-
         viewModel.BeginProductPriceTableExport();
         try
         {
-            var outputPath = file.Path.LocalPath;
+            var outputPath = PdfPreviewService.CreatePath(
+                viewModel.ProductPriceTableSuggestedFileName);
             await new ProductPriceTablePdfService().ExportAsync(document, outputPath);
             viewModel.CompleteProductPriceTableExport(
                 SystemFileLauncher.Open(outputPath));

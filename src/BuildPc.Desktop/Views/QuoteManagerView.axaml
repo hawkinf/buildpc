@@ -98,6 +98,9 @@
               <TextBlock Text="TOTAL" FontSize="9" Foreground="{DynamicResource Brush.TextMuted}" />
               <TextBlock Text="{Binding TotalText}" FontSize="20" FontWeight="Bold"
                          Foreground="{DynamicResource Brush.AccentLight}" />
+              <TextBlock Text="{Binding $parent[UserControl].DataContext.StatusMessage}"
+                         FontSize="9" TextWrapping="Wrap" MaxWidth="360"
+                         Foreground="{DynamicResource Brush.TextSecondary}" />
             </StackPanel>
             <Button Grid.Column="1" Classes="primary" Click="ExportPdf_Click"
                     IsEnabled="{Binding $parent[UserControl].DataContext.HasSelection}">

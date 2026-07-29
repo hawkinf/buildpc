@@ -8,6 +8,7 @@ public sealed class QuoteManagerViewModel : ViewModelBase
 {
     private readonly QuoteRepository _repository;
     private SavedQuoteListItemViewModel? _selectedQuote;
+    private string _statusMessage = string.Empty;
 
     public QuoteManagerViewModel(QuoteRepository repository)
     {
@@ -33,6 +34,11 @@ public sealed class QuoteManagerViewModel : ViewModelBase
     public bool HasSelection => SelectedQuote is not null;
     public bool HasQuotes => Quotes.Count > 0;
     public bool IsEmpty => !HasQuotes;
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        private set => SetProperty(ref _statusMessage, value);
+    }
 
     public void Refresh()
     {
@@ -48,4 +54,14 @@ public sealed class QuoteManagerViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasQuotes));
         OnPropertyChanged(nameof(IsEmpty));
     }
+
+    public void CompletePdfPreview(bool opened)
+    {
+        StatusMessage = opened
+            ? "PDF aberto. Use o visualizador para salvar ou imprimir."
+            : "O PDF foi gerado, mas não foi possível abri-lo automaticamente.";
+    }
+
+    public void FailPdfPreview() =>
+        StatusMessage = "Não foi possível gerar a visualização do PDF.";
 }

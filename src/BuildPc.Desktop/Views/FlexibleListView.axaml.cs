@@ -1,7 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 using BuildPc.Desktop.Services;
 using BuildPc.Desktop.ViewModels;
 
@@ -56,33 +55,27 @@ public partial class FlexibleListView : UserControl
         }
     }
 
-    private async void ExportPdf_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void ExportPdf_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not FlexibleListViewModel
             {
                 CanExport: true,
                 SavedQuote: { } quote
-            } ||
-            TopLevel.GetTopLevel(this)?.StorageProvider is not { } storage)
+            } viewModel)
         {
             return;
         }
 
-        var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
+        var outputPath = PdfPreviewService.CreatePath(
+            $"orcamento-{quote.Number:000000}.pdf");
+        try
         {
-            Title = "Exportar orçamento para PDF",
-            SuggestedFileName = $"orcamento-{quote.Number:000000}.pdf",
-            DefaultExtension = "pdf",
-            FileTypeChoices =
-            [
-                new FilePickerFileType("Documento PDF") { Patterns = ["*.pdf"] }
-            ]
-        });
-        if (file is not null)
-        {
-            var outputPath = file.Path.LocalPath;
             new QuotePdfService().Export(quote, outputPath);
-            SystemFileLauncher.Open(outputPath);
+            viewModel.CompletePdfPreview(SystemFileLauncher.Open(outputPath));
+        }
+        catch
+        {
+            viewModel.FailPdfPreview();
         }
     }
 }

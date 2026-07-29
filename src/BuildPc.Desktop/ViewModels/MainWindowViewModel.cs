@@ -1186,15 +1186,15 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         IsExportingProductPriceTable = false;
         ProductPriceTableStatusMessage = opened
-            ? "Tabela exportada e aberta na tela."
-            : "Tabela exportada, mas não foi possível abri-la automaticamente.";
+            ? "PDF aberto. Use o visualizador para salvar ou imprimir."
+            : "O PDF foi gerado, mas não foi possível abri-lo automaticamente.";
     }
 
     public void FailProductPriceTableExport()
     {
         IsExportingProductPriceTable = false;
         ProductPriceTableStatusMessage =
-            "Não foi possível exportar a tabela em PDF.";
+            "Não foi possível gerar a visualização do PDF.";
     }
 
     private void SortCatalogByDescription()

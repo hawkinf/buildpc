@@ -313,6 +313,20 @@ public sealed class FlexibleListViewModel : ViewModelBase
         }
     }
 
+    public void CompletePdfPreview(bool opened)
+    {
+        IsStatusSuccess = opened;
+        StatusMessage = opened
+            ? "PDF aberto. Use o visualizador para salvar ou imprimir."
+            : "O PDF foi gerado, mas não foi possível abri-lo automaticamente.";
+    }
+
+    public void FailPdfPreview()
+    {
+        IsStatusSuccess = false;
+        StatusMessage = "Não foi possível gerar a visualização do PDF.";
+    }
+
     public IReadOnlyList<SavedQuoteItem> BuildQuoteItems() =>
         Items.Select(item => new SavedQuoteItem
         {

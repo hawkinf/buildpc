@@ -33,6 +33,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _supportedFormFactors = string.Empty;
     private string _productFormMessage = string.Empty;
     private bool _isProductFormSuccess;
+    private bool _isProductEditCostVisible;
     private bool _isImportingAll;
     private bool _isToolsMenuExpanded;
     private ProductListItemViewModel? _selectedCatalogProduct;
@@ -104,37 +105,26 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         SelectedItems = [];
         Issues = [];
+        var categoryDefinitions = _businessSettings.EffectiveProductCategories();
+        CategoryOptions = new ObservableCollection<CategoryOptionViewModel>(
+            categoryDefinitions.Select(category =>
+                new CategoryOptionViewModel(category.Value, category.Name)));
         Products = new ObservableCollection<ProductListItemViewModel>(
             catalog.Select((component, index) =>
                 ProductListItemViewModel.From(
                     component,
+                    CategoryNameFor(component.Category),
                     ToggleKeep,
                     SelectCatalogProduct,
                     BulkSelectionChanged,
                     index % 2 == 1)));
-        CategoryOptions =
-        [
-            new(ComponentCategory.Processor, "Processador"),
-            new(ComponentCategory.Cooler, "Coolers"),
-            new(ComponentCategory.Motherboard, "Placa-mãe"),
-            new(ComponentCategory.Memory, "Memória"),
-            new(ComponentCategory.GraphicsCard, "Placa de vídeo"),
-            new(ComponentCategory.HardDrive, "Discos rígidos (HD)"),
-            new(ComponentCategory.Storage, "SSD / NVMe"),
-            new(ComponentCategory.PowerSupply, "Fonte"),
-            new(ComponentCategory.Case, "Gabinete"),
-            new(ComponentCategory.Monitor, "Monitores"),
-            new(ComponentCategory.Mouse, "Mouses"),
-            new(ComponentCategory.Keyboard, "Teclados")
-        ];
-        CategorySummaries = [];
-        RefreshCategorySummaries();
         ProductCategoryFilters =
-        [
-            new(null, "Todos"),
-            .. CategoryOptions.Select(category =>
-                new ProductCategoryFilterViewModel(category.Value, category.Name))
-        ];
+            new ObservableCollection<ProductCategoryFilterViewModel>(
+            [
+                new(null, "Todos"),
+                .. CategoryOptions.Select(category =>
+                    new ProductCategoryFilterViewModel(category.Value, category.Name))
+            ]);
         _selectedCatalogCategoryFilter = ProductCategoryFilters[0];
         CatalogSortOptions =
         [
@@ -166,6 +156,10 @@ public sealed class MainWindowViewModel : ViewModelBase
             settings => SaveApiSettings(apiSettingsPath, settings),
             TestApiConnectionAsync,
             ApplicationThemeService.Apply);
+        CategoryManagement = new CategoryManagementViewModel(
+            categoryDefinitions,
+            CategoryProductCount,
+            SaveProductCategories);
         BulkDescriptionOperations =
         [
             new("Substituir descrição", BulkDescriptionMode.Replace),
@@ -298,8 +292,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ObservableCollection<ProductListItemViewModel> Products { get; }
     public ObservableCollection<ProductListItemViewModel> FilteredProducts { get; }
     public ObservableCollection<CategoryOptionViewModel> CategoryOptions { get; }
-    public ObservableCollection<CategorySummaryViewModel> CategorySummaries { get; }
-    public IReadOnlyList<ProductCategoryFilterViewModel> ProductCategoryFilters { get; }
+    public ObservableCollection<ProductCategoryFilterViewModel> ProductCategoryFilters { get; }
     public IReadOnlyList<ProductCatalogSortOptionViewModel> CatalogSortOptions { get; }
     public IReadOnlyList<ProductPriceTableOptionViewModel> ProductPriceTableOptions { get; }
     public ObservableCollection<ImportSourceViewModel> ImportSources { get; }
@@ -307,6 +300,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public FlexibleListViewModel FlexibleList { get; }
     public QuoteManagerViewModel QuoteManager { get; }
     public PricingSettingsViewModel PricingSettings { get; }
+    public CategoryManagementViewModel CategoryManagement { get; }
     public ConnectionStatusViewModel ConnectionStatus { get; }
     public ICommand ClearCommand { get; }
     public ICommand BalancedPresetCommand { get; }
@@ -365,7 +359,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public int CatalogCount => Products.Count;
     public string CatalogCountText => $"{CatalogCount} produtos disponíveis";
-    public string CategoryCountText => $"{CategorySummaries.Count} categorias";
+    public bool HasSelectedCatalogProduct => SelectedCatalogProduct is not null;
 
     public ProductPriceTableOptionViewModel SelectedProductPriceTableOption
     {
@@ -577,7 +571,13 @@ public sealed class MainWindowViewModel : ViewModelBase
     public CategoryOptionViewModel? SelectedProductCategory
     {
         get => _selectedProductCategory;
-        set => SetProperty(ref _selectedProductCategory, value);
+        set
+        {
+            if (SetProperty(ref _selectedProductCategory, value))
+            {
+                OnPropertyChanged(nameof(ProductSalePrice));
+            }
+        }
     }
 
     public string ProductName
@@ -601,8 +601,49 @@ public sealed class MainWindowViewModel : ViewModelBase
     public string ProductPrice
     {
         get => _productPrice;
-        set => SetProperty(ref _productPrice, value);
+        set
+        {
+            if (SetProperty(ref _productPrice, value))
+            {
+                OnPropertyChanged(nameof(ProductSalePrice));
+            }
+        }
     }
+
+    public string ProductSalePrice
+    {
+        get
+        {
+            if (SelectedProductCategory is null ||
+                !TryParsePrice(ProductPrice, out var cost) ||
+                cost <= 0)
+            {
+                return "R$ —";
+            }
+
+            return FlexibleListItemViewModel.CalculateSalePrice(
+                    cost,
+                    _businessSettings.MarginFor(SelectedProductCategory.Value))
+                .ToString("C", BrazilianCulture);
+        }
+    }
+
+    public bool IsProductEditCostVisible
+    {
+        get => _isProductEditCostVisible;
+        private set
+        {
+            if (SetProperty(ref _isProductEditCostVisible, value))
+            {
+                OnPropertyChanged(nameof(IsProductEditCostHidden));
+            }
+        }
+    }
+
+    public bool IsProductEditCostHidden => !IsProductEditCostVisible;
+
+    public void SetProductEditCostVisible(bool visible) =>
+        IsProductEditCostVisible = visible;
 
     public string ProductImagePath
     {
@@ -832,6 +873,93 @@ public sealed class MainWindowViewModel : ViewModelBase
         FlexibleList.ApplySettings(settings);
     }
 
+    private string? SaveProductCategories(
+        IReadOnlyList<ProductCategoryDefinition> categories)
+    {
+        try
+        {
+            var activeCategories = categories
+                .Select(category => category.Value)
+                .ToHashSet();
+            _businessSettings = _businessSettings with
+            {
+                ProductCategories = categories.ToList(),
+                CategoryMargins = _businessSettings.CategoryMargins
+                    .Where(margin => activeCategories.Contains(margin.Key))
+                    .ToDictionary()
+            };
+            _quoteRepository.SaveSettings(_businessSettings);
+            RebuildCategoryOptions(categories);
+            FlexibleList.UpdateCategories(CategoryOptions);
+            FlexibleList.ApplySettings(_businessSettings);
+            PricingSettings.RefreshCategories(categories);
+            RefreshCatalogCollections(refreshCategoryManagement: false);
+            return null;
+        }
+        catch (IOException)
+        {
+            return "Não foi possível salvar as categorias no armazenamento.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return "O aplicativo não tem permissão para salvar as categorias.";
+        }
+        catch (SqliteException)
+        {
+            return "Não foi possível salvar as categorias no banco de dados.";
+        }
+        catch (InvalidOperationException)
+        {
+            return "Não foi possível salvar as categorias no servidor.";
+        }
+    }
+
+    private void RebuildCategoryOptions(
+        IReadOnlyList<ProductCategoryDefinition> categories)
+    {
+        var selectedProductCategory = SelectedProductCategory?.Value;
+        var selectedFilter = SelectedCatalogCategoryFilter.Value;
+
+        CategoryOptions.Clear();
+        foreach (var category in categories
+                     .OrderBy(category => category.DisplayOrder)
+                     .ThenBy(
+                         category => category.Name,
+                         StringComparer.CurrentCultureIgnoreCase))
+        {
+            CategoryOptions.Add(new CategoryOptionViewModel(
+                category.Value,
+                category.Name));
+        }
+
+        ProductCategoryFilters.Clear();
+        ProductCategoryFilters.Add(new ProductCategoryFilterViewModel(
+            null,
+            "Todos"));
+        foreach (var category in CategoryOptions)
+        {
+            ProductCategoryFilters.Add(new ProductCategoryFilterViewModel(
+                category.Value,
+                category.Name));
+        }
+
+        SelectedProductCategory =
+            CategoryOptions.FirstOrDefault(category =>
+                category.Value == selectedProductCategory) ??
+            CategoryOptions.First();
+        SelectedCatalogCategoryFilter =
+            ProductCategoryFilters.FirstOrDefault(filter =>
+                filter.Value == selectedFilter) ??
+            ProductCategoryFilters[0];
+    }
+
+    private int CategoryProductCount(ComponentCategory category) =>
+        Products.Count(product => product.Component.Category == category);
+
+    private string CategoryNameFor(ComponentCategory category) =>
+        CategoryOptions.FirstOrDefault(option => option.Value == category)?.Name ??
+        category.ToString();
+
     private static void SaveApiSettings(
         string settingsPath,
         BuildPcApiSettings? settings)
@@ -966,7 +1094,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private void RefreshCatalogCollections()
+    private void RefreshCatalogCollections(bool refreshCategoryManagement = true)
     {
         var selectedCatalogProductId = SelectedCatalogProduct?.Id;
         var catalog = _catalogRepository.GetAll();
@@ -992,6 +1120,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         foreach (var product in catalog.Select((component, index) =>
                      ProductListItemViewModel.From(
                          component,
+                         CategoryNameFor(component.Category),
                          ToggleKeep,
                          SelectCatalogProduct,
                          BulkSelectionChanged,
@@ -1011,31 +1140,12 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(CatalogCount));
         OnPropertyChanged(nameof(CatalogCountText));
-        RefreshCategorySummaries();
+        if (refreshCategoryManagement)
+        {
+            CategoryManagement.UpdateProductCounts();
+        }
         RefreshProductFilter();
         BulkSelectionChanged();
-    }
-
-    private void RefreshCategorySummaries()
-    {
-        CategorySummaries.Clear();
-        for (var index = 0; index < CategoryOptions.Count; index++)
-        {
-            var category = CategoryOptions[index];
-            CategorySummaries.Add(CategorySummaryViewModel.From(
-                category,
-                Products.Count(product =>
-                    product.Component.Category == category.Value),
-                index % 2 == 1,
-                ShowCategoryProducts));
-        }
-    }
-
-    private void ShowCategoryProducts(ComponentCategory category)
-    {
-        SelectedCatalogCategoryFilter = ProductCategoryFilters.First(filter =>
-            filter.Value == category);
-        ShowView("products");
     }
 
     private void RefreshImportCounts()
@@ -1096,6 +1206,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
 
         OnPropertyChanged(nameof(SelectedCatalogProduct));
+        OnPropertyChanged(nameof(HasSelectedCatalogProduct));
         OnPropertyChanged(nameof(IsProductFormVisible));
         OnPropertyChanged(nameof(IsProductDetailVisible));
     }
@@ -1133,6 +1244,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
 
         SelectCatalogProduct(null);
+        SetProductEditCostVisible(false);
         SetEditingProductId(selected.Id);
         SelectedProductCategory = CategoryOptions.First(category =>
             category.Value == selected.Category);
@@ -1163,7 +1275,6 @@ public sealed class MainWindowViewModel : ViewModelBase
         if (IsProductManagementView)
         {
             SelectCatalogProduct(null);
-            ShowView("products");
             return;
         }
 
@@ -1203,6 +1314,12 @@ public sealed class MainWindowViewModel : ViewModelBase
         catch (SqliteException)
         {
             ProductFormMessage = "Não foi possível excluir o produto do banco de dados.";
+            IsProductFormSuccess = false;
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            ProductFormMessage = "Não foi possível excluir o produto no servidor.";
             IsProductFormSuccess = false;
             return;
         }
@@ -1474,6 +1591,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         catch (SqliteException)
         {
             ProductFormMessage = "Não foi possível salvar o produto no banco de dados.";
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            ProductFormMessage = "Não foi possível salvar o produto no servidor.";
             return;
         }
 

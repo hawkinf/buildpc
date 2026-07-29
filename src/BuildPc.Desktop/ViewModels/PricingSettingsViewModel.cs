@@ -12,6 +12,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
     private readonly IReadOnlyList<CategoryOptionViewModel> _categories;
     private readonly Action<BusinessSettings> _save;
     private readonly Action<AppThemeMode> _applyTheme;
+    private List<ProductCategoryDefinition>? _productCategories;
     private CategoryOptionViewModel? _selectedCategory;
     private ThemeModeOptionViewModel _selectedThemeOption;
     private string _newMarginText = string.Empty;
@@ -39,6 +40,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
         _categories = categories;
         _save = save;
         _applyTheme = applyTheme;
+        _productCategories = settings.ProductCategories?.ToList();
         ThemeOptions =
         [
             new(AppThemeMode.System, "Sistema", "Acompanha automaticamente o tema do Windows"),
@@ -201,6 +203,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
         {
             GlobalMarginPercent = globalMargin,
             CategoryMargins = categoryMargins,
+            ProductCategories = _productCategories?.ToList(),
             CompanyName = CompanyName.Trim(),
             CompanyDocument = CompanyDocument.Trim(),
             CompanyPhone = CompanyPhone.Trim(),
@@ -215,6 +218,40 @@ public sealed class PricingSettingsViewModel : ViewModelBase
         IsSuccess = true;
         StatusMessage = "Configurações salvas e margens aplicadas à montagem.";
         OnPropertyChanged(nameof(IsError));
+    }
+
+    public void RefreshCategories(
+        IReadOnlyList<ProductCategoryDefinition> categories)
+    {
+        _productCategories = categories.ToList();
+        var activeCategories = categories
+            .Select(category => category.Value)
+            .ToHashSet();
+        foreach (var margin in CategoryMargins
+                     .Where(margin => !activeCategories.Contains(margin.Category))
+                     .ToList())
+        {
+            CategoryMargins.Remove(margin);
+        }
+
+        foreach (var margin in CategoryMargins)
+        {
+            var category = _categories.FirstOrDefault(option =>
+                option.Value == margin.Category);
+            if (category is not null)
+            {
+                margin.SetCategoryName(category.Name);
+            }
+        }
+
+        var selectedCategoryValue = SelectedCategory?.Value;
+        SelectedCategory = selectedCategoryValue is null
+            ? null
+            : _categories.FirstOrDefault(category =>
+                category.Value == selectedCategoryValue);
+
+        OnPropertyChanged(nameof(AvailableCategories));
+        SelectedCategory ??= AvailableCategories.FirstOrDefault();
     }
 
     private void Fail(string message)

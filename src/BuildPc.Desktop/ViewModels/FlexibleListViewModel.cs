@@ -28,7 +28,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
         Func<FlexibleListViewModel, SavedQuote?>? saveQuote = null)
     {
         _catalog = catalog.ToList();
-        Categories = categories.ToList();
+        Categories = new ObservableCollection<CategoryOptionViewModel>(categories);
         _settings = settings ?? new BusinessSettings();
         _saveQuote = saveQuote;
         _selectedCategory = Categories[0];
@@ -47,7 +47,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
         SaveQuoteCommand = new RelayCommand(SaveQuote);
     }
 
-    public IReadOnlyList<CategoryOptionViewModel> Categories { get; }
+    public ObservableCollection<CategoryOptionViewModel> Categories { get; }
     public ObservableCollection<FlexibleListItemViewModel> Items { get; }
     public ComponentSlotViewModel ProductPicker { get; }
     public IReadOnlyList<int> QuantityOptions { get; } = Enumerable.Range(1, 100).ToList();
@@ -206,6 +206,36 @@ public sealed class FlexibleListViewModel : ViewModelBase
         ProductPicker.ReplaceOptions(ProductsForSelectedCategory());
         OnPropertyChanged(nameof(CategoryProductsText));
         OnPropertyChanged(nameof(CanAdd));
+    }
+
+    public void UpdateCategories(IEnumerable<CategoryOptionViewModel> categories)
+    {
+        var previousCategory = SelectedCategory.Value;
+        Categories.Clear();
+        foreach (var category in categories)
+        {
+            Categories.Add(category);
+        }
+
+        var selected = Categories.FirstOrDefault(category =>
+                           category.Value == previousCategory) ??
+                       Categories.First();
+        _selectedCategory = selected;
+        OnPropertyChanged(nameof(SelectedCategory));
+        ProductPicker.Selected = null;
+        ProductPicker.ReplaceOptions(ProductsForSelectedCategory());
+        OnPropertyChanged(nameof(CategoryProductsText));
+        OnPropertyChanged(nameof(CanAdd));
+
+        foreach (var item in Items)
+        {
+            var category = Categories.FirstOrDefault(option =>
+                option.Value == item.Component.Category);
+            if (category is not null)
+            {
+                item.SetCategoryName(category.Name);
+            }
+        }
     }
 
     private IEnumerable<PcComponent> ProductsForSelectedCategory() =>

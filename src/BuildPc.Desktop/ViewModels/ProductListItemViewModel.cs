@@ -18,13 +18,14 @@ public sealed class ProductListItemViewModel : ViewModelBase
         Func<ProductListItemViewModel, bool> toggleKeep,
         Action<ProductListItemViewModel> select,
         Action bulkSelectionChanged,
-        bool isAlternate)
+        bool isAlternate,
+        string? categoryName = null)
     {
         Component = component;
         Id = component.Id;
         Name = component.Name;
         Brand = component.Brand;
-        Category = CategoryName(component.Category);
+        Category = categoryName ?? CategoryName(component.Category);
         Icon = CategoryIcon(component.Category);
         Description = component.Description;
         ImageUrl = component.ImageUrl;
@@ -119,6 +120,21 @@ public sealed class ProductListItemViewModel : ViewModelBase
         Action bulkSelectionChanged,
         bool isAlternate) =>
         new(component, toggleKeep, select, bulkSelectionChanged, isAlternate);
+
+    public static ProductListItemViewModel From(
+        PcComponent component,
+        string categoryName,
+        Func<ProductListItemViewModel, bool> toggleKeep,
+        Action<ProductListItemViewModel> select,
+        Action bulkSelectionChanged,
+        bool isAlternate) =>
+        new(
+            component,
+            toggleKeep,
+            select,
+            bulkSelectionChanged,
+            isAlternate,
+            categoryName);
 
     public static ProductListItemViewModel From(
         PcComponent component,

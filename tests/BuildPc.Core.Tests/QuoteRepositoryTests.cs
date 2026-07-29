@@ -25,7 +25,18 @@ public sealed class QuoteRepositoryTests
                 CompanyName = "Empresa Teste",
                 CompanyPhone = "(11) 99999-9999",
                 AdditionalQuoteInfo = "Proposta válida por 7 dias.",
-                ThemeMode = AppThemeMode.Light
+                ThemeMode = AppThemeMode.Light,
+                ProductCategories =
+                [
+                    .. ProductCategoryDefinition.Defaults(),
+                    new ProductCategoryDefinition
+                    {
+                        Value = (ComponentCategory)1000,
+                        Name = "Acessórios",
+                        DisplayOrder = 12,
+                        IsSystem = false
+                    }
+                ]
             };
             repository.SaveSettings(settings);
 
@@ -34,6 +45,12 @@ public sealed class QuoteRepositoryTests
             Assert.Equal(18.5m, loadedSettings.MarginFor(ComponentCategory.GraphicsCard));
             Assert.Equal(25m, loadedSettings.MarginFor(ComponentCategory.Memory));
             Assert.Equal(AppThemeMode.Light, loadedSettings.ThemeMode);
+            Assert.Contains(
+                loadedSettings.EffectiveProductCategories(),
+                category =>
+                    category.Value == (ComponentCategory)1000 &&
+                    category.Name == "Acessórios" &&
+                    !category.IsSystem);
 
             var saved = repository.SaveQuote(
                 null,

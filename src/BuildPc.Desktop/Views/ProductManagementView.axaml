@@ -1,0 +1,364 @@
+<UserControl
+    x:Class="BuildPc.Desktop.Views.ProductManagementView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:BuildPc.Desktop.Controls">
+
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0"
+            BorderBrush="{DynamicResource Brush.Border}"
+            BorderThickness="0,0,0,1"
+            Padding="30,20">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Gerenciar Produtos"
+                     FontSize="22"
+                     FontWeight="Bold" />
+          <TextBlock Text="Adicione, edite e exclua produtos do Catálogo Local."
+                     Foreground="{DynamicResource Brush.TextBodyMuted}"
+                     FontSize="12" />
+        </StackPanel>
+        <Border Grid.Column="1"
+                Background="{DynamicResource Brush.AccentSurface}"
+                CornerRadius="8"
+                Padding="12,7"
+                VerticalAlignment="Center">
+          <TextBlock Text="{Binding CatalogCountText}"
+                     Foreground="{DynamicResource Brush.AccentBadge}"
+                     FontSize="11"
+                     FontWeight="SemiBold" />
+        </Border>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="600,*"
+          ColumnSpacing="20"
+          Margin="30,22">
+      <ScrollViewer Grid.Column="0"
+                    HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16">
+          <Border Classes="card">
+            <StackPanel Spacing="16">
+              <StackPanel Spacing="3">
+                <TextBlock Text="{Binding ProductFormTitle}"
+                           FontSize="16"
+                           FontWeight="Bold" />
+                <TextBlock Text="Os campos com * são obrigatórios."
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           FontSize="11" />
+              </StackPanel>
+
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <StackPanel Grid.Column="0" Spacing="6">
+                  <TextBlock Text="Categoria *"
+                             FontSize="11"
+                             Foreground="{DynamicResource Brush.TextLabel}" />
+                  <ComboBox ItemsSource="{Binding CategoryOptions}"
+                            SelectedItem="{Binding SelectedProductCategory, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Name}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6">
+                  <TextBlock Text="Marca *"
+                             FontSize="11"
+                             Foreground="{DynamicResource Brush.TextLabel}" />
+                  <TextBox Text="{Binding ProductBrand, Mode=TwoWay}"
+                           PlaceholderText="Ex.: AMD" />
+                </StackPanel>
+              </Grid>
+
+              <StackPanel Spacing="6">
+                <TextBlock Text="Nome do produto *"
+                           FontSize="11"
+                           Foreground="{DynamicResource Brush.TextLabel}" />
+                <TextBox Text="{Binding ProductName, Mode=TwoWay}"
+                         PlaceholderText="Ex.: Ryzen 7 7700" />
+              </StackPanel>
+
+              <StackPanel Spacing="6">
+                <TextBlock Text="Descrição *"
+                           FontSize="11"
+                           Foreground="{DynamicResource Brush.TextLabel}" />
+                <TextBox Text="{Binding ProductDescription, Mode=TwoWay}"
+                         PlaceholderText="Ex.: 8 núcleos • AM5 • 65 W"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         MinHeight="70" />
+              </StackPanel>
+
+              <StackPanel Spacing="6">
+                <TextBlock Text="Custo *"
+                           FontSize="11"
+                           Foreground="{DynamicResource Brush.TextLabel}" />
+                <TextBox Text="{Binding ProductPrice, Mode=TwoWay}"
+                         PlaceholderText="Ex.: 1299,90" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="input-group">
+            <Grid ColumnDefinitions="96,*" ColumnSpacing="14">
+              <Border Width="96"
+                      Height="96"
+                      CornerRadius="10"
+                      Background="White">
+                <Grid>
+                  <PathIcon Data="{StaticResource Icon.Products}"
+                            Width="30"
+                            Height="30"
+                            Foreground="{DynamicResource Brush.TextMuted}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                  <controls:RemoteImage Url="{Binding ProductImagePath}"
+                                        Stretch="Uniform"
+                                        Margin="4" />
+                </Grid>
+              </Border>
+              <StackPanel Grid.Column="1"
+                          Spacing="8"
+                          VerticalAlignment="Center">
+                <TextBlock Text="Foto do produto"
+                           FontSize="13"
+                           FontWeight="SemiBold" />
+                <TextBlock Text="{Binding ProductImagePath}"
+                           TextTrimming="CharacterEllipsis"
+                           MaxLines="1"
+                           FontSize="9"
+                           Foreground="{DynamicResource Brush.TextSecondary}" />
+                <WrapPanel Orientation="Horizontal">
+                  <Button Classes="secondary"
+                          Click="SelectProductImage_Click"
+                          Margin="0,0,8,0">
+                    <TextBlock Text="Adicionar / trocar foto" />
+                  </Button>
+                  <Button Classes="secondary"
+                          Command="{Binding RemoveProductImageCommand}"
+                          IsEnabled="{Binding HasProductImage}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <PathIcon Data="{StaticResource Icon.Clear}"
+                                Width="13"
+                                Height="13"
+                                Foreground="{DynamicResource Brush.Error}" />
+                      <TextBlock Text="Remover"
+                                 Foreground="{DynamicResource Brush.Error}" />
+                    </StackPanel>
+                  </Button>
+                </WrapPanel>
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <TextBlock Text="{Binding ProductFormMessage}"
+                     TextWrapping="Wrap"
+                     IsVisible="{Binding IsProductFormError}"
+                     Foreground="{DynamicResource Brush.Error}"
+                     FontSize="11" />
+          <TextBlock Text="{Binding ProductFormMessage}"
+                     TextWrapping="Wrap"
+                     IsVisible="{Binding IsProductFormSuccess}"
+                     Foreground="{DynamicResource Brush.Success}"
+                     FontSize="11" />
+
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+            <Button Classes="secondary"
+                    Command="{Binding CancelProductEditCommand}"
+                    HorizontalContentAlignment="Center">
+              <TextBlock Text="Cancelar" />
+            </Button>
+            <Button Grid.Column="1"
+                    Classes="primary"
+                    Command="{Binding SaveProductCommand}"
+                    HorizontalContentAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <PathIcon Data="{StaticResource Icon.Save}"
+                          Width="17"
+                          Height="17"
+                          Foreground="White" />
+                <TextBlock Text="{Binding ProductSaveButtonText}"
+                           Foreground="White" />
+              </StackPanel>
+            </Button>
+          </Grid>
+          <Border Height="56"
+                  IsHitTestVisible="False" />
+        </StackPanel>
+      </ScrollViewer>
+
+      <Border Grid.Column="1"
+              Classes="card"
+              Padding="0">
+        <Grid RowDefinitions="Auto,Auto,Auto,*">
+          <Border BorderBrush="{DynamicResource Brush.Border}"
+                  BorderThickness="0,0,0,1"
+                  Padding="16,14">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto"
+                  ColumnSpacing="8">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Produtos cadastrados"
+                           FontSize="15"
+                           FontWeight="Bold" />
+                <TextBlock Text="{Binding FilteredCatalogCountText}"
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           FontSize="10" />
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Classes="primary"
+                      Command="{Binding NewProductCommand}"
+                      Padding="9,6"
+                      MinWidth="34"
+                      ToolTip.Tip="Adicionar novo produto">
+                <PathIcon Data="{StaticResource Icon.Add}"
+                          Width="14"
+                          Height="14"
+                          Foreground="White" />
+              </Button>
+              <Button Grid.Column="2"
+                      Classes="secondary"
+                      Command="{Binding EditProductCommand}"
+                      IsEnabled="{Binding HasSelectedCatalogProduct}"
+                      Padding="9,6"
+                      MinWidth="34"
+                      ToolTip.Tip="Editar produto selecionado">
+                <PathIcon Data="{StaticResource Icon.Settings}"
+                          Width="14"
+                          Height="14"
+                          Foreground="{DynamicResource Brush.AccentLight}" />
+              </Button>
+              <Button Grid.Column="3"
+                      Classes="secondary"
+                      Command="{Binding RequestDeleteProductCommand}"
+                      IsEnabled="{Binding HasSelectedCatalogProduct}"
+                      Padding="9,6"
+                      MinWidth="34"
+                      ToolTip.Tip="Excluir produto selecionado">
+                <PathIcon Data="{StaticResource Icon.Clear}"
+                          Width="14"
+                          Height="14"
+                          Foreground="{DynamicResource Brush.Error}" />
+              </Button>
+            </Grid>
+          </Border>
+
+          <Border Grid.Row="1"
+                  BorderBrush="{DynamicResource Brush.Border}"
+                  BorderThickness="0,0,0,1"
+                  Padding="16,11">
+            <Grid ColumnDefinitions="170,*" ColumnSpacing="8">
+              <ComboBox ItemsSource="{Binding ProductCategoryFilters}"
+                        SelectedItem="{Binding SelectedCatalogCategoryFilter, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Name}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <TextBox Grid.Column="1"
+                       Text="{Binding CatalogSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="Filtrar produtos" />
+            </Grid>
+          </Border>
+
+          <Border Grid.Row="2"
+                  Classes="input-group"
+                  Margin="16,10,16,0"
+                  IsVisible="{Binding IsDeleteConfirmationVisible}">
+            <StackPanel Spacing="9">
+              <TextBlock Text="Excluir o produto selecionado definitivamente?"
+                         TextWrapping="Wrap"
+                         Foreground="{DynamicResource Brush.Error}"
+                         FontWeight="SemiBold" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <Button Classes="secondary"
+                        Command="{Binding CancelDeleteProductCommand}">
+                  <TextBlock Text="Não" />
+                </Button>
+                <Button Grid.Column="1"
+                        Classes="secondary"
+                        Command="{Binding ConfirmDeleteProductCommand}">
+                  <TextBlock Text="Sim, excluir"
+                             Foreground="{DynamicResource Brush.Error}" />
+                </Button>
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <ScrollViewer Grid.Row="3"
+                        Padding="16,12"
+                        HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding FilteredProducts}">
+              <ItemsControl.Styles>
+                <Style Selector="ContentPresenter">
+                  <Setter Property="HorizontalAlignment" Value="Stretch" />
+                </Style>
+              </ItemsControl.Styles>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="catalog-item"
+                          Command="{Binding SelectCommand}"
+                          HorizontalContentAlignment="Stretch"
+                          Margin="0,0,0,7"
+                          ToolTip.Tip="Selecione para editar ou excluir">
+                    <Border Classes="catalog-row"
+                            Classes.alternate="{Binding IsAlternate}"
+                            Classes.selected="{Binding IsSelected}">
+                      <Grid ColumnDefinitions="Auto,*,105"
+                            ColumnSpacing="11">
+                        <Border Width="44"
+                                Height="44"
+                                CornerRadius="7"
+                                Background="White"
+                                VerticalAlignment="Center">
+                          <Grid>
+                            <PathIcon Data="{Binding Icon, Converter={StaticResource IconResourceConverter}}"
+                                      Width="19"
+                                      Height="19"
+                                      Foreground="{DynamicResource Brush.TextMuted}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                            <controls:RemoteImage Url="{Binding ImageUrl}"
+                                                  Stretch="Uniform"
+                                                  Margin="3" />
+                          </Grid>
+                        </Border>
+                        <StackPanel Grid.Column="1"
+                                    Spacing="3"
+                                    VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Name}"
+                                     FontSize="11"
+                                     FontWeight="SemiBold"
+                                     Foreground="{DynamicResource Brush.AccentPale}"
+                                     TextTrimming="CharacterEllipsis"
+                                     MaxLines="1" />
+                          <TextBlock FontSize="9"
+                                     Foreground="{DynamicResource Brush.TextSecondary}">
+                            <TextBlock.Inlines>
+                              <Run Text="{Binding Category}" />
+                              <Run Text=" • " />
+                              <Run Text="{Binding Brand}" />
+                            </TextBlock.Inlines>
+                          </TextBlock>
+                        </StackPanel>
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding Price}"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.Warning}"
+                                   TextAlignment="Right"
+                                   VerticalAlignment="Center" />
+                      </Grid>
+                    </Border>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

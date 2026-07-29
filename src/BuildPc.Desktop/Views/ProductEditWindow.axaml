@@ -70,13 +70,55 @@
                    MinHeight="88" />
         </StackPanel>
 
-        <StackPanel Spacing="6">
-          <TextBlock Text="Custo *"
-                     FontSize="11"
-                     Foreground="{DynamicResource Brush.TextLabel}" />
-          <TextBox Text="{Binding ProductPrice, Mode=TwoWay}"
-                   PlaceholderText="Ex.: 1299,90" />
-        </StackPanel>
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+          <StackPanel Grid.Column="0" Spacing="6">
+            <TextBlock Text="Valor de venda"
+                       FontSize="11"
+                       Foreground="{DynamicResource Brush.TextLabel}" />
+            <TextBox Text="{Binding ProductSalePrice}"
+                     IsReadOnly="True"
+                     TextAlignment="Right"
+                     FontWeight="SemiBold" />
+          </StackPanel>
+
+          <StackPanel Grid.Column="1" Spacing="6">
+            <TextBlock Text="Custo *"
+                       FontSize="11"
+                       Foreground="{DynamicResource Brush.TextLabel}" />
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <Button x:Name="productCostEyeButton"
+                      Classes="secondary"
+                      MinWidth="44"
+                      Padding="10"
+                      ToolTip.Tip="Mantenha pressionado para revelar o custo">
+                <PathIcon Data="{StaticResource Icon.Eye}"
+                          Width="17"
+                          Height="17"
+                          Foreground="{DynamicResource Brush.AccentLight}" />
+              </Button>
+              <TextBox Grid.Column="1"
+                       Text="{Binding ProductPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PasswordChar="*"
+                       IsVisible="{Binding IsProductEditCostHidden}"
+                       PlaceholderText="********"
+                       Padding="30,8,12,8"
+                       TextAlignment="Right" />
+              <TextBox Grid.Column="1"
+                       Text="{Binding ProductPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       IsVisible="{Binding IsProductEditCostVisible}"
+                       Padding="30,8,12,8"
+                       TextAlignment="Right" />
+              <TextBlock Grid.Column="1"
+                         Text="R$"
+                         Margin="10,0,0,0"
+                         HorizontalAlignment="Left"
+                         VerticalAlignment="Center"
+                         IsHitTestVisible="False"
+                         FontSize="10"
+                         Foreground="{DynamicResource Brush.TextSecondary}" />
+            </Grid>
+          </StackPanel>
+        </Grid>
 
         <Border Classes="input-group">
           <Grid ColumnDefinitions="96,*" ColumnSpacing="14">

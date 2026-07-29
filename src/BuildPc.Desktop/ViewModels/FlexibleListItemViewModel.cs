@@ -11,6 +11,7 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
     private int _quantity;
     private bool _isAlternate;
     private string _name;
+    private string _categoryName;
     private string _description;
     private string _priceText;
     private decimal _unitPriceValue;
@@ -28,7 +29,7 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
         Action changed)
     {
         Component = component;
-        CategoryName = categoryName;
+        _categoryName = categoryName;
         _quantity = Math.Clamp(quantity, 1, 100);
         _name = component.Name;
         _description = component.Description;
@@ -45,7 +46,11 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
     }
 
     public PcComponent Component { get; }
-    public string CategoryName { get; }
+    public string CategoryName
+    {
+        get => _categoryName;
+        private set => SetProperty(ref _categoryName, value);
+    }
     public string Brand => Component.Brand;
     public string? ImageUrl => Component.ImageUrl;
     public bool HasImage => !string.IsNullOrWhiteSpace(ImageUrl);
@@ -227,6 +232,9 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
     }
 
     public void SetCostVisible(bool visible) => IsCostVisible = visible;
+
+    public void SetCategoryName(string name) =>
+        CategoryName = name;
 
     private void RecalculateSellingPrice()
     {

@@ -6,6 +6,7 @@ public sealed record BusinessSettings
 
     public decimal GlobalMarginPercent { get; init; } = MinimumMarginPercent;
     public Dictionary<ComponentCategory, decimal> CategoryMargins { get; init; } = [];
+    public List<ProductCategoryDefinition>? ProductCategories { get; init; }
     public string CompanyName { get; init; } = string.Empty;
     public string CompanyDocument { get; init; } = string.Empty;
     public string CompanyPhone { get; init; } = string.Empty;
@@ -22,5 +23,27 @@ public sealed record BusinessSettings
             ? margin
             : GlobalMarginPercent;
         return Math.Max(MinimumMarginPercent, configuredMargin);
+    }
+
+    public IReadOnlyList<ProductCategoryDefinition> EffectiveProductCategories()
+    {
+        if (ProductCategories is null or { Count: 0 })
+        {
+            return ProductCategoryDefinition.Defaults();
+        }
+
+        var categories = ProductCategories
+            .Where(category => !string.IsNullOrWhiteSpace(category.Name))
+            .GroupBy(category => category.Value)
+            .Select(group => group.Last() with
+            {
+                Name = group.Last().Name.Trim()
+            })
+            .OrderBy(category => category.DisplayOrder)
+            .ThenBy(category => category.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+        return categories.Count == 0
+            ? ProductCategoryDefinition.Defaults()
+            : categories;
     }
 }

@@ -1,0 +1,235 @@
+<UserControl
+    x:Class="BuildPc.Desktop.Views.CategoryManagementView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0"
+            BorderBrush="{DynamicResource Brush.Border}"
+            BorderThickness="0,0,0,1"
+            Padding="30,20">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Gerenciar Categorias"
+                     FontSize="22"
+                     FontWeight="Bold" />
+          <TextBlock Text="Adicione categorias e altere os nomes usados no catálogo e na montagem."
+                     Foreground="{DynamicResource Brush.TextBodyMuted}"
+                     FontSize="12" />
+        </StackPanel>
+        <Border Grid.Column="1"
+                Background="{DynamicResource Brush.AccentSurface}"
+                CornerRadius="8"
+                Padding="12,7"
+                VerticalAlignment="Center">
+          <TextBlock Text="{Binding CategoryCountText}"
+                     Foreground="{DynamicResource Brush.AccentBadge}"
+                     FontSize="11"
+                     FontWeight="SemiBold" />
+        </Border>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="*,420"
+          ColumnSpacing="20"
+          Margin="30,22">
+      <Border Classes="card"
+              Padding="0">
+        <Grid RowDefinitions="Auto,*">
+          <Border BorderBrush="{DynamicResource Brush.Border}"
+                  BorderThickness="0,0,0,1"
+                  Padding="18,14">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Categorias cadastradas"
+                           FontSize="15"
+                           FontWeight="Bold" />
+                <TextBlock Text="Selecione uma categoria para alterar seu nome."
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           FontSize="10" />
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Classes="primary"
+                      Command="{Binding NewCategoryCommand}"
+                      Padding="12,7"
+                      MinHeight="34">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <PathIcon Data="{StaticResource Icon.Add}"
+                            Width="14"
+                            Height="14"
+                            Foreground="White" />
+                  <TextBlock Text="Nova categoria"
+                             Foreground="White"
+                             FontSize="11" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </Border>
+
+          <ListBox Grid.Row="1"
+                   ItemsSource="{Binding Categories}"
+                   SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                   Background="Transparent"
+                   BorderThickness="0"
+                   Padding="12">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="0,0,0,7" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+              </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Border Classes="component-row"
+                        Classes.alternate="{Binding IsAlternate}">
+                  <Grid ColumnDefinitions="Auto,*,Auto"
+                        ColumnSpacing="12">
+                    <Border Width="42"
+                            Height="42"
+                            CornerRadius="9"
+                            Background="{DynamicResource Brush.AccentSurface}"
+                            VerticalAlignment="Center">
+                      <PathIcon Data="{Binding Icon, Converter={StaticResource IconResourceConverter}}"
+                                Width="20"
+                                Height="20"
+                                Foreground="{DynamicResource Brush.AccentLight}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1"
+                                Spacing="3"
+                                VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}"
+                                 FontSize="12"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource Brush.AccentPale}" />
+                      <TextBlock Text="{Binding TypeText}"
+                                 FontSize="9"
+                                 Foreground="{DynamicResource Brush.TextSecondary}" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding ProductCountText}"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource Brush.Warning}"
+                               VerticalAlignment="Center"
+                               TextAlignment="Right" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Border>
+
+      <ScrollViewer Grid.Column="1"
+                    HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="14">
+          <Border Classes="card">
+            <StackPanel Spacing="14">
+              <StackPanel Spacing="3">
+                <TextBlock Text="{Binding EditorTitle}"
+                           FontSize="16"
+                           FontWeight="Bold" />
+                <TextBlock Text="O nome será usado nos filtros, produtos, montagem e margens."
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           FontSize="10" />
+              </StackPanel>
+
+              <StackPanel Spacing="6">
+                <TextBlock Text="Nome da categoria *"
+                           FontSize="11"
+                           Foreground="{DynamicResource Brush.TextLabel}" />
+                <TextBox Text="{Binding CategoryName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         PlaceholderText="Ex.: Acessórios" />
+              </StackPanel>
+
+              <Border Background="{DynamicResource Brush.InfoPanelBackground}"
+                      BorderBrush="{DynamicResource Brush.InfoBorder}"
+                      BorderThickness="1"
+                      CornerRadius="8"
+                      Padding="11"
+                      IsVisible="{Binding IsEditingCategory}">
+                <TextBlock Text="Categorias do sistema podem ser renomeadas. Somente categorias personalizadas e sem produtos podem ser excluídas."
+                           TextWrapping="Wrap"
+                           FontSize="9"
+                           Foreground="{DynamicResource Brush.TextBody}" />
+              </Border>
+
+              <TextBlock Text="{Binding StatusMessage}"
+                         TextWrapping="Wrap"
+                         IsVisible="{Binding IsError}"
+                         Foreground="{DynamicResource Brush.Error}"
+                         FontSize="10" />
+              <TextBlock Text="{Binding StatusMessage}"
+                         TextWrapping="Wrap"
+                         IsVisible="{Binding IsSuccess}"
+                         Foreground="{DynamicResource Brush.Success}"
+                         FontSize="10" />
+
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="9">
+                <Button Classes="secondary"
+                        Command="{Binding CancelEditCommand}"
+                        HorizontalContentAlignment="Center">
+                  <TextBlock Text="Cancelar" />
+                </Button>
+                <Button Grid.Column="1"
+                        Classes="primary"
+                        Command="{Binding SaveCategoryCommand}"
+                        HorizontalContentAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <PathIcon Data="{StaticResource Icon.Save}"
+                              Width="15"
+                              Height="15"
+                              Foreground="White" />
+                    <TextBlock Text="{Binding SaveButtonText}"
+                               Foreground="White" />
+                  </StackPanel>
+                </Button>
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Button Classes="secondary"
+                  Command="{Binding RequestDeleteCategoryCommand}"
+                  IsEnabled="{Binding CanRequestDeleteCategory}"
+                  HorizontalContentAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <PathIcon Data="{StaticResource Icon.Clear}"
+                        Width="15"
+                        Height="15"
+                        Foreground="{DynamicResource Brush.Error}" />
+              <TextBlock Text="Excluir categoria selecionada"
+                         Foreground="{DynamicResource Brush.Error}" />
+            </StackPanel>
+          </Button>
+
+          <Border Classes="input-group"
+                  IsVisible="{Binding IsDeleteConfirmationVisible}">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Excluir esta categoria definitivamente?"
+                         TextWrapping="Wrap"
+                         FontWeight="SemiBold"
+                         Foreground="{DynamicResource Brush.Error}" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <Button Classes="secondary"
+                        Command="{Binding CancelDeleteCategoryCommand}">
+                  <TextBlock Text="Não" />
+                </Button>
+                <Button Grid.Column="1"
+                        Classes="secondary"
+                        Command="{Binding ConfirmDeleteCategoryCommand}">
+                  <TextBlock Text="Sim, excluir"
+                             Foreground="{DynamicResource Brush.Error}" />
+                </Button>
+              </Grid>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</UserControl>

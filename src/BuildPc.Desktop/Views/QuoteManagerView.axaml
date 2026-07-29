@@ -22,6 +22,7 @@
             <!-- A lista só crescia e não tinha filtro nenhum. -->
             <Grid Width="260">
               <TextBox Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       AutomationProperties.Name="Buscar orçamento por número, cliente, telefone ou produto"
                        PlaceholderText="Número, cliente, telefone ou produto"
                        Padding="12,8,34,8" />
               <Button Classes="list-header"
@@ -32,6 +33,7 @@
                       Margin="0,0,6,0"
                       MinWidth="24"
                       Padding="4"
+                      AutomationProperties.Name="Limpar a busca"
                       ToolTip.Tip="Limpar a busca">
                 <PathIcon Data="{StaticResource Icon.Clear}" Width="11" Height="11"
                           Foreground="{DynamicResource Brush.TextSecondary}" />
@@ -39,6 +41,7 @@
             </Grid>
             <ComboBox ItemsSource="{Binding Periods}"
                       SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}"
+                      AutomationProperties.Name="Período dos orçamentos exibidos"
                       MinWidth="160">
               <ComboBox.ItemTemplate>
                 <DataTemplate>
@@ -98,6 +101,7 @@
                   IsEnabled="{Binding $parent[UserControl].DataContext.HasSelection}"
                   MinHeight="36"
                   Padding="12,8"
+                  AutomationProperties.Name="Abrir este orçamento na Montagem para consultar ou ajustar"
                   ToolTip.Tip="Abrir este orçamento na Montagem para consultar ou ajustar">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <PathIcon Data="{StaticResource Icon.Assembly}" Width="16" Height="16"
@@ -124,6 +128,7 @@
                   MinHeight="36"
                   MinWidth="36"
                   Padding="9,8"
+                  AutomationProperties.Name="Duplicar: abre uma cópia na Montagem para gravar como novo"
                   ToolTip.Tip="Duplicar: abre uma cópia na Montagem para gravar como novo">
             <PathIcon Data="{StaticResource Icon.Copy}" Width="15" Height="15"
                       Foreground="{DynamicResource Brush.AccentLight}" />
@@ -135,6 +140,7 @@
                   MinHeight="36"
                   MinWidth="36"
                   Padding="9,8"
+                  AutomationProperties.Name="Excluir o orçamento selecionado"
                   ToolTip.Tip="Excluir o orçamento selecionado">
             <PathIcon Data="{StaticResource Icon.Clear}" Width="15" Height="15"
                       Foreground="{DynamicResource Brush.Error}" />
@@ -193,6 +199,7 @@
             </StackPanel>
           </Grid>
           <ListBox Grid.Row="1" ItemsSource="{Binding Quotes}"
+                   AutomationProperties.Name="Orçamentos gravados"
                    SelectedItem="{Binding SelectedQuote, Mode=TwoWay}"
                    Padding="0,0,22,180">
             <ListBox.ItemTemplate>

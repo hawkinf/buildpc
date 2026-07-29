@@ -230,6 +230,7 @@
               <StackPanel Spacing="8">
                 <Grid ColumnDefinitions="240,*,Auto,Auto,Auto" ColumnSpacing="8">
                   <ComboBox ItemsSource="{Binding ProductCategoryFilters}"
+                            AutomationProperties.Name="Filtrar produtos por categoria"
                             SelectedItem="{Binding SelectedCatalogCategoryFilter, Mode=TwoWay}">
                     <ComboBox.ItemTemplate>
                       <DataTemplate>
@@ -239,6 +240,7 @@
                   </ComboBox>
                   <TextBox Grid.Column="1"
                            Text="{Binding CatalogSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                           AutomationProperties.Name="Filtrar produtos por palavras-chave"
                            PlaceholderText="Palavras-chave: nvme 256 adata" />
                   <Border Grid.Column="2"
                           Background="{DynamicResource Brush.PanelBackground}"
@@ -248,12 +250,14 @@
                       <Button Classes="price-mode"
                               Classes.active="{Binding IsCatalogCostDisplayActive}"
                               Command="{Binding ShowCatalogCostCommand}"
+                              AutomationProperties.Name="Mostrar valores de custo"
                               ToolTip.Tip="Mostrar valores de custo">
                         <TextBlock Text="Custo" />
                       </Button>
                       <Button Classes="price-mode"
                               Classes.active="{Binding IsCatalogSaleDisplayActive}"
                               Command="{Binding ShowCatalogSaleCommand}"
+                              AutomationProperties.Name="Mostrar valores de venda"
                               ToolTip.Tip="Mostrar valores de venda">
                         <TextBlock Text="Venda" />
                       </Button>
@@ -268,6 +272,7 @@
                           Height="44"
                           MinHeight="44"
                           Padding="10"
+                          AutomationProperties.Name="Exportar o preço selecionado para PDF"
                           ToolTip.Tip="Exportar o preço selecionado para PDF">
                     <PathIcon Data="{StaticResource Icon.Pdf}"
                               Width="17"
@@ -299,11 +304,13 @@
                 <Grid ColumnDefinitions="24,Auto,*,115" ColumnSpacing="8">
                   <CheckBox IsChecked="{Binding AreAllFilteredProductsSelected, Mode=TwoWay}"
                             VerticalAlignment="Center"
+                            AutomationProperties.Name="Marcar ou desmarcar todos os produtos visíveis"
                             ToolTip.Tip="Marcar ou desmarcar todos os produtos visíveis" />
                   <Button Grid.Column="1" Classes="secondary"
                           Command="{Binding RequestBulkDeleteCommand}"
                           IsEnabled="{Binding HasBulkSelection}"
                           Padding="7" MinWidth="32"
+                          AutomationProperties.Name="Apagar produtos marcados"
                           ToolTip.Tip="Apagar produtos marcados">
                     <PathIcon Data="{StaticResource Icon.Clear}" Width="14" Height="14"
                               Foreground="{DynamicResource Brush.Error}" />
@@ -372,9 +379,11 @@
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
                     <CheckBox IsChecked="{Binding IsBulkSelected, Mode=TwoWay}"
                               VerticalAlignment="Center"
+                              AutomationProperties.Name="Marcar para alteração em massa"
                               ToolTip.Tip="Marcar para alteração em massa" />
                     <Button Grid.Column="1" Classes="catalog-item"
                             Click="CatalogProduct_Click"
+                            AutomationProperties.Name="Clique para editar o produto"
                             ToolTip.Tip="Clique para editar o produto">
                       <Border x:Name="catalogProductRow"
                               Classes="catalog-row"

@@ -199,6 +199,7 @@
                                  TextAlignment="Right" />
                         <Button Grid.Column="2" Classes="secondary"
                                 Command="{Binding RemoveCommand}" Padding="7"
+                                AutomationProperties.Name="Usar novamente a margem global"
                                 ToolTip.Tip="Usar novamente a margem global">
                           <PathIcon Data="{StaticResource Icon.Clear}" Width="14" Height="14"
                                     Foreground="{DynamicResource Brush.Error}" />

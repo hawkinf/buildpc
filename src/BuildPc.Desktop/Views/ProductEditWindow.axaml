@@ -82,6 +82,7 @@
                       Height="28"
                       MinHeight="28"
                       Padding="6"
+                      AutomationProperties.Name="Adicionar ou trocar a foto"
                       ToolTip.Tip="Adicionar ou trocar a foto">
                 <PathIcon Data="{StaticResource Icon.Add}"
                           Width="13"
@@ -96,6 +97,7 @@
                       Height="28"
                       MinHeight="28"
                       Padding="6"
+                      AutomationProperties.Name="Remover a foto"
                       ToolTip.Tip="Remover a foto">
                 <PathIcon Data="{StaticResource Icon.Clear}"
                           Width="12"
@@ -196,6 +198,7 @@
                         Height="28"
                         MinHeight="28"
                         Padding="5"
+                        AutomationProperties.Name="Mantenha pressionado para revelar custo e lucro"
                         ToolTip.Tip="Mantenha pressionado para revelar custo e lucro">
                   <PathIcon Data="{StaticResource Icon.Eye}"
                             Width="13"

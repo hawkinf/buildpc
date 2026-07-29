@@ -46,6 +46,7 @@
                          Foreground="{DynamicResource Brush.TextLabel}" />
               <ComboBox ItemsSource="{Binding Categories}"
                         SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                        AutomationProperties.Name="Filtrar por categoria"
                         MinHeight="38"
                         Height="38"
                         Padding="10,5">
@@ -62,6 +63,7 @@
                          FontSize="9"
                          Foreground="{DynamicResource Brush.TextLabel}" />
               <TextBox Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       AutomationProperties.Name="Filtrar produtos por palavras-chave"
                        PlaceholderText="Palavras-chave: nvme 256 adata"
                        MinHeight="38"
                        Height="38"
@@ -135,6 +137,7 @@
 
         <ListBox Grid.Row="2"
                  ItemsSource="{Binding Items}"
+                 AutomationProperties.Name="Produtos e preços"
                  Background="Transparent"
                  BorderThickness="0"
                  Padding="12,8,30,180"

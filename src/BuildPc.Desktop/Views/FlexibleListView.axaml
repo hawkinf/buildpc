@@ -48,6 +48,7 @@
           <Button x:Name="sensitiveTotalsButton"
                   Classes="secondary"
                   Padding="10"
+                  AutomationProperties.Name="Mantenha pressionado para ver custo e lucro"
                   ToolTip.Tip="Mantenha pressionado para ver custo e lucro">
             <PathIcon Data="{StaticResource Icon.Eye}" Width="18" Height="18"
                       Foreground="{DynamicResource Brush.AccentLight}" />
@@ -56,6 +57,7 @@
           <Button Classes="secondary"
                   Command="{Binding SaveQuoteCommand}"
                   IsEnabled="{Binding HasItems}"
+                  AutomationProperties.Name="Gravar orçamento (Ctrl+S)"
                   ToolTip.Tip="Gravar orçamento (Ctrl+S)">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <PathIcon Data="{StaticResource Icon.Save}" Width="16" Height="16" />
@@ -66,6 +68,7 @@
           <Button Classes="primary"
                   Click="ExportPdf_Click"
                   IsEnabled="{Binding CanExport}"
+                  AutomationProperties.Name="Exportar PDF (Ctrl+P)"
                   ToolTip.Tip="Exportar PDF (Ctrl+P)">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <PathIcon Data="{StaticResource Icon.Pdf}" Width="16" Height="16"
@@ -77,6 +80,7 @@
           <Button Classes="secondary"
                   Command="{Binding RequestClearCommand}"
                   IsEnabled="{Binding HasItems}"
+                  AutomationProperties.Name="Limpar montagem (Ctrl+L)"
                   ToolTip.Tip="Limpar montagem (Ctrl+L)">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <PathIcon Data="{StaticResource Icon.Clear}" Width="16" Height="16"
@@ -100,6 +104,7 @@
                 <TextBlock Text="1. Categoria" FontSize="11"
                            Foreground="{DynamicResource Brush.TextLabel}" />
                 <ComboBox ItemsSource="{Binding Categories}"
+                          AutomationProperties.Name="Categoria do produto a adicionar"
                           SelectedItem="{Binding SelectedCategory, Mode=TwoWay}">
                   <ComboBox.ItemTemplate>
                     <DataTemplate>
@@ -283,6 +288,7 @@
               <TextBlock Text="Nome do cliente *" FontSize="10"
                          Foreground="{DynamicResource Brush.TextLabel}" />
               <TextBox Text="{Binding ClientName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       AutomationProperties.Name="Nome do cliente, obrigatório"
                        PlaceholderText="Nome para o orçamento" />
             </StackPanel>
             <StackPanel Grid.Column="1" Spacing="5">
@@ -290,12 +296,14 @@
                          Foreground="{DynamicResource Brush.TextLabel}" />
               <TextBox Text="{Binding ClientPhone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                        MaxLength="15"
+                       AutomationProperties.Name="Telefone do cliente, obrigatório"
                        PlaceholderText="(00) 00000-0000" />
             </StackPanel>
             <StackPanel Grid.Column="2" Spacing="5">
               <TextBlock Text="Observações deste orçamento" FontSize="10"
                          Foreground="{DynamicResource Brush.TextLabel}" />
               <TextBox Text="{Binding Notes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       AutomationProperties.Name="Observações deste orçamento"
                        PlaceholderText="Informações específicas para este cliente" />
             </StackPanel>
           </Grid>
@@ -311,6 +319,7 @@
                 <TextBox Text="{Binding DiscountText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                          Padding="30,8,12,8"
                          TextAlignment="Right"
+                         AutomationProperties.Name="Desconto em reais"
                          PlaceholderText="0,00" />
                 <TextBlock Text="R$" Margin="12,0,0,0"
                            HorizontalAlignment="Left" VerticalAlignment="Center"
@@ -328,6 +337,7 @@
               <TextBlock Text="Validade (dias)" FontSize="10"
                          Foreground="{DynamicResource Brush.TextLabel}" />
               <NumericUpDown Value="{Binding ValidityDays, Mode=TwoWay}"
+                             AutomationProperties.Name="Validade da proposta em dias, zero para sem prazo"
                              Minimum="0" Maximum="365"
                              Increment="1"
                              FormatString="0"
@@ -341,6 +351,7 @@
               <TextBlock Text="Condições de pagamento" FontSize="10"
                          Foreground="{DynamicResource Brush.TextLabel}" />
               <TextBox Text="{Binding PaymentTerms, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       AutomationProperties.Name="Condições de pagamento"
                        PlaceholderText="Ex.: 3x sem juros no cartão" />
             </StackPanel>
 
@@ -348,6 +359,7 @@
               <TextBlock Text="Prazo de entrega" FontSize="10"
                          Foreground="{DynamicResource Brush.TextLabel}" />
               <TextBox Text="{Binding DeliveryTerms, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       AutomationProperties.Name="Prazo de entrega"
                        PlaceholderText="Ex.: 5 dias úteis" />
             </StackPanel>
           </Grid>
@@ -452,6 +464,7 @@
                           Command="{Binding RemoveCommand}"
                           Padding="8" MinWidth="36"
                           VerticalAlignment="Center"
+                          AutomationProperties.Name="Remover produto"
                           ToolTip.Tip="Remover produto">
                     <PathIcon Data="{StaticResource Icon.Clear}" Width="15" Height="15"
                               Foreground="{DynamicResource Brush.Error}" />

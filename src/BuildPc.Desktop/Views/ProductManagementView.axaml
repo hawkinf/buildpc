@@ -211,6 +211,7 @@
                       Command="{Binding NewProductCommand}"
                       Padding="9,6"
                       MinWidth="34"
+                      AutomationProperties.Name="Adicionar novo produto"
                       ToolTip.Tip="Adicionar novo produto">
                 <PathIcon Data="{StaticResource Icon.Add}"
                           Width="14"
@@ -223,6 +224,7 @@
                       IsEnabled="{Binding HasSelectedCatalogProduct}"
                       Padding="9,6"
                       MinWidth="34"
+                      AutomationProperties.Name="Editar produto selecionado"
                       ToolTip.Tip="Editar produto selecionado">
                 <PathIcon Data="{StaticResource Icon.Settings}"
                           Width="14"
@@ -235,6 +237,7 @@
                       IsEnabled="{Binding HasSelectedCatalogProduct}"
                       Padding="9,6"
                       MinWidth="34"
+                      AutomationProperties.Name="Excluir produto selecionado"
                       ToolTip.Tip="Excluir produto selecionado">
                 <PathIcon Data="{StaticResource Icon.Clear}"
                           Width="14"
@@ -316,6 +319,7 @@
                 <Button Classes="catalog-item"
                         Command="{Binding SelectCommand}"
                         HorizontalContentAlignment="Stretch"
+                        AutomationProperties.Name="Selecione para editar ou excluir"
                         ToolTip.Tip="Selecione para editar ou excluir">
                   <Border x:Name="managedProductRow"
                           Classes="catalog-row"

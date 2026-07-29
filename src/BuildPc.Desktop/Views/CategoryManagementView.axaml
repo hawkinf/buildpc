@@ -69,6 +69,7 @@
 
           <ListBox Grid.Row="1"
                    ItemsSource="{Binding Categories}"
+                   AutomationProperties.Name="Categorias do catálogo"
                    SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
                    Background="Transparent"
                    BorderThickness="0"
@@ -145,6 +146,7 @@
                            FontSize="11"
                            Foreground="{DynamicResource Brush.TextLabel}" />
                 <TextBox Text="{Binding CategoryName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         AutomationProperties.Name="Nome da categoria"
                          PlaceholderText="Ex.: Acessórios" />
               </StackPanel>
 

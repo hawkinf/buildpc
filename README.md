@@ -34,7 +34,8 @@ implantação e o checklist obrigatório para manter o projeto consistente.
 - PDF da tabela de custo separado por categorias, preservando filtros e a
   ordenação escolhida por descrição ou custo;
 - rodapé global com estado ONLINE/OFFLINE da API e barras de rolagem verticais
-  reforçadas em todas as telas;
+  reforçadas em todas as telas, com área segura para o último conteúdo não
+  ficar cortado;
 - arquivo `buildpc.config.json` gerado ao lado do executável com tema, margens,
   empresa, categorias, links de importação e acesso ao servidor;
 - chave da API protegida pelo cofre criptográfico do Windows e nunca gravada

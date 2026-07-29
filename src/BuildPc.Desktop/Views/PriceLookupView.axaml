@@ -137,7 +137,7 @@
                  ItemsSource="{Binding Items}"
                  Background="Transparent"
                  BorderThickness="0"
-                 Padding="12,8"
+                 Padding="12,8,30,180"
                  SelectionMode="Single">
           <ListBox.ItemsPanel>
             <ItemsPanelTemplate>

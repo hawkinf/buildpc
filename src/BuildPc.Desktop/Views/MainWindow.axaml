@@ -9,7 +9,7 @@
     Width="1440"
     Height="900"
     MinWidth="1280"
-    MinHeight="720"
+    MinHeight="640"
     WindowStartupLocation="CenterScreen">
 
   <Grid ColumnDefinitions="230,*,320" RowDefinitions="*,38">
@@ -699,7 +699,8 @@
 
             <ScrollViewer Grid.Row="2" Padding="18,12" HorizontalScrollBarVisibility="Disabled">
               <ItemsControl ItemsSource="{Binding FilteredProducts}"
-                            HorizontalAlignment="Stretch">
+                            HorizontalAlignment="Stretch"
+                            Margin="0,0,0,180">
                 <ItemsControl.Styles>
                   <Style Selector="ContentPresenter">
                     <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -908,6 +909,8 @@
 
           <TextBlock Text="Os preços e a disponibilidade pertencem à loja de origem e podem mudar a qualquer momento."
                      Foreground="{DynamicResource Brush.TextDim}" FontSize="10" TextWrapping="Wrap" />
+          <Border Height="180"
+                  IsHitTestVisible="False" />
         </StackPanel>
       </ScrollViewer>
     </Grid>

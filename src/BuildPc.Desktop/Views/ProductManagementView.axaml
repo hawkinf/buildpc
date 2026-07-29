@@ -37,7 +37,8 @@
           Margin="30,22">
       <ScrollViewer Grid.Column="0"
                     HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="16">
+        <StackPanel Spacing="16"
+                    Margin="0,0,24,0">
           <Border Classes="card">
             <StackPanel Spacing="16">
               <StackPanel Spacing="3">
@@ -184,7 +185,7 @@
               </StackPanel>
             </Button>
           </Grid>
-          <Border Height="56"
+          <Border Height="180"
                   IsHitTestVisible="False" />
         </StackPanel>
       </ScrollViewer>
@@ -290,7 +291,8 @@
           <ScrollViewer Grid.Row="3"
                         Padding="16,12"
                         HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl ItemsSource="{Binding FilteredProducts}">
+            <ItemsControl ItemsSource="{Binding FilteredProducts}"
+                          Margin="0,0,0,180">
               <ItemsControl.Styles>
                 <Style Selector="ContentPresenter">
                   <Setter Property="HorizontalAlignment" Value="Stretch" />

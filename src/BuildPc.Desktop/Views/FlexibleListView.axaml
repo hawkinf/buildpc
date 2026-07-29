@@ -376,14 +376,14 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Border Height="84" IsHitTestVisible="False"
+        <Border Height="180" IsHitTestVisible="False"
                 IsVisible="{Binding HasItems}" />
       </StackPanel>
     </ScrollViewer>
 
     <Border Grid.Row="2" Background="{DynamicResource Brush.SidebarBackground}"
             BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,0,0"
-            Padding="30,13,46,13">
+            Padding="30,13,46,31">
       <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="12">
         <StackPanel VerticalAlignment="Center">
           <TextBlock Text="{Binding SaveStateText}" FontSize="10"

@@ -24,7 +24,8 @@
           <TextBlock Text="ORÇAMENTOS GRAVADOS" FontSize="10" FontWeight="Bold"
                      Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,0,12" />
           <ListBox Grid.Row="1" ItemsSource="{Binding Quotes}"
-                   SelectedItem="{Binding SelectedQuote, Mode=TwoWay}">
+                   SelectedItem="{Binding SelectedQuote, Mode=TwoWay}"
+                   Padding="0,0,22,180">
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <Border Classes="catalog-row" Margin="0,0,0,6" Padding="12">
@@ -71,7 +72,7 @@
           <ScrollViewer Grid.Row="2"
                         HorizontalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding Items}"
-                          Margin="0,0,36,0">
+                          Margin="0,0,36,180">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <Border x:Name="savedQuoteProductRow"

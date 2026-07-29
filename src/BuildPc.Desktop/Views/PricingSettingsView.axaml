@@ -15,8 +15,12 @@
     <ScrollViewer Grid.Row="1" Padding="30,22,46,28"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Visible">
-      <Grid ColumnDefinitions="430,*" ColumnSpacing="18" MaxWidth="1120"
-        HorizontalAlignment="Left">
+      <StackPanel>
+        <Grid RowDefinitions="Auto"
+              ColumnDefinitions="430,*"
+              ColumnSpacing="18"
+              MaxWidth="1120"
+              HorizontalAlignment="Left">
         <StackPanel Spacing="18">
           <Border Classes="card">
             <StackPanel Spacing="12">
@@ -266,7 +270,10 @@
             </Grid>
           </Border>
         </StackPanel>
-      </Grid>
+        </Grid>
+        <Border Height="180"
+                IsHitTestVisible="False" />
+      </StackPanel>
     </ScrollViewer>
   </Grid>
 </UserControl>

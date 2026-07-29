@@ -32,7 +32,7 @@ dotnet build BuildPc.sln --no-restore
 dotnet test BuildPc.sln --no-build
 ```
 
-No estado documentado, a solução compila sem avisos e possui 104 testes
+No estado documentado, a solução compila sem avisos e possui 105 testes
 aprovados.
 
 ## O que o programa faz
@@ -89,6 +89,8 @@ Comportamento:
 - o orçamento precisa ser gravado antes de poder ser exportado;
 - depois de qualquer alteração, é necessário gravar novamente antes de
   exportar;
+- os botões de olho, gravação e exportação ficam numa barra fixa com folga
+  acima do rodapé global;
 - a exportação gera uma prévia PDF e abre o visualizador do sistema; é no
   visualizador que o usuário salva ou imprime.
 
@@ -611,7 +613,13 @@ chave da API não aparece em texto aberto no JSON.
 - listas de produtos sempre zebradas;
 - listas de produtos sempre usam o preview animado compartilhado;
 - barras verticais devem ser grossas e não cobrir preços ou lixeiras;
-- todas as telas mantêm rodapé reservado;
+- todas as telas mantêm rodapé reservado e uma folga rolável inferior que
+  permite levar o último controle completamente acima desse rodapé;
+- o conteúdo direto de um `ScrollViewer` deve ter altura natural, como
+  `StackPanel` ou `ItemsControl`; não use `Grid` diretamente, pois o conteúdo
+  excedente pode ficar fora do cálculo da área rolável do Avalonia;
+- a janela principal aceita altura mínima de 640 px e as telas devem continuar
+  utilizáveis nesse tamanho;
 - rodapé global mostra ONLINE em verde ou OFFLINE em vermelho;
 - usar recursos de cor dinâmica para Claro/Escuro/Sistema;
 - evitar valores de cor fixos fora de overlays, sombras ou casos justificados;
@@ -655,6 +663,11 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Telas roláveis receberam uma área segura inferior consistente; Configurações,
+  Importações, Gerenciar Produtos, Gerenciar Categorias, Consulta de Preços,
+  Montagem, Orçamentos e edição de produto não deixam o último conteúdo preso
+  atrás do rodapé. Um teste estrutural protege a medição correta dos
+  `ScrollViewer`.
 - Preview animado compartilhado foi aplicado a todas as listas de produtos.
 - Gerenciador de Orçamentos recebeu folga para scrollbar e tabela financeira
   alinhada.

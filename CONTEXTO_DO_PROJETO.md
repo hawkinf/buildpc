@@ -651,17 +651,54 @@ Auditoria somente de leitura via `ssh contaslite`:
 | Disco | 73% usado (11 GB livres) |
 | Memória | 2,4 GB totais, folga pequena |
 
-**Pendências no servidor, ainda não aplicadas:**
+**Ações aplicadas no servidor em 29/07/2026:**
 
-1. `client_max_body_size` continua `10m` em
-   `/etc/nginx/sites-enabled/contaslite.conf`. O repositório já usa `64m`; sem
-   esse ajuste no servidor, importar uma categoria grande falha com 413.
-2. `app_metadata` tem 577 marcas `deleted_product:` inúteis. A poda automática
-   já está no código e roda no próximo início do serviço, depois do deploy.
-3. O timer de backup nunca executou (`LAST n/a`); existe apenas o `pg_dump`
-   manual de 29/07. O backup fica só na própria VPS, sem copia externa.
-4. O journal do systemd ocupa 1 GB. O nível de log já foi reduzido no código;
-   considere também `SystemMaxUse` em `journald.conf`.
+1. `client_max_body_size` do bloco `/buildpc-api/` passou de `10m` para `64m`
+   em `/etc/nginx/sites-enabled/contaslite.conf`, com `nginx -t` e reload.
+   Backups de configuração do Nginx ficam em `/etc/nginx/backups/` — **nunca**
+   dentro de `sites-enabled/`, porque `include sites-enabled/*` carregaria o
+   backup como um segundo servidor e `nginx -t` falha.
+2. Deploy da API para `/opt/buildpc-api/releases/audit-20260729-175553`, com o
+   destino anterior registado em `/opt/buildpc-api/ROLLBACK.txt`. A poda removeu
+   577 marcas obsoletas: `app_metadata` caiu de 590 para 37 linhas, mantendo as
+   24 marcas legítimas do catálogo inicial. Produtos (1420) e orçamentos (2)
+   intactos. A memória do serviço caiu de 102 MB para 37 MB.
+3. O backup foi executado (`systemctl start buildpc-backup.service`) e o
+   restauro foi validado num banco descartável: 1420 produtos, 2 orçamentos,
+   37 metadata e 1 settings, idêntico à produção. Retenção de 14 dias
+   confirmada no script e o timer diário está `enabled`.
+
+**Publicação da API — o build tem de ser self-contained**
+
+A VPS **não tem runtime .NET instalado** (`dotnet` não existe no PATH). Publicar
+com `--self-contained false` gera um pacote que não inicia. Use sempre:
+
+```powershell
+dotnet publish src/BuildPc.Api/BuildPc.Api.csproj -c Release -r linux-x64 --self-contained true -o PASTA
+```
+
+O pacote correto tem ~343 arquivos e inclui `libcoreclr.so` e
+`System.Private.CoreLib.dll`. Antes de trocar o symlink `current`, teste o
+binário novo numa porta livre (`ASPNETCORE_URLS=http://127.0.0.1:8129`) com o
+mesmo `/etc/buildpc-api.env`; só troque depois de `/health` responder 200.
+
+Ao encerrar essa instância de teste, localize o PID pela porta
+(`ss -tlnpH "sport = :8129"`). **Não use `pkill -f` com um padrão que apareça na
+própria linha de comando por SSH**: o padrão casa com o próprio comando e mata a
+sessão.
+
+**Pendência que depende de decisão do usuário:**
+
+- O backup existe apenas na própria VPS. Uma cópia externa (outro host, bucket,
+  armazenamento offsite) precisa de um destino e credenciais definidos pelo
+  usuário; sem isso, uma falha de disco perde os 14 dias.
+
+**Verificado e sem ação necessária:**
+
+- O journal do systemd ocupa 1 GB porque `SystemMaxUse=1G` já está definido em
+  `/etc/systemd/journald.conf` e é respeitado. Nesse 1 GB cabem ~46 dias de
+  histórico de todos os serviços da máquina. Não vacuum sem motivo: a redução do
+  log da própria API já libera a maior parte desse espaço para histórico útil.
 
 ### Migração SQLite para PostgreSQL
 

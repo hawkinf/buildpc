@@ -16,7 +16,7 @@ public sealed class CategoryManagementViewModelTests
             categories =>
             {
                 saved = categories.ToList();
-                return null;
+                return Task.FromResult<string?>(null);
             });
 
         viewModel.CategoryName = "Acessórios";
@@ -60,7 +60,7 @@ public sealed class CategoryManagementViewModelTests
         var viewModel = new CategoryManagementViewModel(
             [.. ProductCategoryDefinition.Defaults(), custom],
             category => category == custom.Value ? 2 : 0,
-            _ => null);
+            _ => Task.FromResult<string?>(null));
 
         viewModel.SelectedCategory = viewModel.Categories.First(category =>
             category.IsSystem);

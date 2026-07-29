@@ -8,11 +8,22 @@ public partial class QuoteManagerView : UserControl
 {
     public QuoteManagerView() => InitializeComponent();
 
-    private void Refresh_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void Refresh_Click(
+        object? sender,
+        Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if (DataContext is QuoteManagerViewModel viewModel)
+        if (DataContext is not QuoteManagerViewModel viewModel)
         {
-            viewModel.Refresh();
+            return;
+        }
+
+        try
+        {
+            await viewModel.RefreshAsync();
+        }
+        catch (Exception exception)
+        {
+            CrashLogService.Record("Atualizar orçamentos", exception);
         }
     }
 

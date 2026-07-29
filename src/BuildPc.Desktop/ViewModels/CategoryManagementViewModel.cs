@@ -7,7 +7,7 @@ namespace BuildPc.Desktop.ViewModels;
 public sealed class CategoryManagementViewModel : ViewModelBase
 {
     private readonly Func<ComponentCategory, int> _productCount;
-    private readonly Func<IReadOnlyList<ProductCategoryDefinition>, string?> _save;
+    private readonly Func<IReadOnlyList<ProductCategoryDefinition>, Task<string?>> _save;
     private CategoryManagementItemViewModel? _selectedCategory;
     private string _categoryName = string.Empty;
     private string _statusMessage = string.Empty;
@@ -17,17 +17,17 @@ public sealed class CategoryManagementViewModel : ViewModelBase
     public CategoryManagementViewModel(
         IEnumerable<ProductCategoryDefinition> categories,
         Func<ComponentCategory, int> productCount,
-        Func<IReadOnlyList<ProductCategoryDefinition>, string?> save)
+        Func<IReadOnlyList<ProductCategoryDefinition>, Task<string?>> save)
     {
         _productCount = productCount;
         _save = save;
         Categories = [];
         Reload(categories, null);
         NewCategoryCommand = new RelayCommand(BeginNewCategory);
-        SaveCategoryCommand = new RelayCommand(SaveCategory);
+        SaveCategoryCommand = new AsyncRelayCommand(SaveCategoryAsync);
         CancelEditCommand = new RelayCommand(BeginNewCategory);
         RequestDeleteCategoryCommand = new RelayCommand(RequestDeleteCategory);
-        ConfirmDeleteCategoryCommand = new RelayCommand(ConfirmDeleteCategory);
+        ConfirmDeleteCategoryCommand = new AsyncRelayCommand(ConfirmDeleteCategoryAsync);
         CancelDeleteCategoryCommand = new RelayCommand(CancelDeleteCategory);
     }
 
@@ -124,7 +124,7 @@ public sealed class CategoryManagementViewModel : ViewModelBase
         ClearStatus();
     }
 
-    private void SaveCategory()
+    private async Task SaveCategoryAsync()
     {
         var name = CategoryName.Trim();
         if (string.IsNullOrWhiteSpace(name))
@@ -175,7 +175,7 @@ public sealed class CategoryManagementViewModel : ViewModelBase
             definitions[index] = saved;
         }
 
-        if (!TrySave(definitions))
+        if (!await TrySaveAsync(definitions))
         {
             return;
         }
@@ -212,7 +212,7 @@ public sealed class CategoryManagementViewModel : ViewModelBase
         ClearStatus();
     }
 
-    private void ConfirmDeleteCategory()
+    private async Task ConfirmDeleteCategoryAsync()
     {
         var selected = SelectedCategory;
         if (selected is null ||
@@ -227,7 +227,7 @@ public sealed class CategoryManagementViewModel : ViewModelBase
             .Where(category => category.Value != selected.Value)
             .Select(category => category.Definition)
             .ToList();
-        if (!TrySave(definitions))
+        if (!await TrySaveAsync(definitions))
         {
             return;
         }
@@ -240,9 +240,10 @@ public sealed class CategoryManagementViewModel : ViewModelBase
     private void CancelDeleteCategory() =>
         IsDeleteConfirmationVisible = false;
 
-    private bool TrySave(IReadOnlyList<ProductCategoryDefinition> definitions)
+    private async Task<bool> TrySaveAsync(
+        IReadOnlyList<ProductCategoryDefinition> definitions)
     {
-        var error = _save(definitions);
+        var error = await _save(definitions);
         if (string.IsNullOrWhiteSpace(error))
         {
             return true;

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows.Input;
 using BuildPc.Core.Models;
 using BuildPc.Desktop.Services;
@@ -8,7 +9,7 @@ namespace BuildPc.Desktop.ViewModels;
 public sealed class FlexibleListViewModel : ViewModelBase
 {
     private readonly List<PcComponent> _catalog;
-    private readonly Func<FlexibleListViewModel, SavedQuote?>? _saveQuote;
+    private readonly Func<FlexibleListViewModel, Task<SavedQuote?>>? _saveQuote;
     private CategoryOptionViewModel _selectedCategory;
     private int _quantity = 1;
     private BusinessSettings _settings;
@@ -21,12 +22,17 @@ public sealed class FlexibleListViewModel : ViewModelBase
     private bool _isDirty;
     private bool _isClearConfirmationVisible;
     private SavedQuote? _savedQuote;
+    private string _discountText = string.Empty;
+    private decimal _discountValue;
+    private int _validityDays;
+    private string _paymentTerms = string.Empty;
+    private string _deliveryTerms = string.Empty;
 
     public FlexibleListViewModel(
         IEnumerable<PcComponent> catalog,
         IEnumerable<CategoryOptionViewModel> categories,
         BusinessSettings? settings = null,
-        Func<FlexibleListViewModel, SavedQuote?>? saveQuote = null)
+        Func<FlexibleListViewModel, Task<SavedQuote?>>? saveQuote = null)
     {
         _catalog = catalog.ToList();
         Categories = new ObservableCollection<CategoryOptionViewModel>(categories);
@@ -47,7 +53,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
         RequestClearCommand = new RelayCommand(RequestClear);
         ConfirmClearCommand = new RelayCommand(Clear);
         CancelClearCommand = new RelayCommand(CancelClear);
-        SaveQuoteCommand = new RelayCommand(SaveQuote);
+        SaveQuoteCommand = new AsyncRelayCommand(SaveQuoteAsync);
     }
 
     public ObservableCollection<CategoryOptionViewModel> Categories { get; }
@@ -135,6 +141,79 @@ public sealed class FlexibleListViewModel : ViewModelBase
         : IsDirty
             ? "Existem alterações. Grave novamente para exportar."
             : $"Orçamento #{SavedQuote.Number:000000} gravado.";
+
+    /// <summary>Desconto digitado, em reais.</summary>
+    public string DiscountText
+    {
+        get => _discountText;
+        set
+        {
+            if (!SetProperty(ref _discountText, value ?? string.Empty))
+            {
+                return;
+            }
+
+            _discountValue = decimal.TryParse(
+                _discountText,
+                NumberStyles.Currency,
+                MainWindowViewModel.BrazilianCulture,
+                out var discount) && discount > 0
+                ? discount
+                : 0m;
+            OnPropertyChanged(nameof(DiscountValue));
+            OnPropertyChanged(nameof(FinalPriceValue));
+            OnPropertyChanged(nameof(FinalPrice));
+            OnPropertyChanged(nameof(HasDiscount));
+            MarkDirty();
+        }
+    }
+
+    public decimal DiscountValue => _discountValue;
+    public bool HasDiscount => DiscountValue > 0m;
+
+    /// <summary>Total que o cliente paga, já com o desconto aplicado.</summary>
+    public decimal FinalPriceValue =>
+        Math.Max(0m, TotalPriceValue - DiscountValue);
+
+    public string FinalPrice =>
+        FinalPriceValue.ToString("C", MainWindowViewModel.BrazilianCulture);
+
+    /// <summary>Dias de validade da proposta. Zero significa sem prazo.</summary>
+    public int ValidityDays
+    {
+        get => _validityDays;
+        set
+        {
+            if (SetProperty(ref _validityDays, Math.Clamp(value, 0, 365)))
+            {
+                MarkDirty();
+            }
+        }
+    }
+
+    public string PaymentTerms
+    {
+        get => _paymentTerms;
+        set
+        {
+            if (SetProperty(ref _paymentTerms, value ?? string.Empty))
+            {
+                MarkDirty();
+            }
+        }
+    }
+
+    public string DeliveryTerms
+    {
+        get => _deliveryTerms;
+        set
+        {
+            if (SetProperty(ref _deliveryTerms, value ?? string.Empty))
+            {
+                MarkDirty();
+            }
+        }
+    }
 
     public string ClientName
     {
@@ -314,6 +393,10 @@ public sealed class FlexibleListViewModel : ViewModelBase
         ClientName = string.Empty;
         ClientPhone = string.Empty;
         Notes = string.Empty;
+        DiscountText = string.Empty;
+        ValidityDays = 0;
+        PaymentTerms = string.Empty;
+        DeliveryTerms = string.Empty;
         ProductPicker.Selected = null;
         ProductPicker.FilterText = string.Empty;
         Quantity = 1;
@@ -347,6 +430,14 @@ public sealed class FlexibleListViewModel : ViewModelBase
         ClientName = quote.ClientName;
         ClientPhone = quote.ClientPhone;
         Notes = quote.Notes;
+        DiscountText = quote.DiscountAmount > 0m
+            ? quote.DiscountAmount.ToString(
+                "N2",
+                MainWindowViewModel.BrazilianCulture)
+            : string.Empty;
+        ValidityDays = quote.ValidityDays;
+        PaymentTerms = quote.PaymentTerms;
+        DeliveryTerms = quote.DeliveryTerms;
         ProductPicker.Selected = null;
         Quantity = 1;
         SavedQuote = quote;
@@ -412,6 +503,8 @@ public sealed class FlexibleListViewModel : ViewModelBase
         OnPropertyChanged(nameof(TotalCost));
         OnPropertyChanged(nameof(TotalPriceValue));
         OnPropertyChanged(nameof(TotalPrice));
+        OnPropertyChanged(nameof(FinalPriceValue));
+        OnPropertyChanged(nameof(FinalPrice));
         OnPropertyChanged(nameof(TotalProfitValue));
         OnPropertyChanged(nameof(TotalProfit));
         OnPropertyChanged(nameof(TotalProfitPercentValue));
@@ -460,6 +553,33 @@ public sealed class FlexibleListViewModel : ViewModelBase
         StatusMessage = "Não foi possível gerar a visualização do PDF.";
     }
 
+    /// <summary>
+    /// Monta os dados do orçamento a gravar, incluindo desconto, validade e
+    /// condições comerciais informados nesta tela.
+    /// </summary>
+    public QuoteDraft BuildQuoteDraft(BusinessSettings companySnapshot) =>
+        new()
+        {
+            ClientName = ClientName,
+            ClientPhone = ClientPhone,
+            Notes = Notes,
+            Items = BuildQuoteItems(),
+            CompanySnapshot = companySnapshot,
+            DiscountAmount = DiscountValue,
+            ValidityDays = ValidityDays,
+            PaymentTerms = PaymentTerms,
+            DeliveryTerms = DeliveryTerms
+        };
+
+    /// <summary>Itens da montagem no formato de um modelo reutilizável.</summary>
+    public IReadOnlyList<AssemblyTemplateItem> BuildTemplateItems() =>
+        Items.Select(item => new AssemblyTemplateItem
+        {
+            ComponentId = item.Component.Id,
+            Category = item.Component.Category,
+            Quantity = item.Quantity
+        }).ToList();
+
     public IReadOnlyList<SavedQuoteItem> BuildQuoteItems() =>
         Items.Select(item => new SavedQuoteItem
         {
@@ -475,7 +595,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
             UnitPrice = item.SellingUnitPriceValue
         }).ToList();
 
-    private void SaveQuote()
+    private async Task SaveQuoteAsync()
     {
         if (!HasItems)
         {
@@ -496,7 +616,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
             return;
         }
 
-        var saved = _saveQuote(this);
+        var saved = await _saveQuote(this);
         if (saved is null)
         {
             Fail("Não foi possível gravar o orçamento.");

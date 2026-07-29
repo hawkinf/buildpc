@@ -8,7 +8,7 @@ namespace BuildPc.Core.Tests;
 public sealed class BuildPcApiClientTests
 {
     [Fact]
-    public void GetAllSendsApiKeyAndDeserializesProducts()
+    public async Task GetAllSendsApiKeyAndDeserializesProducts()
     {
         var handler = new StubHttpMessageHandler(request =>
         {
@@ -37,7 +37,7 @@ public sealed class BuildPcApiClientTests
         };
         using var client = new BuildPcApiClient(httpClient, "secret");
 
-        var products = client.GetAll();
+        var products = await client.GetAllAsync();
 
         var product = Assert.Single(products);
         Assert.Equal("product-1", product.Id);
@@ -45,7 +45,7 @@ public sealed class BuildPcApiClientTests
     }
 
     [Fact]
-    public void ServerProblemDetailIsReturnedAsOperationError()
+    public async Task ServerProblemDetailIsReturnedAsOperationError()
     {
         var handler = new StubHttpMessageHandler(_ =>
             JsonResponse(
@@ -57,8 +57,8 @@ public sealed class BuildPcApiClientTests
         };
         using var client = new BuildPcApiClient(httpClient, "invalid");
 
-        var exception = Assert.Throws<InvalidOperationException>(
-            () => client.GetSettings());
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => client.GetSettingsAsync());
 
         Assert.Equal("Chave inválida.", exception.Message);
     }

@@ -15,6 +15,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private readonly KabumCatalogImporter _kabumCatalogImporter;
     private readonly IQuoteRepository _quoteRepository;
     private readonly BuildPcApplicationSettingsStore _applicationSettingsStore;
+    private readonly IAssemblyTemplateRepository _templateRepository;
     private readonly Dictionary<string, string> _configuredImportSourceUrls;
     private readonly IDebouncer _catalogSearchDebounce;
 
@@ -68,66 +69,127 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public static CultureInfo BrazilianCulture { get; } = CultureInfo.GetCultureInfo("pt-BR");
 
-    public MainWindowViewModel()
-        : this(forceLocalDatabase: false)
-    {
-    }
-
+    /// <summary>
+    /// Carrega tudo o que depende de banco ou rede e devolve o ViewModel pronto.
+    /// </summary>
+    /// <remarks>
+    /// O construtor não pode aguardar, e antes fazia três chamadas bloqueantes
+    /// (configurações, catálogo e datas de importação). No modo servidor isso
+    /// travava a interface durante a abertura. Toda a leitura acontece aqui, e o
+    /// construtor apenas monta as coleções com dados já em memória.
+    /// </remarks>
     /// <param name="forceLocalDatabase">
     /// Ignora a API configurada e usa o SQLite local nesta sessão. Serve para
     /// abrir o programa quando o servidor não responde, sem alterar o arquivo
     /// de configuração.
     /// </param>
-    public MainWindowViewModel(bool forceLocalDatabase)
+    public static async Task<MainWindowViewModel> CreateAsync(
+        bool forceLocalDatabase = false,
+        CancellationToken cancellationToken = default)
     {
         var dataDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "BuildPC");
         var databasePath = Path.Combine(dataDirectory, "catalogo.db");
         var legacyJsonPath = Path.Combine(dataDirectory, "produtos.json");
-        _productImages = new ProductImageStore(
-            Path.Combine(dataDirectory, "imagens-produtos"));
         var legacyApiSettingsPath = Path.Combine(dataDirectory, "servidor.json");
-        _applicationSettingsStore = new BuildPcApplicationSettingsStore(
+
+        var applicationSettingsStore = new BuildPcApplicationSettingsStore(
             BuildPcApplicationSettingsStore.DefaultPath);
-        var applicationConfiguration = _applicationSettingsStore.Load();
+        var applicationConfiguration = applicationSettingsStore.Load();
         var legacyApiSettings = applicationConfiguration is null
             ? BuildPcApiSettings.Load(legacyApiSettingsPath)
             : null;
-        _apiSettings = forceLocalDatabase
+        var apiSettings = forceLocalDatabase
             ? null
             : applicationConfiguration?.ApiSettings ?? legacyApiSettings;
-        IsUsingLocalDatabaseFallback = forceLocalDatabase;
-        _isApiKeyUnreadable = applicationConfiguration?.IsApiKeyUnreadable ?? false;
+
+        IComponentCatalogRepository catalogRepository;
+        IQuoteRepository quoteRepository;
+        IAssemblyTemplateRepository templateRepository;
+        if (apiSettings is not null)
+        {
+            var apiClient = new BuildPcApiClient(apiSettings);
+            catalogRepository = apiClient;
+            quoteRepository = apiClient;
+            templateRepository = apiClient;
+        }
+        else
+        {
+            catalogRepository = new ComponentCatalogRepository(
+                databasePath,
+                legacyJsonPath);
+            var localQuotes = new QuoteRepository(databasePath);
+            quoteRepository = localQuotes;
+            templateRepository = localQuotes;
+        }
+
+        var businessSettings =
+            applicationConfiguration?.Application ??
+            await quoteRepository.GetSettingsAsync(cancellationToken)
+                .ConfigureAwait(false);
+        var catalog = await catalogRepository.GetAllAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var lastImports = await catalogRepository
+            .GetLastImportsAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return new MainWindowViewModel(new StartupContext(
+            forceLocalDatabase,
+            dataDirectory,
+            applicationSettingsStore,
+            applicationConfiguration,
+            apiSettings,
+            catalogRepository,
+            quoteRepository,
+            templateRepository,
+            businessSettings,
+            catalog,
+            lastImports));
+    }
+
+    /// <summary>Dados já carregados, para o construtor não fazer I/O.</summary>
+    private sealed record StartupContext(
+        bool ForceLocalDatabase,
+        string DataDirectory,
+        BuildPcApplicationSettingsStore SettingsStore,
+        BuildPcApplicationConfiguration? Configuration,
+        BuildPcApiSettings? ApiSettings,
+        IComponentCatalogRepository CatalogRepository,
+        IQuoteRepository QuoteRepository,
+        IAssemblyTemplateRepository TemplateRepository,
+        BusinessSettings BusinessSettings,
+        IReadOnlyList<PcComponent> Catalog,
+        IReadOnlyDictionary<string, DateTimeOffset> LastImports);
+
+    private MainWindowViewModel(StartupContext context)
+    {
+        _productImages = new ProductImageStore(
+            Path.Combine(context.DataDirectory, "imagens-produtos"));
+        _applicationSettingsStore = context.SettingsStore;
+        _apiSettings = context.ApiSettings;
+        IsUsingLocalDatabaseFallback = context.ForceLocalDatabase;
+        _isApiKeyUnreadable = context.Configuration?.IsApiKeyUnreadable ?? false;
         _configuredImportSourceUrls =
-            applicationConfiguration?.ImportSourceUrls.ToDictionary(
+            context.Configuration?.ImportSourceUrls.ToDictionary(
                 entry => entry.Key,
                 entry => entry.Value,
                 StringComparer.OrdinalIgnoreCase) ??
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        if (_apiSettings is not null)
-        {
-            var apiClient = new BuildPcApiClient(_apiSettings);
-            _catalogRepository = apiClient;
-            _quoteRepository = apiClient;
-        }
-        else
-        {
-            _catalogRepository = new ComponentCatalogRepository(databasePath, legacyJsonPath);
-            _quoteRepository = new QuoteRepository(databasePath);
-        }
+        _catalogRepository = context.CatalogRepository;
+        _quoteRepository = context.QuoteRepository;
+        _templateRepository = context.TemplateRepository;
         ConnectionStatus = new ConnectionStatusViewModel(
             _apiSettings,
             TestApiConnectionAsync);
-        _businessSettings =
-            applicationConfiguration?.Application ??
-            _quoteRepository.GetSettings();
+        _businessSettings = context.BusinessSettings;
         _kabumCatalogImporter = new KabumCatalogImporter(new HttpClient
         {
             Timeout = TimeSpan.FromSeconds(45)
         });
-        var catalog = _catalogRepository.GetAll();
-        _lastImports = _catalogRepository.GetLastImports();
+        var applicationConfiguration = context.Configuration;
+        var catalog = context.Catalog;
+        _lastImports = context.LastImports;
         var categoryDefinitions = _businessSettings.EffectiveProductCategories();
         CategoryOptions = new ObservableCollection<CategoryOptionViewModel>(
             categoryDefinitions.Select(category =>
@@ -137,7 +199,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 ProductListItemViewModel.From(
                     component,
                     CategoryNameFor(component.Category),
-                    ToggleKeep,
+                    ToggleKeepAsync,
                     SelectCatalogProduct,
                     BulkSelectionChanged,
                     index % 2 == 1)));
@@ -165,7 +227,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             catalog,
             CategoryOptions,
             _businessSettings,
-            SaveQuote);
+            SaveQuoteAsync);
         PriceLookup = new PriceLookupViewModel(
             catalog,
             categoryDefinitions,
@@ -176,7 +238,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         PricingSettings = new PricingSettingsViewModel(
             _businessSettings,
             CategoryOptions,
-            SaveBusinessSettings,
+            SaveBusinessSettingsAsync,
             _apiSettings,
             SaveApiSettings,
             TestApiConnectionAsync,
@@ -185,7 +247,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         CategoryManagement = new CategoryManagementViewModel(
             categoryDefinitions,
             CategoryProductCount,
-            SaveProductCategories);
+            SaveProductCategoriesAsync);
         BulkDescriptionOperations =
         [
             new("Substituir descrição", BulkDescriptionMode.Replace),
@@ -292,15 +354,15 @@ public sealed class MainWindowViewModel : ViewModelBase
         ShowQuotesCommand = new RelayCommand(() => ShowView("quotes"));
         ShowSettingsCommand = new RelayCommand(() => ShowToolView("settings"));
         ToggleToolsMenuCommand = new RelayCommand(ToggleToolsMenu);
-        SaveProductCommand = new RelayCommand(SaveProduct);
+        SaveProductCommand = new AsyncRelayCommand(SaveProductAsync);
         NewProductCommand = new RelayCommand(BeginNewProduct);
         EditProductCommand = new RelayCommand(BeginEditProduct);
         RequestDeleteProductCommand = new RelayCommand(RequestDeleteProduct);
-        ConfirmDeleteProductCommand = new RelayCommand(ConfirmDeleteProduct);
+        ConfirmDeleteProductCommand = new AsyncRelayCommand(ConfirmDeleteProductAsync);
         CancelDeleteProductCommand = new RelayCommand(CancelDeleteProduct);
-        ApplyBulkDescriptionCommand = new RelayCommand(ApplyBulkDescription);
+        ApplyBulkDescriptionCommand = new AsyncRelayCommand(ApplyBulkDescriptionAsync);
         RequestBulkDeleteCommand = new RelayCommand(RequestBulkDelete);
-        ConfirmBulkDeleteCommand = new RelayCommand(ConfirmBulkDelete);
+        ConfirmBulkDeleteCommand = new AsyncRelayCommand(ConfirmBulkDeleteAsync);
         CancelBulkDeleteCommand = new RelayCommand(CancelBulkDelete);
         SortCatalogByDescriptionCommand = new RelayCommand(SortCatalogByDescription);
         SortCatalogByCostCommand = new RelayCommand(SortCatalogByCost);
@@ -320,7 +382,10 @@ public sealed class MainWindowViewModel : ViewModelBase
             SaveApplicationConfiguration();
         }
 
-        BuildPcApiSettings.Disable(legacyApiSettingsPath);
+        // O servidor.json legado ja foi lido em CreateAsync; remove-lo
+        // aqui evita que a migracao volte a acontecer no proximo inicio.
+        BuildPcApiSettings.Disable(
+            Path.Combine(context.DataDirectory, "servidor.json"));
     }
 
     public ObservableCollection<ProductListItemViewModel> Products { get; }
@@ -890,7 +955,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         if (IsQuotesView)
         {
-            QuoteManager.Refresh();
+            _ = QuoteManager.RefreshAsync();
         }
     }
 
@@ -900,18 +965,14 @@ public sealed class MainWindowViewModel : ViewModelBase
         ShowView("flexible-list");
     }
 
-    private SavedQuote? SaveQuote(FlexibleListViewModel list)
+    private async Task<SavedQuote?> SaveQuoteAsync(FlexibleListViewModel list)
     {
         try
         {
-            var quote = _quoteRepository.SaveQuote(
+            var quote = await _quoteRepository.SaveQuoteAsync(
                 list.SavedQuote,
-                list.ClientName,
-                list.ClientPhone,
-                list.Notes,
-                list.BuildQuoteItems(),
-                _businessSettings);
-            QuoteManager.Refresh();
+                list.BuildQuoteDraft(_businessSettings));
+            await QuoteManager.RefreshAsync();
             return quote;
         }
         catch (ArgumentException)
@@ -928,11 +989,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private string? SaveBusinessSettings(BusinessSettings settings)
+    private async Task<string?> SaveBusinessSettingsAsync(BusinessSettings settings)
     {
         try
         {
-            _quoteRepository.SaveSettings(settings);
+            await _quoteRepository.SaveSettingsAsync(settings);
         }
         catch (SqliteException)
         {
@@ -971,7 +1032,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         return null;
     }
 
-    private string? SaveProductCategories(
+    private async Task<string?> SaveProductCategoriesAsync(
         IReadOnlyList<ProductCategoryDefinition> categories)
     {
         try
@@ -986,7 +1047,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                     .Where(margin => activeCategories.Contains(margin.Key))
                     .ToDictionary()
             };
-            _quoteRepository.SaveSettings(_businessSettings);
+            await _quoteRepository.SaveSettingsAsync(_businessSettings);
             SaveApplicationConfiguration();
             RebuildCategoryOptions(categories);
             FlexibleList.UpdateCategories(CategoryOptions);
@@ -994,7 +1055,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             PriceLookup.UpdateCategories(categories);
             PriceLookup.ApplySettings(_businessSettings);
             PricingSettings.RefreshCategories(categories);
-            RefreshCatalogCollections(refreshCategoryManagement: false);
+            await RefreshCatalogCollectionsAsync(refreshCategoryManagement: false);
             return null;
         }
         catch (IOException)
@@ -1349,14 +1410,14 @@ public sealed class MainWindowViewModel : ViewModelBase
 
             // Gravar milhares de produtos é lento o bastante para congelar o
             // modal de progresso se rodar na thread da interface.
-            var result = await Task.Run(
-                () => _catalogRepository.ReplaceImported(
-                    source.Category,
-                    source.SourceKey,
-                    imported),
+            var result = await _catalogRepository.ReplaceImportedAsync(
+                source.Category,
+                source.SourceKey,
+                imported,
                 CancellationToken.None);
-            RefreshCatalogCollections();
+            await RefreshCatalogCollectionsAsync();
             source.LastImportedAt = result.ImportedAt;
+            ReportImportChanges(source, result);
             source.StatusMessage =
                 $"{result.Imported} importados • {result.Removed} anteriores removidos" +
                 $" • {result.Kept} mantidos.";
@@ -1417,6 +1478,40 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Acrescenta ao aviso da categoria o que mudou em relação à carga
+    /// anterior: variações de preço e itens que deixaram de vir.
+    /// </summary>
+    private static void ReportImportChanges(
+        ImportSourceViewModel source,
+        ImportReplaceResult result)
+    {
+        if (!result.HasPriceChanges && result.Disappeared == 0)
+        {
+            return;
+        }
+
+        var parts = new List<string>();
+        if (result.Increases > 0)
+        {
+            parts.Add($"{result.Increases} subiram de preço");
+        }
+
+        if (result.Decreases > 0)
+        {
+            parts.Add($"{result.Decreases} baixaram de preço");
+        }
+
+        if (result.Disappeared > 0)
+        {
+            parts.Add(result.Disappeared == 1
+                ? "1 saiu do catálogo da loja"
+                : $"{result.Disappeared} saíram do catálogo da loja");
+        }
+
+        source.StatusMessage += $" • {string.Join(", ", parts)}.";
+    }
+
     private void SetImportProgress(
         int position,
         int total,
@@ -1430,11 +1525,11 @@ public sealed class MainWindowViewModel : ViewModelBase
     /// Lê o catálogo tratando a indisponibilidade do banco ou do servidor.
     /// Devolve <c>null</c> quando a leitura falha, mantendo as coleções atuais.
     /// </summary>
-    private IReadOnlyList<PcComponent>? TryReadCatalog()
+    private async Task<IReadOnlyList<PcComponent>?> TryReadCatalogAsync()
     {
         try
         {
-            return _catalogRepository.GetAll();
+            return await _catalogRepository.GetAllAsync();
         }
         catch (SqliteException)
         {
@@ -1451,9 +1546,10 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private void RefreshCatalogCollections(bool refreshCategoryManagement = true)
+    private async Task RefreshCatalogCollectionsAsync(
+        bool refreshCategoryManagement = true)
     {
-        if (TryReadCatalog() is not { } catalog)
+        if (await TryReadCatalogAsync() is not { } catalog)
         {
             return;
         }
@@ -1467,7 +1563,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                      ProductListItemViewModel.From(
                          component,
                          CategoryNameFor(component.Category),
-                         ToggleKeep,
+                         ToggleKeepAsync,
                          SelectCatalogProduct,
                          BulkSelectionChanged,
                          index % 2 == 1)))
@@ -1525,11 +1621,13 @@ public sealed class MainWindowViewModel : ViewModelBase
         "&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=" +
         "&sort=most_searched";
 
-    private bool ToggleKeep(ProductListItemViewModel product)
+    private async Task<bool> ToggleKeepAsync(ProductListItemViewModel product)
     {
         try
         {
-            return _catalogRepository.SetKeepOnImport(product.Id, !product.IsKept);
+            return await _catalogRepository.SetKeepOnImportAsync(
+                product.Id,
+                !product.IsKept);
         }
         catch (SqliteException)
         {
@@ -1644,7 +1742,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void CancelDeleteProduct() => IsDeleteConfirmationVisible = false;
 
-    private void ConfirmDeleteProduct()
+    private async Task ConfirmDeleteProductAsync()
     {
         var selected = SelectedCatalogProduct;
         if (selected is null)
@@ -1655,7 +1753,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         var removedImage = selected.Component.ImageUrl;
         try
         {
-            if (!_catalogRepository.Delete(selected.Id))
+            if (!await _catalogRepository.DeleteAsync(selected.Id))
             {
                 ProductFormMessage = "O produto não foi encontrado no catálogo.";
                 IsProductFormSuccess = false;
@@ -1679,7 +1777,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         SelectCatalogProduct(null);
         SetEditingProductId(null);
         ClearProductForm();
-        RefreshCatalogCollections();
+        await RefreshCatalogCollectionsAsync();
         IsProductFormSuccess = true;
         ProductFormMessage = "Produto excluído do catálogo.";
     }
@@ -1862,7 +1960,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void CancelBulkDelete() => IsBulkDeleteConfirmationVisible = false;
 
-    private void ConfirmBulkDelete()
+    private async Task ConfirmBulkDeleteAsync()
     {
         var selectedProducts = Products
             .Where(product => product.IsBulkSelected)
@@ -1877,10 +1975,10 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         try
         {
-            var deleted = _catalogRepository.DeleteMany(selectedIds);
+            var deleted = await _catalogRepository.DeleteManyAsync(selectedIds);
             _productImages.DeleteIfUnused(selectedProducts);
             IsBulkDeleteConfirmationVisible = false;
-            RefreshCatalogCollections();
+            await RefreshCatalogCollectionsAsync();
             BulkStatusMessage = deleted == 1
                 ? "1 produto apagado."
                 : $"{deleted} produtos apagados.";
@@ -1896,7 +1994,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private void ApplyBulkDescription()
+    private async Task ApplyBulkDescriptionAsync()
     {
         var selectedIds = Products
             .Where(product => product.IsBulkSelected)
@@ -1910,11 +2008,11 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         try
         {
-            var updated = _catalogRepository.UpdateDescriptions(
+            var updated = await _catalogRepository.UpdateDescriptionsAsync(
                 selectedIds,
                 BulkDescriptionText,
                 SelectedBulkDescriptionOperation.Mode);
-            RefreshCatalogCollections();
+            await RefreshCatalogCollectionsAsync();
             BulkDescriptionText = string.Empty;
             BulkStatusMessage = updated == 1
                 ? "Descrição de 1 produto atualizada."
@@ -1930,7 +2028,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private void SaveProduct()
+    private async Task SaveProductAsync()
     {
         var returnToProductCatalog = IsProductManagementView;
         IsProductFormSuccess = false;
@@ -2004,9 +2102,9 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             if (existing is null)
             {
-                _catalogRepository.Add(component);
+                await _catalogRepository.AddAsync(component);
             }
-            else if (!_catalogRepository.Update(component))
+            else if (!await _catalogRepository.UpdateAsync(component))
             {
                 ProductFormMessage = "O produto não foi encontrado para atualização.";
                 return;
@@ -2039,7 +2137,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         var savedId = component.Id;
         SetEditingProductId(null);
-        RefreshCatalogCollections();
+        await RefreshCatalogCollectionsAsync();
         ClearProductForm();
         SelectCatalogProduct(IsProductManagementView
             ? null

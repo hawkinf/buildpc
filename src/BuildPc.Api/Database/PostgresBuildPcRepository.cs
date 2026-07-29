@@ -8,7 +8,8 @@ namespace BuildPc.Api.Database;
 
 public sealed class PostgresBuildPcRepository :
     IComponentCatalogRepository,
-    IQuoteRepository
+    IQuoteRepository,
+    IAssemblyTemplateRepository
 {
     private const string SettingsKey = "business";
     private const long QuoteNumberLock = 724_913_581;
@@ -26,11 +27,26 @@ public sealed class PostgresBuildPcRepository :
         SeedDefaultCatalog();
     }
 
+    // O PostgreSQL fica na mesma máquina que a API, atendendo um usuário.
+    // As tarefas voltam concluídas; se a carga crescer, trocar por Npgsql
+    // assíncrono é uma mudança local a esta classe.
+    public Task<IReadOnlyList<PcComponent>> GetAllAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(GetAll());
+
     public IReadOnlyList<PcComponent> GetAll() =>
         ReadStoredComponents()
             .OrderBy(component => ComponentCategoryInfo.DisplayOrder(component.Category))
             .ThenBy(component => component.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
+
+    public Task AddAsync(
+        PcComponent component,
+        CancellationToken cancellationToken = default)
+    {
+        Add(component);
+        return Task.CompletedTask;
+    }
 
     public void Add(PcComponent component)
     {
@@ -54,6 +70,11 @@ public sealed class PostgresBuildPcRepository :
             preserveKeepFlag: false);
     }
 
+    public Task<bool> UpdateAsync(
+        PcComponent component,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(Update(component));
+
     public bool Update(PcComponent component)
     {
         ArgumentNullException.ThrowIfNull(component);
@@ -69,11 +90,21 @@ public sealed class PostgresBuildPcRepository :
         return true;
     }
 
+    public Task<bool> DeleteAsync(
+        string componentId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(Delete(componentId));
+
     public bool Delete(string componentId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(componentId);
         return DeleteMany([componentId]) == 1;
     }
+
+    public Task<int> DeleteManyAsync(
+        IEnumerable<string> componentIds,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(DeleteMany(componentIds));
 
     public int DeleteMany(IEnumerable<string> componentIds)
     {
@@ -114,6 +145,13 @@ public sealed class PostgresBuildPcRepository :
         transaction.Commit();
         return deleted;
     }
+
+    public Task<int> UpdateDescriptionsAsync(
+        IEnumerable<string> componentIds,
+        string description,
+        BulkDescriptionMode mode,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(UpdateDescriptions(componentIds, description, mode));
 
     public int UpdateDescriptions(
         IEnumerable<string> componentIds,
@@ -179,6 +217,13 @@ public sealed class PostgresBuildPcRepository :
         transaction.Commit();
         return updated;
     }
+
+    public Task<ImportReplaceResult> ReplaceImportedAsync(
+        ComponentCategory category,
+        string source,
+        IEnumerable<PcComponent> components,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(ReplaceImported(category, source, components));
 
     public ImportReplaceResult ReplaceImported(
         ComponentCategory category,
@@ -251,6 +296,10 @@ public sealed class PostgresBuildPcRepository :
             : null;
     }
 
+    public Task<IReadOnlyDictionary<string, DateTimeOffset>> GetLastImportsAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(GetLastImports());
+
     public IReadOnlyDictionary<string, DateTimeOffset> GetLastImports()
     {
         using var connection = OpenConnection();
@@ -278,6 +327,12 @@ public sealed class PostgresBuildPcRepository :
         return result;
     }
 
+    public Task<bool> SetKeepOnImportAsync(
+        string componentId,
+        bool keep,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(SetKeepOnImport(componentId, keep));
+
     public bool SetKeepOnImport(string componentId, bool keep)
     {
         using var connection = OpenConnection();
@@ -292,6 +347,10 @@ public sealed class PostgresBuildPcRepository :
         command.Parameters.AddWithValue("keep", keep);
         return command.ExecuteNonQuery() > 0;
     }
+
+    public Task<BusinessSettings> GetSettingsAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(GetSettings());
 
     public BusinessSettings GetSettings()
     {
@@ -316,6 +375,14 @@ public sealed class PostgresBuildPcRepository :
         }
     }
 
+    public Task SaveSettingsAsync(
+        BusinessSettings settings,
+        CancellationToken cancellationToken = default)
+    {
+        SaveSettings(settings);
+        return Task.CompletedTask;
+    }
+
     public void SaveSettings(BusinessSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -323,47 +390,64 @@ public sealed class PostgresBuildPcRepository :
         SaveSettings(connection, null, settings);
     }
 
-    public SavedQuote SaveQuote(
+    public Task<SavedQuote> SaveQuoteAsync(
         SavedQuote? existing,
-        string clientName,
-        string clientPhone,
-        string notes,
-        IReadOnlyList<SavedQuoteItem> items,
-        BusinessSettings companySnapshot)
+        QuoteDraft draft,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(SaveQuote(existing, draft));
+
+    public SavedQuote SaveQuote(SavedQuote? existing, QuoteDraft draft)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(clientName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(clientPhone);
-        ArgumentNullException.ThrowIfNull(items);
-        ArgumentNullException.ThrowIfNull(companySnapshot);
-        if (items.Count == 0)
+        ArgumentNullException.ThrowIfNull(draft);
+        ArgumentException.ThrowIfNullOrWhiteSpace(draft.ClientName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(draft.ClientPhone);
+        ArgumentNullException.ThrowIfNull(draft.Items);
+        ArgumentNullException.ThrowIfNull(draft.CompanySnapshot);
+        if (draft.Items.Count == 0)
         {
             throw new ArgumentException(
                 "O orçamento deve possuir ao menos um item.",
-                nameof(items));
+                nameof(draft));
+        }
+
+        if (draft.DiscountAmount < 0m)
+        {
+            throw new ArgumentException(
+                "O desconto não pode ser negativo.",
+                nameof(draft));
         }
 
         using var connection = OpenConnection();
         using var transaction = connection.BeginTransaction();
-        var id = existing?.Id ?? Guid.NewGuid();
-        var number = existing?.Number ?? NextNumber(connection, transaction);
+        var totalPrice = draft.Items.Sum(item => item.TotalPrice);
         var quote = new SavedQuote
         {
-            Id = id,
-            Number = number,
+            Id = existing?.Id ?? Guid.NewGuid(),
+            Number = existing?.Number ?? NextNumber(connection, transaction),
             CreatedAt = DateTimeOffset.Now,
-            ClientName = clientName.Trim(),
-            ClientPhone = clientPhone.Trim(),
-            Notes = notes.Trim(),
-            TotalCost = items.Sum(item => item.UnitCost * item.Quantity),
-            TotalPrice = items.Sum(item => item.TotalPrice),
-            Items = items,
-            CompanySnapshot = companySnapshot
+            ClientName = draft.ClientName.Trim(),
+            ClientPhone = draft.ClientPhone.Trim(),
+            Notes = draft.Notes.Trim(),
+            TotalCost = draft.Items.Sum(item => item.UnitCost * item.Quantity),
+            TotalPrice = totalPrice,
+            // Um desconto maior que o total zeraria a venda e inverteria o lucro.
+            DiscountAmount = Math.Min(draft.DiscountAmount, totalPrice),
+            ValidityDays = Math.Max(0, draft.ValidityDays),
+            PaymentTerms = draft.PaymentTerms.Trim(),
+            DeliveryTerms = draft.DeliveryTerms.Trim(),
+            Items = draft.Items,
+            CompanySnapshot = draft.CompanySnapshot
         };
 
         InsertQuote(connection, transaction, quote);
         transaction.Commit();
         return quote;
     }
+
+    public Task<bool> DeleteQuoteAsync(
+        Guid quoteId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(DeleteQuote(quoteId));
 
     public bool DeleteQuote(Guid quoteId)
     {
@@ -373,6 +457,10 @@ public sealed class PostgresBuildPcRepository :
         command.Parameters.AddWithValue("@id", quoteId);
         return command.ExecuteNonQuery() > 0;
     }
+
+    public Task<IReadOnlyList<SavedQuote>> GetQuotesAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(GetQuotes());
 
     public IReadOnlyList<SavedQuote> GetQuotes()
     {
@@ -460,6 +548,211 @@ public sealed class PostgresBuildPcRepository :
         transaction.Commit();
     }
 
+    public Task<bool> SetFavoriteAsync(
+        string componentId,
+        bool favorite,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(SetFavorite(componentId, favorite));
+
+    public bool SetFavorite(string componentId, bool favorite)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(componentId);
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            "UPDATE products SET is_favorite = @favorite WHERE lower(id) = lower(@id);";
+        command.Parameters.AddWithValue("id", componentId);
+        command.Parameters.AddWithValue("favorite", favorite);
+        return command.ExecuteNonQuery() > 0;
+    }
+
+    public Task<IReadOnlyList<PriceHistoryEntry>> GetPriceHistoryAsync(
+        string componentId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(GetPriceHistory(componentId));
+
+    public IReadOnlyList<PriceHistoryEntry> GetPriceHistory(string componentId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(componentId);
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT component_id, price_cents, recorded_at, source
+            FROM price_history
+            WHERE lower(component_id) = lower(@id)
+            ORDER BY recorded_at DESC, id DESC;
+            """;
+        command.Parameters.AddWithValue("id", componentId);
+
+        using var reader = command.ExecuteReader();
+        var entries = new List<PriceHistoryEntry>();
+        while (reader.Read())
+        {
+            entries.Add(new PriceHistoryEntry
+            {
+                ComponentId = reader.GetString(0),
+                Price = reader.GetInt64(1) / 100m,
+                RecordedAt = DateTimeOffset.Parse(
+                    reader.GetString(2),
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind),
+                Source = reader.GetString(3)
+            });
+        }
+
+        return entries;
+    }
+
+    /// <summary>
+    /// Grava o custo anterior de um produto quando ele muda, e devolve a
+    /// variação. Só registra mudanças reais, para o histórico não crescer com
+    /// uma linha por importação sem alteração de preço.
+    /// </summary>
+    private static PriceChange? RecordPriceChange(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        PcComponent previous,
+        PcComponent current,
+        string source,
+        DateTimeOffset recordedAt)
+    {
+        if (previous.Price == current.Price)
+        {
+            return null;
+        }
+
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            INSERT INTO price_history(component_id, price_cents, recorded_at, source)
+            VALUES (@id, @price_cents, @recorded_at, @source);
+            """;
+        command.Parameters.AddWithValue("id", previous.Id);
+        command.Parameters.AddWithValue("price_cents", ToCents(previous.Price));
+        command.Parameters.AddWithValue(
+            "recorded_at",
+            recordedAt.ToString("O", CultureInfo.InvariantCulture));
+        command.Parameters.AddWithValue("source", source);
+        command.ExecuteNonQuery();
+
+        return new PriceChange
+        {
+            ComponentId = current.Id,
+            Name = current.Name,
+            PreviousPrice = previous.Price,
+            CurrentPrice = current.Price
+        };
+    }
+
+    public Task<IReadOnlyList<AssemblyTemplate>> GetTemplatesAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(GetTemplates());
+
+    public IReadOnlyList<AssemblyTemplate> GetTemplates()
+    {
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT id, name, description, created_at, items_json
+            FROM assembly_templates
+            ORDER BY lower(name);
+            """;
+        using var reader = command.ExecuteReader();
+        var templates = new List<AssemblyTemplate>();
+        while (reader.Read())
+        {
+            try
+            {
+                templates.Add(new AssemblyTemplate
+                {
+                    Id = reader.GetGuid(0),
+                    Name = reader.GetString(1),
+                    Description = reader.GetString(2),
+                    CreatedAt = DateTimeOffset.Parse(
+                        reader.GetString(3),
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.RoundtripKind),
+                    Items = JsonSerializer.Deserialize<List<AssemblyTemplateItem>>(
+                                reader.GetString(4),
+                                JsonOptions) ?? []
+                });
+            }
+            catch (JsonException)
+            {
+                // Um modelo inválido não impede a leitura dos demais.
+            }
+        }
+
+        return templates;
+    }
+
+    public Task<AssemblyTemplate> SaveTemplateAsync(
+        AssemblyTemplate template,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(SaveTemplate(template));
+
+    public AssemblyTemplate SaveTemplate(AssemblyTemplate template)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        ArgumentException.ThrowIfNullOrWhiteSpace(template.Name);
+        if (template.Items.Count == 0)
+        {
+            throw new ArgumentException(
+                "O modelo deve possuir ao menos um item.",
+                nameof(template));
+        }
+
+        var saved = template with
+        {
+            Id = template.Id == Guid.Empty ? Guid.NewGuid() : template.Id,
+            Name = template.Name.Trim(),
+            Description = template.Description.Trim(),
+            CreatedAt = template.CreatedAt == default
+                ? DateTimeOffset.Now
+                : template.CreatedAt
+        };
+
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT INTO assembly_templates(id, name, description, created_at, items_json)
+            VALUES (@id, @name, @description, @created_at, @items_json)
+            ON CONFLICT (id) DO UPDATE SET
+                name = excluded.name,
+                description = excluded.description,
+                items_json = excluded.items_json;
+            """;
+        command.Parameters.AddWithValue("id", saved.Id);
+        command.Parameters.AddWithValue("name", saved.Name);
+        command.Parameters.AddWithValue("description", saved.Description);
+        command.Parameters.AddWithValue(
+            "created_at",
+            saved.CreatedAt.ToString("O", CultureInfo.InvariantCulture));
+        command.Parameters.AddWithValue(
+            "items_json",
+            JsonSerializer.Serialize(saved.Items, JsonOptions));
+        command.ExecuteNonQuery();
+        return saved;
+    }
+
+    public Task<bool> DeleteTemplateAsync(
+        Guid templateId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(DeleteTemplate(templateId));
+
+    public bool DeleteTemplate(Guid templateId)
+    {
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM assembly_templates WHERE id = @id;";
+        command.Parameters.AddWithValue("id", templateId);
+        return command.ExecuteNonQuery() > 0;
+    }
+
     private void Initialize()
     {
         using var connection = OpenConnection();
@@ -517,6 +810,32 @@ public sealed class PostgresBuildPcRepository :
                 ON quotes(lower(client_name));
             CREATE INDEX IF NOT EXISTS ix_app_metadata_key_prefix
                 ON app_metadata(key text_pattern_ops);
+            ALTER TABLE products
+                ADD COLUMN IF NOT EXISTS is_favorite boolean NOT NULL DEFAULT false;
+            ALTER TABLE quotes
+                ADD COLUMN IF NOT EXISTS discount_cents bigint NOT NULL DEFAULT 0;
+            ALTER TABLE quotes
+                ADD COLUMN IF NOT EXISTS validity_days integer NOT NULL DEFAULT 0;
+            ALTER TABLE quotes
+                ADD COLUMN IF NOT EXISTS payment_terms text NOT NULL DEFAULT '';
+            ALTER TABLE quotes
+                ADD COLUMN IF NOT EXISTS delivery_terms text NOT NULL DEFAULT '';
+            CREATE TABLE IF NOT EXISTS price_history (
+                id bigserial PRIMARY KEY,
+                component_id text NOT NULL,
+                price_cents bigint NOT NULL,
+                recorded_at text NOT NULL,
+                source text NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ix_price_history_component
+                ON price_history(lower(component_id), recorded_at DESC);
+            CREATE TABLE IF NOT EXISTS assembly_templates (
+                id uuid PRIMARY KEY,
+                name text NOT NULL,
+                description text NOT NULL,
+                created_at text NOT NULL,
+                items_json text NOT NULL
+            );
             """);
     }
 

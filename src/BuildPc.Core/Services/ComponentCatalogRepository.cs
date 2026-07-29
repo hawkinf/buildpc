@@ -31,13 +31,27 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
         MigrateLegacyJsonOnce(legacyJsonPath);
     }
 
-    public IReadOnlyList<PcComponent> GetAll() =>
+    // O SQLite local responde em microssegundos; envolver em Task.Run só
+    // acrescentaria troca de thread. As tarefas voltam já concluídas.
+    public Task<IReadOnlyList<PcComponent>> GetAllAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(GetAll());
+
+    internal IReadOnlyList<PcComponent> GetAll() =>
         ReadStoredComponents()
             .OrderBy(component => ComponentCategoryInfo.DisplayOrder(component.Category))
             .ThenBy(component => component.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
 
-    public void Add(PcComponent component)
+    public Task AddAsync(
+        PcComponent component,
+        CancellationToken cancellationToken = default)
+    {
+        Add(component);
+        return Task.CompletedTask;
+    }
+
+    internal void Add(PcComponent component)
     {
         ArgumentNullException.ThrowIfNull(component);
 
@@ -62,7 +76,12 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
             preserveKeepFlag: false);
     }
 
-    public bool Update(PcComponent component)
+    public Task<bool> UpdateAsync(
+        PcComponent component,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(Update(component));
+
+    internal bool Update(PcComponent component)
     {
         ArgumentNullException.ThrowIfNull(component);
         using var connection = OpenConnection();
@@ -81,13 +100,23 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
         return true;
     }
 
-    public bool Delete(string componentId)
+    public Task<bool> DeleteAsync(
+        string componentId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(Delete(componentId));
+
+    internal bool Delete(string componentId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(componentId);
         return DeleteMany([componentId]) == 1;
     }
 
-    public int DeleteMany(IEnumerable<string> componentIds)
+    public Task<int> DeleteManyAsync(
+        IEnumerable<string> componentIds,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(DeleteMany(componentIds));
+
+    internal int DeleteMany(IEnumerable<string> componentIds)
     {
         ArgumentNullException.ThrowIfNull(componentIds);
         var ids = componentIds
@@ -131,7 +160,14 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
         return deleted;
     }
 
-    public int UpdateDescriptions(
+    public Task<int> UpdateDescriptionsAsync(
+        IEnumerable<string> componentIds,
+        string description,
+        BulkDescriptionMode mode,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(UpdateDescriptions(componentIds, description, mode));
+
+    internal int UpdateDescriptions(
         IEnumerable<string> componentIds,
         string description,
         BulkDescriptionMode mode)
@@ -199,7 +235,14 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
         return updated;
     }
 
-    public ImportReplaceResult ReplaceImported(
+    public Task<ImportReplaceResult> ReplaceImportedAsync(
+        ComponentCategory category,
+        string source,
+        IEnumerable<PcComponent> components,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(ReplaceImported(category, source, components));
+
+    internal ImportReplaceResult ReplaceImported(
         ComponentCategory category,
         string source,
         IEnumerable<PcComponent> components)
@@ -216,6 +259,20 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
         using var connection = OpenConnection();
         using var transaction = connection.BeginTransaction();
 
+        // Preços antes da substituição, para detectar variações e para o
+        // aviso de produtos que deixaram de vir na carga.
+        var previousByCategory = ReadStoredComponents(connection, transaction)
+            .Where(component =>
+                component.Category == category &&
+                string.Equals(
+                    component.ImportSource,
+                    source,
+                    StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(
+                component => component.Id,
+                component => component,
+                StringComparer.OrdinalIgnoreCase);
+
         var keptCount = CountImported(
             connection,
             transaction,
@@ -228,8 +285,22 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
             category,
             source);
 
+        var importedAt = DateTimeOffset.UtcNow;
+        var priceChanges = new List<PriceChange>();
         foreach (var component in incoming)
         {
+            if (previousByCategory.TryGetValue(component.Id, out var previous) &&
+                RecordPriceChange(
+                    connection,
+                    transaction,
+                    previous,
+                    component,
+                    source,
+                    importedAt) is { } change)
+            {
+                priceChanges.Add(change);
+            }
+
             InsertOrUpdate(
                 connection,
                 transaction,
@@ -241,17 +312,29 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
                 preserveKeepFlag: true);
         }
 
-        var importedAt = DateTimeOffset.UtcNow;
+        var incomingIds = incoming
+            .Select(component => component.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var disappeared = previousByCategory.Keys
+            .Where(id => !incomingIds.Contains(id))
+            .Count();
+
         SetMetadata(
             connection,
             transaction,
             ImportMetadataKey(category, source),
             importedAt.ToString("O", CultureInfo.InvariantCulture));
         transaction.Commit();
-        return new(incoming.Count, removedCount, keptCount, importedAt);
+        return new(
+            incoming.Count,
+            removedCount,
+            keptCount,
+            importedAt,
+            priceChanges,
+            disappeared);
     }
 
-    public DateTimeOffset? GetLastImport(ComponentCategory category, string source)
+    internal DateTimeOffset? GetLastImport(ComponentCategory category, string source)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(source);
 
@@ -270,7 +353,11 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
             : null;
     }
 
-    public IReadOnlyDictionary<string, DateTimeOffset> GetLastImports()
+    public Task<IReadOnlyDictionary<string, DateTimeOffset>> GetLastImportsAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(GetLastImports());
+
+    internal IReadOnlyDictionary<string, DateTimeOffset> GetLastImports()
     {
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
@@ -297,7 +384,13 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
         return result;
     }
 
-    public bool SetKeepOnImport(string componentId, bool keep)
+    public Task<bool> SetKeepOnImportAsync(
+        string componentId,
+        bool keep,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(SetKeepOnImport(componentId, keep));
+
+    internal bool SetKeepOnImport(string componentId, bool keep)
     {
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
@@ -310,6 +403,104 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
         command.Parameters.AddWithValue("$id", componentId);
         command.Parameters.AddWithValue("$keep", keep ? 1 : 0);
         return command.ExecuteNonQuery() > 0;
+    }
+
+    public Task<bool> SetFavoriteAsync(
+        string componentId,
+        bool favorite,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(SetFavorite(componentId, favorite));
+
+    internal bool SetFavorite(string componentId, bool favorite)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(componentId);
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            "UPDATE products SET is_favorite = $favorite WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", componentId);
+        command.Parameters.AddWithValue("$favorite", favorite ? 1 : 0);
+        return command.ExecuteNonQuery() > 0;
+    }
+
+    public Task<IReadOnlyList<PriceHistoryEntry>> GetPriceHistoryAsync(
+        string componentId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(GetPriceHistory(componentId));
+
+    internal IReadOnlyList<PriceHistoryEntry> GetPriceHistory(string componentId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(componentId);
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT component_id, price_cents, recorded_at, source
+            FROM price_history
+            WHERE component_id = $id
+            ORDER BY recorded_at DESC, id DESC;
+            """;
+        command.Parameters.AddWithValue("$id", componentId);
+
+        using var reader = command.ExecuteReader();
+        var entries = new List<PriceHistoryEntry>();
+        while (reader.Read())
+        {
+            entries.Add(new PriceHistoryEntry
+            {
+                ComponentId = reader.GetString(0),
+                Price = reader.GetInt64(1) / 100m,
+                RecordedAt = DateTimeOffset.Parse(
+                    reader.GetString(2),
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind),
+                Source = reader.GetString(3)
+            });
+        }
+
+        return entries;
+    }
+
+    /// <summary>
+    /// Grava o custo anterior de um produto quando ele muda, e devolve a
+    /// variação. Só registra mudanças reais, para o histórico não crescer com
+    /// uma linha por importação sem alteração de preço.
+    /// </summary>
+    private static PriceChange? RecordPriceChange(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        PcComponent previous,
+        PcComponent current,
+        string source,
+        DateTimeOffset recordedAt)
+    {
+        if (previous.Price == current.Price)
+        {
+            return null;
+        }
+
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            INSERT INTO price_history(component_id, price_cents, recorded_at, source)
+            VALUES ($id, $price_cents, $recorded_at, $source);
+            """;
+        command.Parameters.AddWithValue("$id", previous.Id);
+        command.Parameters.AddWithValue("$price_cents", DecimalToCents(previous.Price));
+        command.Parameters.AddWithValue(
+            "$recorded_at",
+            recordedAt.ToString("O", CultureInfo.InvariantCulture));
+        command.Parameters.AddWithValue("$source", source);
+        command.ExecuteNonQuery();
+
+        return new PriceChange
+        {
+            ComponentId = current.Id,
+            Name = current.Name,
+            PreviousPrice = previous.Price,
+            CurrentPrice = current.Price
+        };
     }
 
     private void InitializeDatabase()
@@ -345,12 +536,36 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS price_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                component_id TEXT NOT NULL COLLATE NOCASE,
+                price_cents INTEGER NOT NULL,
+                recorded_at TEXT NOT NULL,
+                source TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ix_price_history_component
+                ON price_history(component_id COLLATE NOCASE, recorded_at DESC);
+            CREATE TABLE IF NOT EXISTS assembly_templates (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL COLLATE NOCASE,
+                description TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                items_json TEXT NOT NULL
+            );
             """;
         command.ExecuteNonQuery();
-        EnsureImageUrlColumn(connection);
+        EnsureColumn(connection, "image_url", "TEXT NULL");
+        EnsureColumn(connection, "is_favorite", "INTEGER NOT NULL DEFAULT 0");
     }
 
-    private static void EnsureImageUrlColumn(SqliteConnection connection)
+    /// <summary>
+    /// Acrescenta uma coluna a <c>products</c> se ela ainda não existir, para
+    /// bases criadas por versões anteriores continuarem abrindo.
+    /// </summary>
+    private static void EnsureColumn(
+        SqliteConnection connection,
+        string columnName,
+        string definition)
     {
         using (var columns = connection.CreateCommand())
         {
@@ -360,7 +575,7 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
             {
                 if (string.Equals(
                         reader.GetString(1),
-                        "image_url",
+                        columnName,
                         StringComparison.OrdinalIgnoreCase))
                 {
                     return;
@@ -369,7 +584,8 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
         }
 
         using var migration = connection.CreateCommand();
-        migration.CommandText = "ALTER TABLE products ADD COLUMN image_url TEXT NULL;";
+        migration.CommandText =
+            $"ALTER TABLE products ADD COLUMN {columnName} {definition};";
         migration.ExecuteNonQuery();
     }
 
@@ -488,13 +704,25 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
     private List<PcComponent> ReadStoredComponents()
     {
         using var connection = OpenConnection();
+        return ReadStoredComponents(connection, transaction: null);
+    }
+
+    /// <summary>
+    /// Lê os produtos usando uma conexão já aberta, para participar da mesma
+    /// transação de uma substituição em curso.
+    /// </summary>
+    private static List<PcComponent> ReadStoredComponents(
+        SqliteConnection connection,
+        SqliteTransaction? transaction)
+    {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText =
             """
             SELECT id, category, name, brand, description, price_cents, power_watts,
                    socket, memory_type, form_factor, supported_sockets,
                    supported_form_factors, import_source, keep_on_import, is_user_defined,
-                   image_url
+                   image_url, is_favorite
             FROM products
             ORDER BY category, name COLLATE NOCASE;
             """;
@@ -520,7 +748,8 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
                 ImportSource = reader.IsDBNull(12) ? null : reader.GetString(12),
                 KeepOnImport = reader.GetBoolean(13),
                 IsUserDefined = reader.GetBoolean(14),
-                ImageUrl = reader.IsDBNull(15) ? null : reader.GetString(15)
+                ImageUrl = reader.IsDBNull(15) ? null : reader.GetString(15),
+                IsFavorite = reader.GetBoolean(16)
             });
         }
 
@@ -687,12 +916,12 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
                     id, category, name, brand, description, price_cents, power_watts,
                     socket, memory_type, form_factor, supported_sockets,
                     supported_form_factors, import_source, keep_on_import, is_user_defined,
-                    image_url)
+                    image_url, is_favorite)
                 VALUES (
                     $id, $category, $name, $brand, $description, $price_cents, $power_watts,
                     $socket, $memory_type, $form_factor, $supported_sockets,
                     $supported_form_factors, $import_source, $keep_on_import, $is_user_defined,
-                    $image_url)
+                    $image_url, $is_favorite)
                 ON CONFLICT(id) DO UPDATE SET
                     category = excluded.category,
                     name = excluded.name,
@@ -708,7 +937,9 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
                     import_source = excluded.import_source,
                     keep_on_import = products.keep_on_import,
                     is_user_defined = excluded.is_user_defined,
-                    image_url = excluded.image_url;
+                    image_url = excluded.image_url,
+                    -- Favorito é escolha do usuário: a importação não desfaz.
+                    is_favorite = products.is_favorite;
                 """
                 :
                 """
@@ -716,12 +947,12 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
                     id, category, name, brand, description, price_cents, power_watts,
                     socket, memory_type, form_factor, supported_sockets,
                     supported_form_factors, import_source, keep_on_import, is_user_defined,
-                    image_url)
+                    image_url, is_favorite)
                 VALUES (
                     $id, $category, $name, $brand, $description, $price_cents, $power_watts,
                     $socket, $memory_type, $form_factor, $supported_sockets,
                     $supported_form_factors, $import_source, $keep_on_import, $is_user_defined,
-                    $image_url);
+                    $image_url, $is_favorite);
                 """;
 
         command.Parameters.AddWithValue("$id", component.Id);
@@ -746,6 +977,7 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
         command.Parameters.AddWithValue(
             "$image_url",
             (object?)component.ImageUrl ?? DBNull.Value);
+        command.Parameters.AddWithValue("$is_favorite", component.IsFavorite ? 1 : 0);
         command.ExecuteNonQuery();
     }
 
@@ -772,4 +1004,28 @@ public sealed record ImportReplaceResult(
     int Imported,
     int Removed,
     int Kept,
-    DateTimeOffset ImportedAt);
+    DateTimeOffset ImportedAt,
+    /// <summary>Produtos cujo custo mudou em relação à carga anterior.</summary>
+    IReadOnlyList<PriceChange> PriceChanges,
+    /// <summary>
+    /// Produtos que existiam na carga anterior e não voltaram nesta. Costuma
+    /// indicar item esgotado ou saído de linha na loja.
+    /// </summary>
+    int Disappeared)
+{
+    /// <summary>Sobrecarga para chamadas que não acompanham variações.</summary>
+    public ImportReplaceResult(
+        int imported,
+        int removed,
+        int kept,
+        DateTimeOffset importedAt)
+        : this(imported, removed, kept, importedAt, [], 0)
+    {
+    }
+
+    public bool HasPriceChanges => PriceChanges.Count > 0;
+
+    public int Increases => PriceChanges.Count(change => change.IsIncrease);
+
+    public int Decreases => PriceChanges.Count(change => !change.IsIncrease);
+}

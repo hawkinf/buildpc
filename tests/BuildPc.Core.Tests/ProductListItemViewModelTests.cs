@@ -25,7 +25,7 @@ public sealed class ProductListItemViewModelTests
         };
         var item = ProductListItemViewModel.From(
             component,
-            _ => true,
+            _ => Task.FromResult(true),
             product => selected = product,
             isAlternate: false);
 

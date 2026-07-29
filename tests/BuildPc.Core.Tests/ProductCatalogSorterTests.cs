@@ -173,7 +173,7 @@ public sealed class ProductCatalogSorterTests
                 Description = description,
                 Price = price
             },
-            _ => true,
+            _ => Task.FromResult(true),
             _ => { },
             isAlternate: false);
 }

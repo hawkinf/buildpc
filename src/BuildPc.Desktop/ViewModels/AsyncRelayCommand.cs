@@ -1,4 +1,5 @@
 using System.Windows.Input;
+using BuildPc.Desktop.Services;
 
 namespace BuildPc.Desktop.ViewModels;
 
@@ -23,6 +24,13 @@ public sealed class AsyncRelayCommand(Func<Task> execute, Func<bool>? canExecute
         try
         {
             await execute();
+        }
+        catch (Exception exception)
+        {
+            // Agora que toda leitura e gravação é assíncrona, este é o funil por
+            // onde as falhas dos comandos passam. Sem o catch, um erro que o
+            // ViewModel não tratou viraria exceção não observada.
+            CrashLogService.Record("Comando", exception);
         }
         finally
         {

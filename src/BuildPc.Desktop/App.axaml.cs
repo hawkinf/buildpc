@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using BuildPc.Desktop.Services;
 using BuildPc.Desktop.ViewModels;
 using BuildPc.Desktop.Views;
@@ -19,20 +20,26 @@ public sealed partial class App : Application
             // Enquanto a recuperação estiver em andamento não existe janela
             // principal; fechar o aviso não pode encerrar o processo sozinho.
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            StartMainWindow(desktop, forceLocalDatabase: false);
+
+            // A carga do catálogo é assíncrona. Sem o Post, aguardá-la aqui
+            // bloquearia a inicialização do próprio laço de mensagens.
+            Dispatcher.UIThread.Post(
+                () => _ = StartMainWindowAsync(desktop, forceLocalDatabase: false));
         }
 
         base.OnFrameworkInitializationCompleted();
     }
 
-    private static void StartMainWindow(
+    private static async Task StartMainWindowAsync(
         IClassicDesktopStyleApplicationLifetime desktop,
         bool forceLocalDatabase)
     {
         MainWindowViewModel viewModel;
         try
         {
-            viewModel = new MainWindowViewModel(forceLocalDatabase);
+            viewModel = await MainWindowViewModel
+                .CreateAsync(forceLocalDatabase)
+                .ConfigureAwait(true);
         }
         catch (Exception exception)
         {
@@ -60,10 +67,10 @@ public sealed partial class App : Application
             switch (errorWindow.Choice)
             {
                 case StartupErrorChoice.UseLocalDatabase:
-                    StartMainWindow(desktop, forceLocalDatabase: true);
+                    _ = StartMainWindowAsync(desktop, forceLocalDatabase: true);
                     break;
                 case StartupErrorChoice.Retry:
-                    StartMainWindow(desktop, forceLocalDatabase: false);
+                    _ = StartMainWindowAsync(desktop, forceLocalDatabase: false);
                     break;
                 default:
                     desktop.Shutdown();

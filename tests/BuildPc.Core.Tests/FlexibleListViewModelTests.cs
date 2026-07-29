@@ -159,7 +159,7 @@ public sealed class FlexibleListViewModelTests
             [processor],
             [new(ComponentCategory.Processor, "Processador")],
             new BusinessSettings { GlobalMarginPercent = 10m },
-            list => persisted = new SavedQuote
+            list => Task.FromResult<SavedQuote?>(persisted = new SavedQuote
             {
                 Id = Guid.NewGuid(),
                 Number = 1,
@@ -169,7 +169,7 @@ public sealed class FlexibleListViewModelTests
                 Items = list.BuildQuoteItems(),
                 TotalCost = list.TotalCostValue,
                 TotalPrice = list.TotalPriceValue
-            });
+            }));
         viewModel.ProductPicker.Selected = processor;
         viewModel.AddCommand.Execute(null);
         viewModel.ClientName = "Cliente";

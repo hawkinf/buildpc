@@ -6,7 +6,7 @@ namespace BuildPc.Desktop.ViewModels;
 
 public sealed class ProductListItemViewModel : ViewModelBase
 {
-    private readonly Func<ProductListItemViewModel, bool> _toggleKeep;
+    private readonly Func<ProductListItemViewModel, Task<bool>> _toggleKeep;
     private readonly Action<ProductListItemViewModel> _select;
     private readonly Action _bulkSelectionChanged;
     private bool _isKept;
@@ -17,7 +17,7 @@ public sealed class ProductListItemViewModel : ViewModelBase
 
     private ProductListItemViewModel(
         PcComponent component,
-        Func<ProductListItemViewModel, bool> toggleKeep,
+        Func<ProductListItemViewModel, Task<bool>> toggleKeep,
         Action<ProductListItemViewModel> select,
         Action bulkSelectionChanged,
         bool isAlternate,
@@ -51,7 +51,7 @@ public sealed class ProductListItemViewModel : ViewModelBase
         _toggleKeep = toggleKeep;
         _select = select;
         _bulkSelectionChanged = bulkSelectionChanged;
-        ToggleKeepCommand = new RelayCommand(ToggleKeep);
+        ToggleKeepCommand = new AsyncRelayCommand(ToggleKeepAsync);
         SelectCommand = new RelayCommand(() => _select(this));
     }
 
@@ -134,7 +134,7 @@ public sealed class ProductListItemViewModel : ViewModelBase
 
     public static ProductListItemViewModel From(
         PcComponent component,
-        Func<ProductListItemViewModel, bool> toggleKeep,
+        Func<ProductListItemViewModel, Task<bool>> toggleKeep,
         Action<ProductListItemViewModel> select,
         Action bulkSelectionChanged,
         bool isAlternate) =>
@@ -143,7 +143,7 @@ public sealed class ProductListItemViewModel : ViewModelBase
     public static ProductListItemViewModel From(
         PcComponent component,
         string categoryName,
-        Func<ProductListItemViewModel, bool> toggleKeep,
+        Func<ProductListItemViewModel, Task<bool>> toggleKeep,
         Action<ProductListItemViewModel> select,
         Action bulkSelectionChanged,
         bool isAlternate) =>
@@ -157,14 +157,14 @@ public sealed class ProductListItemViewModel : ViewModelBase
 
     public static ProductListItemViewModel From(
         PcComponent component,
-        Func<ProductListItemViewModel, bool> toggleKeep,
+        Func<ProductListItemViewModel, Task<bool>> toggleKeep,
         Action<ProductListItemViewModel> select,
         bool isAlternate) =>
         new(component, toggleKeep, select, () => { }, isAlternate);
 
-    private void ToggleKeep()
+    private async Task ToggleKeepAsync()
     {
-        if (_toggleKeep(this))
+        if (await _toggleKeep(this))
         {
             IsKept = !IsKept;
         }

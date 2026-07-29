@@ -24,8 +24,34 @@ public sealed record SavedQuote
     public string ClientPhone { get; init; } = string.Empty;
     public string Notes { get; init; } = string.Empty;
     public decimal TotalCost { get; init; }
+
+    /// <summary>Soma dos itens, antes do desconto.</summary>
     public decimal TotalPrice { get; init; }
-    public decimal TotalProfit => TotalPrice - TotalCost;
+
+    /// <summary>
+    /// Desconto concedido, em reais. Orçamentos gravados antes deste campo
+    /// existir são lidos com zero e continuam válidos.
+    /// </summary>
+    public decimal DiscountAmount { get; init; }
+
+    /// <summary>Dias de validade da proposta. Zero significa sem prazo.</summary>
+    public int ValidityDays { get; init; }
+
+    public string PaymentTerms { get; init; } = string.Empty;
+    public string DeliveryTerms { get; init; } = string.Empty;
+
     public IReadOnlyList<SavedQuoteItem> Items { get; init; } = [];
     public BusinessSettings CompanySnapshot { get; init; } = new();
+
+    /// <summary>Valor que o cliente paga: total dos itens menos o desconto.</summary>
+    public decimal FinalPrice => Math.Max(0m, TotalPrice - DiscountAmount);
+
+    public decimal TotalProfit => FinalPrice - TotalCost;
+
+    public bool HasDiscount => DiscountAmount > 0m;
+
+    /// <summary>Último dia de validade, ou <c>null</c> quando não há prazo.</summary>
+    public DateTimeOffset? ValidUntil => ValidityDays > 0
+        ? CreatedAt.AddDays(ValidityDays)
+        : null;
 }

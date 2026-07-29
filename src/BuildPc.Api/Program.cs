@@ -63,7 +63,7 @@ if (TryGetSqliteImportPath(args, out var sqlitePath))
         return 1;
     }
 
-    var snapshot = SqliteSnapshotReader.Read(sqlitePath);
+    var snapshot = await SqliteSnapshotReader.ReadAsync(sqlitePath);
     app.Services
         .GetRequiredService<PostgresBuildPcRepository>()
         .ImportSnapshot(snapshot);
@@ -258,18 +258,41 @@ app.MapPost(
     (
         SaveQuoteRequest request,
         PostgresBuildPcRepository repository) =>
-        Results.Ok(repository.SaveQuote(
-            request.Existing,
-            request.ClientName,
-            request.ClientPhone,
-            request.Notes,
-            request.Items,
-            request.CompanySnapshot)));
+        Results.Ok(repository.SaveQuote(request.Existing, request.Draft)));
 
 app.MapDelete(
     "/quotes/{id:guid}",
     (Guid id, PostgresBuildPcRepository repository) =>
         Results.Ok(new BooleanResponse(repository.DeleteQuote(id))));
+
+app.MapPut(
+    "/products/{id}/favorite",
+    (
+        string id,
+        SetFavoriteRequest request,
+        PostgresBuildPcRepository repository) =>
+        Results.Ok(new BooleanResponse(
+            repository.SetFavorite(id, request.Favorite))));
+
+app.MapGet(
+    "/products/{id}/price-history",
+    (string id, PostgresBuildPcRepository repository) =>
+        Results.Ok(repository.GetPriceHistory(id)));
+
+app.MapGet(
+    "/templates",
+    (PostgresBuildPcRepository repository) =>
+        Results.Ok(repository.GetTemplates()));
+
+app.MapPost(
+    "/templates",
+    (AssemblyTemplate template, PostgresBuildPcRepository repository) =>
+        Results.Ok(repository.SaveTemplate(template)));
+
+app.MapDelete(
+    "/templates/{id:guid}",
+    (Guid id, PostgresBuildPcRepository repository) =>
+        Results.Ok(new BooleanResponse(repository.DeleteTemplate(id))));
 
 app.Run();
 return 0;

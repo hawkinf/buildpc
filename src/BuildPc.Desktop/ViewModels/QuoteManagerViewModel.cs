@@ -22,10 +22,9 @@ public sealed class QuoteManagerViewModel : ViewModelBase
         _openInAssembly = openInAssembly;
         Quotes = [];
         RequestDeleteCommand = new RelayCommand(RequestDelete);
-        ConfirmDeleteCommand = new RelayCommand(ConfirmDelete);
+        ConfirmDeleteCommand = new AsyncRelayCommand(ConfirmDeleteAsync);
         CancelDeleteCommand = new RelayCommand(CancelDelete);
         OpenInAssemblyCommand = new RelayCommand(OpenInAssembly);
-        Refresh();
     }
 
     public ObservableCollection<SavedQuoteListItemViewModel> Quotes { get; }
@@ -69,12 +68,12 @@ public sealed class QuoteManagerViewModel : ViewModelBase
         private set => SetProperty(ref _statusMessage, value);
     }
 
-    public void Refresh()
+    public async Task RefreshAsync()
     {
         IReadOnlyList<SavedQuote> quotes;
         try
         {
-            quotes = _repository.GetQuotes();
+            quotes = await _repository.GetQuotesAsync();
         }
         catch (SqliteException)
         {
@@ -131,7 +130,7 @@ public sealed class QuoteManagerViewModel : ViewModelBase
 
     private void CancelDelete() => IsDeleteConfirmationVisible = false;
 
-    private void ConfirmDelete()
+    private async Task ConfirmDeleteAsync()
     {
         if (SelectedQuote is not { } selected)
         {
@@ -142,11 +141,11 @@ public sealed class QuoteManagerViewModel : ViewModelBase
         var number = selected.Quote.Number;
         try
         {
-            if (!_repository.DeleteQuote(selected.Quote.Id))
+            if (!await _repository.DeleteQuoteAsync(selected.Quote.Id))
             {
                 StatusMessage = "O orçamento já não estava mais gravado.";
                 IsDeleteConfirmationVisible = false;
-                Refresh();
+                await RefreshAsync();
                 return;
             }
         }
@@ -165,7 +164,7 @@ public sealed class QuoteManagerViewModel : ViewModelBase
 
         IsDeleteConfirmationVisible = false;
         SelectedQuote = null;
-        Refresh();
+        await RefreshAsync();
         StatusMessage = $"Orçamento #{number:000000} excluído.";
     }
 

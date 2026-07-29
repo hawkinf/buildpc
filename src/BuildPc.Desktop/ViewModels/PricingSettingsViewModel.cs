@@ -10,7 +10,7 @@ namespace BuildPc.Desktop.ViewModels;
 public sealed class PricingSettingsViewModel : ViewModelBase
 {
     private readonly IReadOnlyList<CategoryOptionViewModel> _categories;
-    private readonly Func<BusinessSettings, string?> _save;
+    private readonly Func<BusinessSettings, Task<string?>> _save;
     private readonly Action<AppThemeMode> _applyTheme;
     private List<ProductCategoryDefinition>? _productCategories;
     private CategoryOptionViewModel? _selectedCategory;
@@ -31,7 +31,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
     public PricingSettingsViewModel(
         BusinessSettings settings,
         IReadOnlyList<CategoryOptionViewModel> categories,
-        Func<BusinessSettings, string?> save,
+        Func<BusinessSettings, Task<string?>> save,
         BuildPcApiSettings? apiSettings,
         Action<BuildPcApiSettings?> saveApiSettings,
         Func<BuildPcApiSettings, Task> testApiConnection,
@@ -81,7 +81,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
 
         SelectedCategory = AvailableCategories.FirstOrDefault();
         AddMarginCommand = new RelayCommand(AddMargin);
-        SaveCommand = new RelayCommand(Save);
+        SaveCommand = new AsyncRelayCommand(SaveAsync);
     }
 
     public ObservableCollection<CategoryMarginViewModel> CategoryMargins { get; }
@@ -181,7 +181,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
         ClearStatus();
     }
 
-    private void Save()
+    private async Task SaveAsync()
     {
         if (!TryParsePercent(GlobalMarginText, out var globalMargin))
         {
@@ -216,7 +216,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
             AdditionalQuoteInfo = AdditionalQuoteInfo.Trim(),
             ThemeMode = SelectedThemeOption.Mode
         };
-        var error = _save(settings);
+        var error = await _save(settings);
         if (error is not null)
         {
             Fail(error);

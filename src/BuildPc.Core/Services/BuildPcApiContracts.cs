@@ -16,13 +16,11 @@ public sealed record ReplaceImportedProductsRequest(
 
 public sealed record SetKeepOnImportRequest(bool Keep);
 
+public sealed record SetFavoriteRequest(bool Favorite);
+
 public sealed record SaveQuoteRequest(
     SavedQuote? Existing,
-    string ClientName,
-    string ClientPhone,
-    string Notes,
-    IReadOnlyList<SavedQuoteItem> Items,
-    BusinessSettings CompanySnapshot);
+    QuoteDraft Draft);
 
 public sealed record AffectedRowsResponse(int Count);
 

@@ -18,4 +18,10 @@ public sealed record PcComponent
     public string? ImportSource { get; init; }
     public bool KeepOnImport { get; init; }
     public bool IsUserDefined { get; init; }
+
+    /// <summary>
+    /// Produto marcado como favorito, exibido antes dos demais nas listas de
+    /// seleção. Preservado nas importações, como <see cref="KeepOnImport"/>.
+    /// </summary>
+    public bool IsFavorite { get; init; }
 }

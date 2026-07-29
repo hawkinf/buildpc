@@ -43,7 +43,9 @@ public static class SqliteSnapshotReader
         source.BackupDatabase(destination);
     }
 
-    public static BuildPcDatabaseSnapshot Read(string databasePath)
+    public static async Task<BuildPcDatabaseSnapshot> ReadAsync(
+        string databasePath,
+        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(databasePath);
         if (!File.Exists(databasePath))
@@ -56,9 +58,9 @@ public static class SqliteSnapshotReader
         var catalog = new ComponentCatalogRepository(databasePath);
         var quotes = new QuoteRepository(databasePath);
         return new BuildPcDatabaseSnapshot(
-            catalog.GetAll(),
-            quotes.GetSettings(),
-            quotes.GetQuotes(),
+            await catalog.GetAllAsync(cancellationToken).ConfigureAwait(false),
+            await quotes.GetSettingsAsync(cancellationToken).ConfigureAwait(false),
+            await quotes.GetQuotesAsync(cancellationToken).ConfigureAwait(false),
             ReadMetadata(databasePath));
     }
 

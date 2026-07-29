@@ -94,6 +94,10 @@ Comportamento:
 - o orçamento precisa ser gravado antes de poder ser exportado;
 - depois de qualquer alteração, é necessário gravar novamente antes de
   exportar;
+- o preço total de venda fica no cabeçalho, imediatamente antes do botão de
+  olho;
+- a Montagem não exibe cartões separados de quantidade de produtos ou de
+  preço total no corpo da tela;
 - os botões de olho, gravação e exportação ficam no cabeçalho da Montagem,
   junto de “Limpar montagem”;
 - o rodapé interno da Montagem fica reservado aos avisos de gravação e aos

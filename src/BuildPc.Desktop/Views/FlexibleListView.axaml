@@ -10,12 +10,27 @@
         <StackPanel Spacing="4">
           <TextBlock Text="Montagem" FontSize="22" FontWeight="Bold" />
           <TextBlock Text="Escolha uma categoria e adicione quantos produtos precisar."
-                     Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="12" />
+                     Foreground="{DynamicResource Brush.TextBodyMuted}"
+                     FontSize="12"
+                     TextWrapping="Wrap" />
         </StackPanel>
         <StackPanel Grid.Column="1"
                     Orientation="Horizontal"
                     Spacing="12"
                     VerticalAlignment="Center">
+          <StackPanel MinWidth="112"
+                      VerticalAlignment="Center">
+            <TextBlock Text="PREÇO DE VENDA"
+                       FontSize="8"
+                       TextAlignment="Right"
+                       Foreground="{DynamicResource Brush.TextMuted}" />
+            <TextBlock Text="{Binding TotalPrice}"
+                       FontSize="16"
+                       FontWeight="Bold"
+                       TextAlignment="Right"
+                       Foreground="{DynamicResource Brush.AccentLight}" />
+          </StackPanel>
+
           <Button x:Name="sensitiveTotalsButton"
                   Classes="secondary"
                   Padding="10"
@@ -264,39 +279,6 @@
             </StackPanel>
           </Grid>
         </Border>
-
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-          <Border Classes="card">
-            <Grid ColumnDefinitions="Auto,*">
-              <Border Width="38" Height="38" CornerRadius="9"
-                      Background="{DynamicResource Brush.AccentSurface}">
-                <PathIcon Data="{StaticResource Icon.Components}" Width="19" Height="19"
-                          Foreground="{DynamicResource Brush.AccentLight}"
-                          HorizontalAlignment="Center" VerticalAlignment="Center" />
-              </Border>
-              <StackPanel Grid.Column="1" Margin="12,0,0,0">
-                <TextBlock Text="{Binding ItemsText}" FontWeight="Bold" FontSize="15" />
-                <TextBlock Text="{Binding LinesText}" Foreground="{DynamicResource Brush.TextSecondary}"
-                           FontSize="10" />
-              </StackPanel>
-            </Grid>
-          </Border>
-          <Border Grid.Column="1" Classes="card">
-            <Grid ColumnDefinitions="Auto,*">
-              <Border Width="38" Height="38" CornerRadius="9"
-                      Background="{DynamicResource Brush.WarningBackground}">
-                <PathIcon Data="{StaticResource Icon.Currency}" Width="19" Height="19"
-                          Foreground="{DynamicResource Brush.Warning}"
-                          HorizontalAlignment="Center" VerticalAlignment="Center" />
-              </Border>
-              <StackPanel Grid.Column="1" Margin="12,0,0,0">
-                <TextBlock Text="{Binding TotalPrice}" FontWeight="Bold" FontSize="15" />
-                <TextBlock Text="Preço total do orçamento" Foreground="{DynamicResource Brush.TextSecondary}"
-                           FontSize="10" />
-              </StackPanel>
-            </Grid>
-          </Border>
-        </Grid>
 
         <Border Classes="card" IsVisible="{Binding IsEmpty}" Padding="28">
           <StackPanel HorizontalAlignment="Center" Spacing="8">

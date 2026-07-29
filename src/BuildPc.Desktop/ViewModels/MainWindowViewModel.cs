@@ -1868,6 +1868,107 @@ public sealed class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(ProductPriceTableSuggestedFileName));
     }
 
+    /// <summary>
+    /// Conteúdo CSV do que está visível na lista, respeitando categoria, filtro
+    /// e ordenação escolhidos.
+    /// </summary>
+    public string BuildCatalogCsv() =>
+        ProductCsvSerializer.BuildCsv(
+            FilteredProducts.Select(product => product.Component));
+
+    public string CatalogCsvSuggestedFileName =>
+        $"catalogo-{SelectedCatalogCategoryFilter.Value?.ToString().ToLowerInvariant() ?? "todos"}.csv";
+
+    /// <summary>
+    /// Aplica um CSV ao catálogo: produtos com identificador novo são incluídos
+    /// e os existentes são atualizados. Nada é apagado.
+    /// </summary>
+    public async Task ImportCatalogCsvAsync(string csv)
+    {
+        var parsed = ProductCsvSerializer.Parse(csv);
+        if (parsed.Products.Count == 0)
+        {
+            BulkStatusMessage = parsed.HasErrors
+                ? $"Nenhum produto importado. {FirstErrors(parsed)}"
+                : "O arquivo não contém produtos.";
+            return;
+        }
+
+        var existingIds = Products
+            .Select(product => product.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var added = 0;
+        var updated = 0;
+        var failed = 0;
+
+        foreach (var product in parsed.Products)
+        {
+            try
+            {
+                if (existingIds.Contains(product.Id))
+                {
+                    if (await _catalogRepository.UpdateAsync(product))
+                    {
+                        updated++;
+                    }
+                }
+                else
+                {
+                    await _catalogRepository.AddAsync(product);
+                    added++;
+                }
+            }
+            catch (SqliteException)
+            {
+                failed++;
+            }
+            catch (InvalidOperationException)
+            {
+                failed++;
+            }
+        }
+
+        await RefreshCatalogCollectionsAsync();
+
+        var parts = new List<string>();
+        if (added > 0)
+        {
+            parts.Add($"{added} incluídos");
+        }
+
+        if (updated > 0)
+        {
+            parts.Add($"{updated} atualizados");
+        }
+
+        if (failed > 0)
+        {
+            parts.Add($"{failed} recusados pelo banco");
+        }
+
+        var summary = parts.Count > 0
+            ? string.Join(", ", parts) + "."
+            : "Nenhuma alteração.";
+        BulkStatusMessage = parsed.HasErrors
+            ? $"{summary} {FirstErrors(parsed)}"
+            : summary;
+    }
+
+    /// <summary>
+    /// Resume os problemas do arquivo sem inundar a barra de status.
+    /// </summary>
+    private static string FirstErrors(ProductCsvImport parsed)
+    {
+        const int maximum = 3;
+        var shown = string.Join(" ", parsed.Errors.Take(maximum));
+        return parsed.Errors.Count > maximum
+            ? $"{shown} (+{parsed.Errors.Count - maximum} outros problemas)"
+            : shown;
+    }
+
+    public void ReportCatalogCsvFailure() =>
+        BulkStatusMessage = "Não foi possível ler ou gravar o arquivo CSV.";
+
     public ProductPriceTableDocument BuildProductPriceTableDocument()
     {
         var isCost = !_isCatalogShowingSalePrice;

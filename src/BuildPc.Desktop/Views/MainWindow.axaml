@@ -228,7 +228,7 @@
             <Border Grid.Row="1" BorderBrush="{DynamicResource Brush.Border}"
                     BorderThickness="0,0,0,1" Padding="18,12">
               <StackPanel Spacing="8">
-                <Grid ColumnDefinitions="240,*,Auto,Auto,Auto" ColumnSpacing="8">
+                <Grid ColumnDefinitions="240,*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8">
                   <ComboBox ItemsSource="{Binding ProductCategoryFilters}"
                             AutomationProperties.Name="Filtrar produtos por categoria"
                             SelectedItem="{Binding SelectedCatalogCategoryFilter, Mode=TwoWay}">
@@ -279,7 +279,31 @@
                               Height="17"
                               Foreground="{DynamicResource Brush.AccentLight}" />
                   </Button>
-                  <TextBlock Grid.Column="4" Text="{Binding BulkSelectedText}"
+                  <!-- CSV: tira os dados do programa para editar em planilha. -->
+                  <Button Grid.Column="4"
+                          Classes="secondary"
+                          Click="ExportCatalogCsv_Click"
+                          IsEnabled="{Binding CanExportProductPriceTable}"
+                          Width="44" MinWidth="44" Height="44" MinHeight="44"
+                          Padding="10"
+                          AutomationProperties.Name="Exportar a lista visível para CSV"
+                          ToolTip.Tip="Exportar a lista visível para CSV">
+                    <PathIcon Data="{StaticResource Icon.Export}"
+                              Width="17" Height="17"
+                              Foreground="{DynamicResource Brush.AccentLight}" />
+                  </Button>
+                  <Button Grid.Column="5"
+                          Classes="secondary"
+                          Click="ImportCatalogCsv_Click"
+                          Width="44" MinWidth="44" Height="44" MinHeight="44"
+                          Padding="10"
+                          AutomationProperties.Name="Importar produtos de um arquivo CSV"
+                          ToolTip.Tip="Importar produtos de um CSV: inclui os novos e atualiza os existentes">
+                    <PathIcon Data="{StaticResource Icon.Import}"
+                              Width="17" Height="17"
+                              Foreground="{DynamicResource Brush.AccentLight}" />
+                  </Button>
+                  <TextBlock Grid.Column="6" Text="{Binding BulkSelectedText}"
                              HorizontalAlignment="Right" VerticalAlignment="Center"
                              FontSize="9" Foreground="{DynamicResource Brush.TextSecondary}" />
                 </Grid>

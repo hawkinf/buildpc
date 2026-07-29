@@ -1,3 +1,4 @@
+using System.Text;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
@@ -122,6 +123,90 @@ public sealed partial class MainWindow : Window
             viewModel.FailProductPriceTableExport();
         }
     }
+
+    private async void ExportCatalogCsv_Click(
+        object? sender,
+        Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        try
+        {
+            var file = await StorageProvider.SaveFilePickerAsync(
+                new FilePickerSaveOptions
+                {
+                    Title = "Exportar catálogo para CSV",
+                    SuggestedFileName = viewModel.CatalogCsvSuggestedFileName,
+                    DefaultExtension = "csv",
+                    FileTypeChoices = [CsvFileType]
+                });
+            if (file is null)
+            {
+                return;
+            }
+
+            // BOM UTF-8: sem ele o Excel em português corrompe os acentos.
+            await using var stream = await file.OpenWriteAsync();
+            await using var writer = new StreamWriter(
+                stream,
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            await writer.WriteAsync(viewModel.BuildCatalogCsv());
+        }
+        catch (Exception exception)
+        {
+            CrashLogService.Record("Exportar CSV", exception);
+            viewModel.ReportCatalogCsvFailure();
+        }
+    }
+
+    private async void ImportCatalogCsv_Click(
+        object? sender,
+        Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        try
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(
+                new FilePickerOpenOptions
+                {
+                    Title = "Importar produtos de um CSV",
+                    AllowMultiple = false,
+                    FileTypeFilter = [CsvFileType]
+                });
+            if (files.FirstOrDefault() is not { } file)
+            {
+                return;
+            }
+
+            string csv;
+            await using (var stream = await file.OpenReadAsync())
+            using (var reader = new StreamReader(stream, Encoding.UTF8, true))
+            {
+                csv = await reader.ReadToEndAsync();
+            }
+
+            await viewModel.ImportCatalogCsvAsync(csv);
+        }
+        catch (Exception exception)
+        {
+            CrashLogService.Record("Importar CSV", exception);
+            viewModel.ReportCatalogCsvFailure();
+        }
+    }
+
+    private static FilePickerFileType CsvFileType { get; } =
+        new("Planilha CSV")
+        {
+            Patterns = ["*.csv"],
+            MimeTypes = ["text/csv"]
+        };
 
     private async void CatalogProduct_Click(
         object? sender,

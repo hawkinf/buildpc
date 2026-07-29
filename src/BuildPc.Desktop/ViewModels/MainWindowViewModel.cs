@@ -1116,27 +1116,9 @@ public sealed class MainWindowViewModel : ViewModelBase
             (SelectedCatalogCategoryFilter.Value is null ||
              product.Component.Category == SelectedCatalogCategoryFilter.Value) &&
             ProductFilter.Matches(product.Component, CatalogSearchText));
-        filtered = SelectedCatalogSort.Mode switch
-        {
-            ProductCatalogSortMode.DescriptionDescending => filtered
-                .OrderByDescending(
-                    product => product.Description,
-                    StringComparer.CurrentCultureIgnoreCase)
-                .ThenBy(product => product.Name, StringComparer.CurrentCultureIgnoreCase),
-            ProductCatalogSortMode.PriceAscending => filtered
-                .OrderBy(product => product.Component.Price)
-                .ThenBy(product => product.Name, StringComparer.CurrentCultureIgnoreCase),
-            ProductCatalogSortMode.PriceDescending => filtered
-                .OrderByDescending(product => product.Component.Price)
-                .ThenBy(product => product.Name, StringComparer.CurrentCultureIgnoreCase),
-            _ => filtered
-                .OrderBy(
-                    product => product.Description,
-                    StringComparer.CurrentCultureIgnoreCase)
-                .ThenBy(product => product.Name, StringComparer.CurrentCultureIgnoreCase)
-        };
-
-        var visibleProducts = filtered.ToList();
+        var visibleProducts = ProductCatalogSorter.Sort(
+            filtered,
+            SelectedCatalogSort.Mode);
         FilteredProducts.Clear();
         for (var index = 0; index < visibleProducts.Count; index++)
         {
@@ -1155,16 +1137,14 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         var isCost = SelectedProductPriceTableOption.Kind ==
                      ProductPriceTableKind.Cost;
-        var rows = FilteredProducts
-            .Select(product => new ProductPriceTableRow(
-                product.Name,
-                product.ImageUrl,
+        var rows = ProductPriceTableRowFactory.Create(
+            FilteredProducts,
+            component =>
                 isCost
-                    ? product.Component.Price
+                    ? component.Price
                     : FlexibleListItemViewModel.CalculateSalePrice(
-                        product.Component.Price,
-                        _businessSettings.MarginFor(product.Component.Category))))
-            .ToList();
+                        component.Price,
+                        _businessSettings.MarginFor(component.Category)));
         return new ProductPriceTableDocument(
             isCost ? "Tabela de custo" : "Tabela de venda",
             isCost ? "Custo" : "Venda",

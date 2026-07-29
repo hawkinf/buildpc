@@ -511,6 +511,12 @@ public sealed class PostgresBuildPcRepository :
             );
             CREATE INDEX IF NOT EXISTS ix_quotes_created_at
                 ON quotes(created_at DESC);
+            CREATE INDEX IF NOT EXISTS ix_quotes_number
+                ON quotes(number DESC);
+            CREATE INDEX IF NOT EXISTS ix_quotes_client_name
+                ON quotes(lower(client_name));
+            CREATE INDEX IF NOT EXISTS ix_app_metadata_key_prefix
+                ON app_metadata(key text_pattern_ops);
             """);
     }
 

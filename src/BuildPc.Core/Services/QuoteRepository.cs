@@ -80,7 +80,11 @@ public sealed class QuoteRepository : IQuoteRepository
         }
 
         using var connection = OpenConnection();
-        using var transaction = connection.BeginTransaction();
+
+        // BEGIN IMMEDIATE toma a trava de escrita antes de ler MAX(number).
+        // Com a transação diferida padrão, duas instâncias do programa podiam
+        // ler o mesmo número e uma delas falhar na restrição UNIQUE.
+        using var transaction = connection.BeginTransaction(deferred: false);
         var id = existing?.Id ?? Guid.NewGuid();
         var number = existing?.Number ?? NextNumber(connection, transaction);
         var createdAt = DateTimeOffset.Now;
@@ -222,6 +226,10 @@ public sealed class QuoteRepository : IQuoteRepository
             );
             CREATE INDEX IF NOT EXISTS ix_quotes_created_at
                 ON quotes(created_at DESC);
+            CREATE INDEX IF NOT EXISTS ix_quotes_number
+                ON quotes(number DESC);
+            CREATE INDEX IF NOT EXISTS ix_quotes_client_name
+                ON quotes(client_name COLLATE NOCASE);
             """;
         command.ExecuteNonQuery();
     }

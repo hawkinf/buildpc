@@ -33,7 +33,10 @@ public static class PdfPreviewService
     {
         try
         {
-            var expiration = DateTime.UtcNow.AddDays(-2);
+            // As prévias incluem tabelas de custo e dados de clientes. Guardá-las
+            // por dois dias em uma pasta temporária sem proteção era exposição
+            // desnecessária: uma hora cobre a visualização e a impressão.
+            var expiration = DateTime.UtcNow.AddHours(-1);
             foreach (var path in Directory.EnumerateFiles(
                          PreviewDirectory,
                          "*.pdf",

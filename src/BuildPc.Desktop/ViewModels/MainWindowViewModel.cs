@@ -1346,10 +1346,15 @@ public sealed class MainWindowViewModel : ViewModelBase
                 $"Salvando {imported.Count} produtos de {source.Title}...";
             ImportProgressProductsText =
                 $"{imported.Count} produtos prontos para salvar.";
-            var result = _catalogRepository.ReplaceImported(
-                source.Category,
-                source.SourceKey,
-                imported);
+
+            // Gravar milhares de produtos é lento o bastante para congelar o
+            // modal de progresso se rodar na thread da interface.
+            var result = await Task.Run(
+                () => _catalogRepository.ReplaceImported(
+                    source.Category,
+                    source.SourceKey,
+                    imported),
+                CancellationToken.None);
             RefreshCatalogCollections();
             source.LastImportedAt = result.ImportedAt;
             source.StatusMessage =

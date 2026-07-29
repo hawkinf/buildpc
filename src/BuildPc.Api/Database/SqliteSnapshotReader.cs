@@ -61,7 +61,8 @@ public static class SqliteSnapshotReader
             await catalog.GetAllAsync(cancellationToken).ConfigureAwait(false),
             await quotes.GetSettingsAsync(cancellationToken).ConfigureAwait(false),
             await quotes.GetQuotesAsync(cancellationToken).ConfigureAwait(false),
-            ReadMetadata(databasePath));
+            ReadMetadata(databasePath),
+            await quotes.GetTemplatesAsync(cancellationToken).ConfigureAwait(false));
     }
 
     private static IReadOnlyDictionary<string, string> ReadMetadata(string databasePath)

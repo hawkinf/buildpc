@@ -67,8 +67,9 @@ if (TryGetSqliteImportPath(args, out var sqlitePath))
         .GetRequiredService<PostgresBuildPcRepository>()
         .ImportSnapshot(snapshot);
     Console.WriteLine(
-        $"Migração concluída: {snapshot.Products.Count} produtos e " +
-        $"{snapshot.Quotes.Count} orçamentos.");
+        $"Migração concluída: {snapshot.Products.Count} produtos, " +
+        $"{snapshot.Quotes.Count} orçamentos e " +
+        $"{snapshot.Templates.Count} modelos de montagem.");
     return 0;
 }
 

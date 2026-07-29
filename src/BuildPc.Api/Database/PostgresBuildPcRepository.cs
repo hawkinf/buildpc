@@ -510,7 +510,8 @@ public sealed class PostgresBuildPcRepository :
         command.CommandText =
             """
             SELECT id, number, created_at, client_name, client_phone, notes,
-                   total_cost_cents, total_price_cents, items_json, company_json
+                   total_cost_cents, total_price_cents, items_json, company_json,
+                   discount_cents, validity_days, payment_terms, delivery_terms
             FROM quotes
             ORDER BY number DESC;
             """;
@@ -539,7 +540,12 @@ public sealed class PostgresBuildPcRepository :
                     CompanySnapshot = JsonSerializer.Deserialize<BusinessSettings>(
                                           reader.GetString(9),
                                           JsonOptions) ??
-                                      new BusinessSettings()
+                                      new BusinessSettings(),
+                    // Orçamentos gravados antes destes campos leem zero e vazio.
+                    DiscountAmount = reader.IsDBNull(10) ? 0m : reader.GetInt64(10) / 100m,
+                    ValidityDays = reader.IsDBNull(11) ? 0 : reader.GetInt32(11),
+                    PaymentTerms = reader.IsDBNull(12) ? string.Empty : reader.GetString(12),
+                    DeliveryTerms = reader.IsDBNull(13) ? string.Empty : reader.GetString(13)
                 });
             }
             catch (JsonException)
@@ -564,6 +570,8 @@ public sealed class PostgresBuildPcRepository :
             DELETE FROM business_settings;
             DELETE FROM products;
             DELETE FROM app_metadata;
+            DELETE FROM assembly_templates;
+            DELETE FROM price_history;
             """);
 
         foreach (var product in snapshot.Products)
@@ -586,7 +594,46 @@ public sealed class PostgresBuildPcRepository :
             InsertQuote(connection, transaction, quote);
         }
 
+        foreach (var template in snapshot.Templates)
+        {
+            InsertTemplate(connection, transaction, template);
+        }
+
         transaction.Commit();
+    }
+
+    /// <summary>
+    /// Grava um modelo dentro da transação da migração, sem abrir conexão nova.
+    /// </summary>
+    private static void InsertTemplate(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        AssemblyTemplate template)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            INSERT INTO assembly_templates(id, name, description, created_at, items_json)
+            VALUES (@id, @name, @description, @created_at, @items_json)
+            ON CONFLICT (id) DO UPDATE SET
+                name = excluded.name,
+                description = excluded.description,
+                created_at = excluded.created_at,
+                items_json = excluded.items_json;
+            """;
+        command.Parameters.AddWithValue(
+            "id",
+            template.Id == Guid.Empty ? Guid.NewGuid() : template.Id);
+        command.Parameters.AddWithValue("name", template.Name);
+        command.Parameters.AddWithValue("description", template.Description);
+        command.Parameters.AddWithValue(
+            "created_at",
+            template.CreatedAt.ToString("O", CultureInfo.InvariantCulture));
+        command.Parameters.AddWithValue(
+            "items_json",
+            JsonSerializer.Serialize(template.Items, JsonOptions));
+        command.ExecuteNonQuery();
     }
 
     public Task<bool> SetFavoriteAsync(
@@ -1261,10 +1308,12 @@ public sealed class PostgresBuildPcRepository :
             """
             INSERT INTO quotes (
                 id, number, created_at, client_name, client_phone, notes,
-                total_cost_cents, total_price_cents, items_json, company_json)
+                total_cost_cents, total_price_cents, items_json, company_json,
+                discount_cents, validity_days, payment_terms, delivery_terms)
             VALUES (
                 @id, @number, @created_at, @client_name, @client_phone, @notes,
-                @total_cost_cents, @total_price_cents, @items_json, @company_json)
+                @total_cost_cents, @total_price_cents, @items_json, @company_json,
+                @discount_cents, @validity_days, @payment_terms, @delivery_terms)
             ON CONFLICT (id) DO UPDATE SET
                 number = excluded.number,
                 created_at = excluded.created_at,
@@ -1274,7 +1323,11 @@ public sealed class PostgresBuildPcRepository :
                 total_cost_cents = excluded.total_cost_cents,
                 total_price_cents = excluded.total_price_cents,
                 items_json = excluded.items_json,
-                company_json = excluded.company_json;
+                company_json = excluded.company_json,
+                discount_cents = excluded.discount_cents,
+                validity_days = excluded.validity_days,
+                payment_terms = excluded.payment_terms,
+                delivery_terms = excluded.delivery_terms;
             """;
         command.Parameters.AddWithValue("id", quote.Id);
         command.Parameters.AddWithValue("number", quote.Number);
@@ -1296,6 +1349,10 @@ public sealed class PostgresBuildPcRepository :
         command.Parameters.AddWithValue(
             "company_json",
             JsonSerializer.Serialize(quote.CompanySnapshot, JsonOptions));
+        command.Parameters.AddWithValue("discount_cents", ToCents(quote.DiscountAmount));
+        command.Parameters.AddWithValue("validity_days", quote.ValidityDays);
+        command.Parameters.AddWithValue("payment_terms", quote.PaymentTerms);
+        command.Parameters.AddWithValue("delivery_terms", quote.DeliveryTerms);
         command.ExecuteNonQuery();
     }
 

@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using BuildPc.Desktop.Services;
 using BuildPc.Desktop.ViewModels;
 
@@ -8,7 +9,39 @@ namespace BuildPc.Desktop.Views;
 
 public sealed partial class MainWindow : Window
 {
-    public MainWindow() => AvaloniaXamlLoader.Load(this);
+    private readonly DispatcherTimer _connectionStatusTimer;
+
+    public MainWindow()
+    {
+        AvaloniaXamlLoader.Load(this);
+        _connectionStatusTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(30)
+        };
+        _connectionStatusTimer.Tick += RefreshConnectionStatus;
+        Opened += WindowOpened;
+        Closed += WindowClosed;
+    }
+
+    private async void WindowOpened(object? sender, EventArgs e)
+    {
+        _connectionStatusTimer.Start();
+        await RefreshConnectionStatusAsync();
+    }
+
+    private void WindowClosed(object? sender, EventArgs e) =>
+        _connectionStatusTimer.Stop();
+
+    private async void RefreshConnectionStatus(object? sender, EventArgs e) =>
+        await RefreshConnectionStatusAsync();
+
+    private async Task RefreshConnectionStatusAsync()
+    {
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            await viewModel.ConnectionStatus.RefreshAsync();
+        }
+    }
 
     private async void SelectProductImage_Click(
         object? sender,

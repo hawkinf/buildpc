@@ -72,6 +72,9 @@ public sealed class MainWindowViewModel : ViewModelBase
             _catalogRepository = new ComponentCatalogRepository(databasePath, legacyJsonPath);
             _quoteRepository = new QuoteRepository(databasePath);
         }
+        ConnectionStatus = new ConnectionStatusViewModel(
+            apiSettings,
+            TestApiConnectionAsync);
         _businessSettings = _quoteRepository.GetSettings();
         _kabumCatalogImporter = new KabumCatalogImporter(new HttpClient
         {
@@ -296,6 +299,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public FlexibleListViewModel FlexibleList { get; }
     public QuoteManagerViewModel QuoteManager { get; }
     public PricingSettingsViewModel PricingSettings { get; }
+    public ConnectionStatusViewModel ConnectionStatus { get; }
     public ICommand ClearCommand { get; }
     public ICommand BalancedPresetCommand { get; }
     public ICommand PerformancePresetCommand { get; }

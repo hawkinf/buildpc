@@ -26,6 +26,8 @@ somar custos e verificar compatibilidade básica entre componentes.
 - catálogo em SQLite e produtos em ordem alfabética dentro de cada categoria;
 - PDF da tabela de custo separado por categorias, preservando filtros e a
   ordenação escolhida por descrição ou custo;
+- rodapé global com estado ONLINE/OFFLINE da API e barras de rolagem verticais
+  reforçadas em todas as telas;
 - montagem em linhas completas e listas zebradas com produto, descrição e valor destacados;
 - filtros instantâneos em cada lista, incluindo `*`, `?` e exclusões como `-note*`;
 - destaque visual das correspondências e ordenação alfabética ou por preço;

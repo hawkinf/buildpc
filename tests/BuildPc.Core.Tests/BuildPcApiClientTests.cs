@@ -64,7 +64,7 @@ public sealed class BuildPcApiClientTests
     }
 
     [Fact]
-    public async Task TestConnectionAcceptsBuildPcHealthResponse()
+    public async Task TestConnectionAcceptsAuthenticatedBuildPcResponse()
     {
         var handler = new StubHttpMessageHandler(request =>
         {

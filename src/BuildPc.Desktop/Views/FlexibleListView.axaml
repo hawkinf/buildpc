@@ -6,20 +6,53 @@
 
   <Grid RowDefinitions="Auto,*,Auto">
     <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="30,20">
-      <Grid ColumnDefinitions="*,Auto">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
         <StackPanel Spacing="4">
           <TextBlock Text="Montagem" FontSize="22" FontWeight="Bold" />
           <TextBlock Text="Escolha uma categoria e adicione quantos produtos precisar."
                      Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="12" />
         </StackPanel>
-        <Button Grid.Column="1" Classes="secondary" Command="{Binding ClearCommand}"
-                IsEnabled="{Binding HasItems}" VerticalAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <PathIcon Data="{StaticResource Icon.Clear}" Width="16" Height="16"
-                      Foreground="{DynamicResource Brush.TextSecondary}" />
-            <TextBlock Text="Limpar montagem" />
-          </StackPanel>
-        </Button>
+        <StackPanel Grid.Column="1"
+                    Orientation="Horizontal"
+                    Spacing="12"
+                    VerticalAlignment="Center">
+          <Button x:Name="sensitiveTotalsButton"
+                  Classes="secondary"
+                  Padding="10"
+                  ToolTip.Tip="Mantenha pressionado para ver custo e lucro">
+            <PathIcon Data="{StaticResource Icon.Eye}" Width="18" Height="18"
+                      Foreground="{DynamicResource Brush.AccentLight}" />
+          </Button>
+
+          <Button Classes="secondary"
+                  Command="{Binding SaveQuoteCommand}"
+                  IsEnabled="{Binding HasItems}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <PathIcon Data="{StaticResource Icon.Save}" Width="16" Height="16" />
+              <TextBlock Text="Gravar orçamento" />
+            </StackPanel>
+          </Button>
+
+          <Button Classes="primary"
+                  Click="ExportPdf_Click"
+                  IsEnabled="{Binding CanExport}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <PathIcon Data="{StaticResource Icon.Pdf}" Width="16" Height="16"
+                        Foreground="White" />
+              <TextBlock Text="Exportar PDF" Foreground="White" />
+            </StackPanel>
+          </Button>
+
+          <Button Classes="secondary"
+                  Command="{Binding ClearCommand}"
+                  IsEnabled="{Binding HasItems}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <PathIcon Data="{StaticResource Icon.Clear}" Width="16" Height="16"
+                        Foreground="{DynamicResource Brush.TextSecondary}" />
+              <TextBlock Text="Limpar montagem" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
       </Grid>
     </Border>
 
@@ -383,8 +416,8 @@
 
     <Border Grid.Row="2" Background="{DynamicResource Brush.SidebarBackground}"
             BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,0,0"
-            Padding="30,13,46,31">
-      <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="12">
+            Padding="30,8,46,8">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
         <StackPanel VerticalAlignment="Center">
           <TextBlock Text="{Binding SaveStateText}" FontSize="10"
                      Foreground="{DynamicResource Brush.TextSecondary}" />
@@ -408,30 +441,6 @@
                        Foreground="{DynamicResource Brush.Success}" />
           </StackPanel>
         </StackPanel>
-
-        <Button x:Name="sensitiveTotalsButton"
-                Grid.Column="2" Classes="secondary" Padding="10"
-                ToolTip.Tip="Mantenha pressionado para ver custo e lucro">
-          <PathIcon Data="{StaticResource Icon.Eye}" Width="18" Height="18"
-                    Foreground="{DynamicResource Brush.AccentLight}" />
-        </Button>
-
-        <Button Grid.Column="3" Classes="secondary"
-                Command="{Binding SaveQuoteCommand}" IsEnabled="{Binding HasItems}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <PathIcon Data="{StaticResource Icon.Save}" Width="16" Height="16" />
-            <TextBlock Text="Gravar orçamento" />
-          </StackPanel>
-        </Button>
-
-        <Button Grid.Column="4" Classes="primary" Click="ExportPdf_Click"
-                IsEnabled="{Binding CanExport}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <PathIcon Data="{StaticResource Icon.Pdf}" Width="16" Height="16"
-                      Foreground="White" />
-            <TextBlock Text="Exportar PDF" Foreground="White" />
-          </StackPanel>
-        </Button>
       </Grid>
     </Border>
   </Grid>

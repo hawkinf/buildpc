@@ -89,8 +89,10 @@ Comportamento:
 - o orçamento precisa ser gravado antes de poder ser exportado;
 - depois de qualquer alteração, é necessário gravar novamente antes de
   exportar;
-- os botões de olho, gravação e exportação ficam numa barra fixa com folga
-  acima do rodapé global;
+- os botões de olho, gravação e exportação ficam no cabeçalho da Montagem,
+  junto de “Limpar montagem”;
+- o rodapé interno da Montagem fica reservado aos avisos de gravação e aos
+  totais sensíveis revelados pelo olho;
 - a exportação gera uma prévia PDF e abre o visualizador do sistema; é no
   visualizador que o usuário salva ou imprime.
 
@@ -223,6 +225,11 @@ Regras da importação:
 - HD e SSD/NVMe também usam filtros independentes;
 - título, marca e descrição removem menções `Kabum`, `Kabum!` e `no Kabum!`;
 - a URL da miniatura é salva em `PcComponent.ImageUrl`;
+- a importação não grava o arquivo remoto da imagem em disco. `RemoteImage`
+  baixa a imagem quando ela precisa ser exibida e mantém os bytes num cache
+  apenas em memória, compartilhado durante a execução do programa;
+- fotos adicionadas manualmente são copiadas de forma persistente para
+  `%LocalAppData%\BuildPC\imagens-produtos`;
 - importar uma categoria substitui os importados anteriores daquela categoria;
 - produtos manuais nunca são removidos pela importação;
 - produtos importados marcados como `KeepOnImport`/“Manter” são preservados;

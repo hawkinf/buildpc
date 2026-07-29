@@ -34,6 +34,104 @@ public sealed class ProductCatalogSorterTests
             exportedRows.Select(row => row.Title));
     }
 
+    [Theory]
+    [InlineData(
+        ProductCatalogSortMode.DescriptionAscending,
+        "CPU rápida,CPU econômica",
+        "SSD econômico,SSD rápido")]
+    [InlineData(
+        ProductCatalogSortMode.DescriptionDescending,
+        "CPU econômica,CPU rápida",
+        "SSD rápido,SSD econômico")]
+    [InlineData(
+        ProductCatalogSortMode.PriceAscending,
+        "CPU econômica,CPU rápida",
+        "SSD econômico,SSD rápido")]
+    [InlineData(
+        ProductCatalogSortMode.PriceDescending,
+        "CPU rápida,CPU econômica",
+        "SSD rápido,SSD econômico")]
+    public void CostTableSections_GroupByCategoryAndPreserveSortingWithinEachGroup(
+        ProductCatalogSortMode mode,
+        string expectedProcessors,
+        string expectedStorage)
+    {
+        var products = new[]
+        {
+            Product(
+                "SSD rápido",
+                "Gama",
+                300m,
+                ComponentCategory.Storage),
+            Product(
+                "CPU econômica",
+                "Zebra",
+                100m,
+                ComponentCategory.Processor),
+            Product(
+                "SSD econômico",
+                "Beta",
+                200m,
+                ComponentCategory.Storage),
+            Product(
+                "CPU rápida",
+                "Alfa",
+                400m,
+                ComponentCategory.Processor)
+        };
+        var sortedCatalog = ProductCatalogSorter.Sort(products, mode);
+        var rows = ProductPriceTableRowFactory.Create(
+            sortedCatalog,
+            component => component.Price);
+        var document = new ProductPriceTableDocument(
+            "Tabela de custo",
+            "Custo",
+            "Todos",
+            string.Empty,
+            "BuildPC",
+            DateTimeOffset.Now,
+            rows,
+            GroupByCategory: true);
+
+        var sections = ProductPriceTableSectionFactory.Create(document);
+
+        Assert.Equal(
+            ["Processador", "SSD / NVMe"],
+            sections.Select(section => section.CategoryName));
+        Assert.Equal(
+            expectedProcessors.Split(','),
+            sections[0].Rows.Select(row => row.Title));
+        Assert.Equal(
+            expectedStorage.Split(','),
+            sections[1].Rows.Select(row => row.Title));
+    }
+
+    [Fact]
+    public void SaleTableKeepsOneUngroupedSection()
+    {
+        var rows = ProductPriceTableRowFactory.Create(
+            ProductCatalogSorter.Sort(
+                CreateProducts(),
+                ProductCatalogSortMode.PriceDescending),
+            component => component.Price);
+        var document = new ProductPriceTableDocument(
+            "Tabela de venda",
+            "Venda",
+            "Todos",
+            string.Empty,
+            "BuildPC",
+            DateTimeOffset.Now,
+            rows);
+
+        var section = Assert.Single(
+            ProductPriceTableSectionFactory.Create(document));
+
+        Assert.Null(section.CategoryName);
+        Assert.Equal(
+            ["Produto Z", "Produto M", "Produto A"],
+            section.Rows.Select(row => row.Title));
+    }
+
     private static IReadOnlyList<ProductListItemViewModel> CreateProducts() =>
     [
         Product("Produto Z", "Beta", 300m),
@@ -44,12 +142,13 @@ public sealed class ProductCatalogSorterTests
     private static ProductListItemViewModel Product(
         string name,
         string description,
-        decimal price) =>
+        decimal price,
+        ComponentCategory category = ComponentCategory.Storage) =>
         ProductListItemViewModel.From(
             new PcComponent
             {
                 Id = Guid.NewGuid().ToString("N"),
-                Category = ComponentCategory.Storage,
+                Category = category,
                 Name = name,
                 Brand = "Teste",
                 Description = description,

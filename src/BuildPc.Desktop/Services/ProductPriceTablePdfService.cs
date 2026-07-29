@@ -1,3 +1,4 @@
+using BuildPc.Core.Models;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.Rendering;
@@ -8,7 +9,13 @@ namespace BuildPc.Desktop.Services;
 public sealed record ProductPriceTableRow(
     string Title,
     string? ImageUrl,
-    decimal Price);
+    decimal Price,
+    ComponentCategory Category = ComponentCategory.Processor,
+    string CategoryName = "");
+
+public sealed record ProductPriceTableSection(
+    string? CategoryName,
+    IReadOnlyList<ProductPriceTableRow> Rows);
 
 public sealed record ProductPriceTableDocument(
     string Title,
@@ -17,7 +24,8 @@ public sealed record ProductPriceTableDocument(
     string FilterText,
     string CompanyName,
     DateTimeOffset GeneratedAt,
-    IReadOnlyList<ProductPriceTableRow> Rows);
+    IReadOnlyList<ProductPriceTableRow> Rows,
+    bool GroupByCategory = false);
 
 public sealed class ProductPriceTablePdfService
 {
@@ -44,10 +52,16 @@ public sealed class ProductPriceTablePdfService
         Directory.CreateDirectory(temporaryDirectory);
         try
         {
+            var sections = ProductPriceTableSectionFactory.Create(priceTable);
+            var orderedRows = sections.SelectMany(section => section.Rows).ToList();
             var imagePaths = await PrepareImagesAsync(
-                priceTable.Rows,
+                orderedRows,
                 temporaryDirectory);
-            await Task.Run(() => Render(priceTable, imagePaths, outputPath));
+            await Task.Run(() => Render(
+                priceTable,
+                sections,
+                imagePaths,
+                outputPath));
         }
         finally
         {
@@ -65,10 +79,11 @@ public sealed class ProductPriceTablePdfService
 
     private static void Render(
         ProductPriceTableDocument priceTable,
+        IReadOnlyList<ProductPriceTableSection> productSections,
         IReadOnlyList<string?> imagePaths,
         string outputPath)
     {
-        var document = BuildDocument(priceTable, imagePaths);
+        var document = BuildDocument(priceTable, productSections, imagePaths);
         var renderer = new PdfDocumentRenderer
         {
             Document = document
@@ -79,6 +94,7 @@ public sealed class ProductPriceTablePdfService
 
     private static Document BuildDocument(
         ProductPriceTableDocument priceTable,
+        IReadOnlyList<ProductPriceTableSection> productSections,
         IReadOnlyList<string?> imagePaths)
     {
         var document = new Document
@@ -131,6 +147,71 @@ public sealed class ProductPriceTablePdfService
             $"{priceTable.GeneratedAt.LocalDateTime:dd/MM/yyyy 'às' HH:mm}");
         details.Format.SpaceAfter = Unit.FromMillimeter(4);
 
+        var imageIndex = 0;
+        for (var sectionIndex = 0;
+             sectionIndex < productSections.Count;
+             sectionIndex++)
+        {
+            var productSection = productSections[sectionIndex];
+            if (!string.IsNullOrWhiteSpace(productSection.CategoryName))
+            {
+                var category = section.AddParagraph(
+                    productSection.CategoryName.ToUpperInvariant());
+                category.Format.Font.Size = 12;
+                category.Format.Font.Bold = true;
+                category.Format.Font.Color = Color.FromRgb(43, 112, 219);
+                category.Format.SpaceBefore = sectionIndex == 0
+                    ? Unit.FromMillimeter(1)
+                    : Unit.FromMillimeter(5);
+                category.Format.SpaceAfter = Unit.FromMillimeter(2);
+                category.Format.KeepWithNext = true;
+            }
+
+            var table = AddProductTable(
+                section,
+                priceTable.PriceColumnTitle);
+            for (var rowIndex = 0;
+                 rowIndex < productSection.Rows.Count;
+                 rowIndex++)
+            {
+                var item = productSection.Rows[rowIndex];
+                var row = table.AddRow();
+                if (rowIndex % 2 == 1)
+                {
+                    row.Shading.Color = Color.FromRgb(241, 245, 249);
+                }
+
+                row.TopPadding = Unit.FromMillimeter(2);
+                row.BottomPadding = Unit.FromMillimeter(2);
+                row.Cells[0].VerticalAlignment = VerticalAlignment.Center;
+                row.Cells[1].VerticalAlignment = VerticalAlignment.Center;
+                row.Cells[2].VerticalAlignment = VerticalAlignment.Center;
+                AddPreview(row.Cells[0], imagePaths[imageIndex]);
+                SetCellText(row.Cells[1], item.Title, bold: true);
+                SetCellText(
+                    row.Cells[2],
+                    item.Price.ToString(
+                        "C",
+                        ViewModels.MainWindowViewModel.BrazilianCulture),
+                    ParagraphAlignment.Right,
+                    bold: true);
+                imageIndex++;
+            }
+        }
+
+        var footer = section.Footers.Primary.AddParagraph();
+        footer.Format.Alignment = ParagraphAlignment.Center;
+        footer.Format.Font.Size = 7.5;
+        footer.Format.Font.Color = Color.FromRgb(118, 129, 143);
+        footer.AddText($"{priceTable.Title} • Página ");
+        footer.AddPageField();
+        return document;
+    }
+
+    private static Table AddProductTable(
+        Section section,
+        string priceColumnTitle)
+    {
         var table = section.AddTable();
         table.Borders.Width = 0.4;
         table.Borders.Color = Color.FromRgb(205, 213, 223);
@@ -150,41 +231,9 @@ public sealed class ProductPriceTablePdfService
         SetCellText(header.Cells[1], "TÍTULO");
         SetCellText(
             header.Cells[2],
-            priceTable.PriceColumnTitle.ToUpperInvariant(),
+            priceColumnTitle.ToUpperInvariant(),
             ParagraphAlignment.Right);
-
-        for (var index = 0; index < priceTable.Rows.Count; index++)
-        {
-            var item = priceTable.Rows[index];
-            var row = table.AddRow();
-            if (index % 2 == 1)
-            {
-                row.Shading.Color = Color.FromRgb(241, 245, 249);
-            }
-
-            row.TopPadding = Unit.FromMillimeter(2);
-            row.BottomPadding = Unit.FromMillimeter(2);
-            row.Cells[0].VerticalAlignment = VerticalAlignment.Center;
-            row.Cells[1].VerticalAlignment = VerticalAlignment.Center;
-            row.Cells[2].VerticalAlignment = VerticalAlignment.Center;
-            AddPreview(row.Cells[0], imagePaths[index]);
-            SetCellText(row.Cells[1], item.Title, bold: true);
-            SetCellText(
-                row.Cells[2],
-                item.Price.ToString(
-                    "C",
-                    ViewModels.MainWindowViewModel.BrazilianCulture),
-                ParagraphAlignment.Right,
-                bold: true);
-        }
-
-        var footer = section.Footers.Primary.AddParagraph();
-        footer.Format.Alignment = ParagraphAlignment.Center;
-        footer.Format.Font.Size = 7.5;
-        footer.Format.Font.Color = Color.FromRgb(118, 129, 143);
-        footer.AddText($"{priceTable.Title} • Página ");
-        footer.AddPageField();
-        return document;
+        return table;
     }
 
     private static void AddPreview(Cell cell, string? imagePath)

@@ -117,6 +117,70 @@ public sealed class QuotePdfServiceTests
         }
     }
 
+    [Fact]
+    public async Task ProductCostTableExport_CreatesCategorySections()
+    {
+        var requestedPath = Environment.GetEnvironmentVariable(
+            "BUILDPC_COST_TABLE_PDF_SAMPLE_PATH");
+        var shouldKeep = !string.IsNullOrWhiteSpace(requestedPath);
+        var directory = Path.Combine(
+            Path.GetTempPath(),
+            $"buildpc-cost-table-tests-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        var pdfPath = requestedPath ??
+                      Path.Combine(directory, "tabela-custo-categorias.pdf");
+        try
+        {
+            var categories = new[]
+            {
+                (ComponentCategory.Processor, "Processadores", "Ryzen"),
+                (ComponentCategory.GraphicsCard, "Placas de vídeo", "GeForce"),
+                (ComponentCategory.Storage, "SSD / NVMe", "NVMe")
+            };
+            var rows = categories
+                .SelectMany(category => Enumerable.Range(1, 12)
+                    .Select(index => new ProductPriceTableRow(
+                        $"{category.Item3} modelo {index:00} - produto para validação visual",
+                        null,
+                        149.90m + index * 100m,
+                        category.Item1,
+                        category.Item2)))
+                .ToList();
+            var table = new ProductPriceTableDocument(
+                "Tabela de custo",
+                "Custo",
+                "Todos",
+                string.Empty,
+                "BuildPC Tecnologia",
+                new DateTimeOffset(
+                    2026,
+                    7,
+                    29,
+                    15,
+                    0,
+                    0,
+                    TimeSpan.FromHours(-3)),
+                rows,
+                GroupByCategory: true);
+
+            await new ProductPriceTablePdfService().ExportAsync(table, pdfPath);
+
+            Assert.True(File.Exists(pdfPath));
+            using var pdf = PdfSharp.Pdf.IO.PdfReader.Open(
+                pdfPath,
+                PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
+            Assert.True(pdf.PageCount > 1);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+            if (!shouldKeep && File.Exists(pdfPath))
+            {
+                File.Delete(pdfPath);
+            }
+        }
+    }
+
     private static SavedQuoteItem Item(
         string category,
         string name,

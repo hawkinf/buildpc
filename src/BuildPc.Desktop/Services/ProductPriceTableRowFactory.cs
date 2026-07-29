@@ -12,6 +12,8 @@ public static class ProductPriceTableRowFactory
             .Select(product => new ProductPriceTableRow(
                 product.Name,
                 product.ImageUrl,
-                priceSelector(product.Component)))
+                priceSelector(product.Component),
+                product.Component.Category,
+                product.Category))
             .ToList();
 }

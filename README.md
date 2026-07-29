@@ -24,6 +24,8 @@ somar custos e verificar compatibilidade básica entre componentes.
 - quantidade configurável por componente e dois espaços independentes para armazenamento;
 - lista livre por categoria, com adição ilimitada, título, descrição e valor editáveis;
 - catálogo em SQLite e produtos em ordem alfabética dentro de cada categoria;
+- PDF da tabela de custo separado por categorias, preservando filtros e a
+  ordenação escolhida por descrição ou custo;
 - montagem em linhas completas e listas zebradas com produto, descrição e valor destacados;
 - filtros instantâneos em cada lista, incluindo `*`, `?` e exclusões como `-note*`;
 - destaque visual das correspondências e ordenação alfabética ou por preço;

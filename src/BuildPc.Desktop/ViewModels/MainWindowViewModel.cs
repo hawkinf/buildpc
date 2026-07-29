@@ -1185,7 +1185,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             CatalogSearchText.Trim(),
             _businessSettings.CompanyName,
             DateTimeOffset.Now,
-            rows);
+            rows,
+            GroupByCategory: isCost);
     }
 
     public void BeginProductPriceTableExport()

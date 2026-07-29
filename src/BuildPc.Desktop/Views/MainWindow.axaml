@@ -1056,12 +1056,23 @@
                   CornerRadius="10"
                   Padding="16">
             <StackPanel Spacing="10">
-              <TextBlock Text="{Binding ImportProgressCurrentItem}"
-                         FontSize="14"
-                         FontWeight="SemiBold"
-                         Foreground="{DynamicResource Brush.AccentPale}" />
-              <ProgressBar IsIndeterminate="True"
-                           Height="7" />
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <TextBlock Text="{Binding ImportProgressCurrentItem}"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource Brush.AccentPale}" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding ImportProgressPercentText}"
+                           FontSize="13"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource Brush.AccentLight}" />
+              </Grid>
+              <ProgressBar Minimum="0"
+                           Maximum="100"
+                           Value="{Binding ImportProgressValue}"
+                           Foreground="{DynamicResource Brush.Accent}"
+                           Background="{DynamicResource Brush.Border}"
+                           Height="9" />
               <TextBlock Text="{Binding ImportProgressDetail}"
                          FontSize="12"
                          TextWrapping="Wrap" />

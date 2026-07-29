@@ -3,6 +3,13 @@
 Aplicação desktop em C# e Avalonia para montar configurações de computadores,
 somar custos e verificar compatibilidade básica entre componentes.
 
+## Continuidade do desenvolvimento
+
+Antes de alterar o projeto, leia
+[`CONTEXTO_DO_PROJETO.md`](CONTEXTO_DO_PROJETO.md). Ele documenta o
+comportamento atual, regras de negócio, telas, arquitetura, banco, API,
+implantação e o checklist obrigatório para manter o projeto consistente.
+
 ## Recursos
 
 - catálogo inicial com 24 componentes e preços ilustrativos em reais;

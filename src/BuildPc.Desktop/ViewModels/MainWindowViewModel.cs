@@ -46,6 +46,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _importProgressCurrentItem = string.Empty;
     private string _importProgressDetail = string.Empty;
     private string _importProgressProductsText = string.Empty;
+    private double _importProgressValue;
     private bool _isToolsMenuExpanded;
     private ProductListItemViewModel? _selectedCatalogProduct;
     private string? _editingProductId;
@@ -634,6 +635,23 @@ public sealed class MainWindowViewModel : ViewModelBase
         private set => SetProperty(ref _importProgressProductsText, value);
     }
 
+    public double ImportProgressValue
+    {
+        get => _importProgressValue;
+        private set
+        {
+            if (SetProperty(
+                    ref _importProgressValue,
+                    Math.Clamp(value, 0d, 100d)))
+            {
+                OnPropertyChanged(nameof(ImportProgressPercentText));
+            }
+        }
+    }
+
+    public string ImportProgressPercentText =>
+        $"{Math.Round(ImportProgressValue):0}%";
+
     public bool CanCancelCurrentImport =>
         IsImportProgressVisible &&
         _importCancellation is { IsCancellationRequested: false };
@@ -1197,6 +1215,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         using var cancellation = new CancellationTokenSource();
         _importCancellation = cancellation;
+        ImportProgressValue = 0d;
         IsImportProgressVisible = true;
         OnPropertyChanged(nameof(CanCancelCurrentImport));
 
@@ -1294,6 +1313,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             : source.Title;
         ImportProgressDetail = "Validando o link da categoria...";
         ImportProgressProductsText = "Nenhum produto lido ainda.";
+        SetImportProgress(position, total, 0.03d);
 
         var url = source.Url.Trim();
         if (!Uri.TryCreate(url, UriKind.Absolute, out var importUri) ||
@@ -1315,6 +1335,15 @@ public sealed class MainWindowViewModel : ViewModelBase
                 ImportProgressProductsText = current.ProductCount == 1
                     ? "1 produto encontrado."
                     : $"{current.ProductCount} produtos encontrados.";
+                var pageFraction = Math.Min(
+                    0.85d,
+                    0.08d + current.PageNumber * 0.06d +
+                    (current.Status.StartsWith(
+                        "Página",
+                        StringComparison.OrdinalIgnoreCase)
+                        ? 0.03d
+                        : 0d));
+                SetImportProgress(position, total, pageFraction);
             });
             var imported = await _kabumCatalogImporter.FetchAsync(
                 url,
@@ -1322,6 +1351,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 cancellationToken,
                 progress);
             cancellationToken.ThrowIfCancellationRequested();
+            SetImportProgress(position, total, 0.90d);
             ImportProgressDetail =
                 $"Salvando {imported.Count} produtos de {source.Title}...";
             ImportProgressProductsText =
@@ -1339,6 +1369,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             ImportProgressDetail = $"{source.Title} concluído.";
             ImportProgressProductsText =
                 $"{result.Imported} produtos importados.";
+            SetImportProgress(position, total, 1d);
         }
         catch (OperationCanceledException)
             when (cancellationToken.IsCancellationRequested)
@@ -1385,6 +1416,15 @@ public sealed class MainWindowViewModel : ViewModelBase
             source.IsImporting = false;
         }
     }
+
+    private void SetImportProgress(
+        int position,
+        int total,
+        double currentCategoryProgress) =>
+        ImportProgressValue = ImportProgressCalculator.Calculate(
+            position,
+            total,
+            currentCategoryProgress);
 
     private void RefreshCatalogCollections(bool refreshCategoryManagement = true)
     {

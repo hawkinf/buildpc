@@ -17,7 +17,10 @@ public sealed class MainWindowViewModel : ViewModelBase
     private readonly IComponentCatalogRepository _catalogRepository;
     private readonly KabumCatalogImporter _kabumCatalogImporter;
     private readonly IQuoteRepository _quoteRepository;
+    private readonly BuildPcApplicationSettingsStore _applicationSettingsStore;
+    private readonly Dictionary<string, string> _configuredImportSourceUrls;
     private readonly string _productImagesDirectory;
+    private BuildPcApiSettings? _apiSettings;
     private BusinessSettings _businessSettings;
     private string _currentView = "flexible-list";
     private CategoryOptionViewModel? _selectedProductCategory;
@@ -73,11 +76,23 @@ public sealed class MainWindowViewModel : ViewModelBase
         var databasePath = Path.Combine(dataDirectory, "catalogo.db");
         var legacyJsonPath = Path.Combine(dataDirectory, "produtos.json");
         _productImagesDirectory = Path.Combine(dataDirectory, "imagens-produtos");
-        var apiSettingsPath = Path.Combine(dataDirectory, "servidor.json");
-        var apiSettings = BuildPcApiSettings.Load(apiSettingsPath);
-        if (apiSettings is not null)
+        var legacyApiSettingsPath = Path.Combine(dataDirectory, "servidor.json");
+        _applicationSettingsStore = new BuildPcApplicationSettingsStore(
+            BuildPcApplicationSettingsStore.DefaultPath);
+        var applicationConfiguration = _applicationSettingsStore.Load();
+        var legacyApiSettings = applicationConfiguration is null
+            ? BuildPcApiSettings.Load(legacyApiSettingsPath)
+            : null;
+        _apiSettings = applicationConfiguration?.ApiSettings ?? legacyApiSettings;
+        _configuredImportSourceUrls =
+            applicationConfiguration?.ImportSourceUrls.ToDictionary(
+                entry => entry.Key,
+                entry => entry.Value,
+                StringComparer.OrdinalIgnoreCase) ??
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (_apiSettings is not null)
         {
-            var apiClient = new BuildPcApiClient(apiSettings);
+            var apiClient = new BuildPcApiClient(_apiSettings);
             _catalogRepository = apiClient;
             _quoteRepository = apiClient;
         }
@@ -87,9 +102,11 @@ public sealed class MainWindowViewModel : ViewModelBase
             _quoteRepository = new QuoteRepository(databasePath);
         }
         ConnectionStatus = new ConnectionStatusViewModel(
-            apiSettings,
+            _apiSettings,
             TestApiConnectionAsync);
-        _businessSettings = _quoteRepository.GetSettings();
+        _businessSettings =
+            applicationConfiguration?.Application ??
+            _quoteRepository.GetSettings();
         _kabumCatalogImporter = new KabumCatalogImporter(new HttpClient
         {
             Timeout = TimeSpan.FromSeconds(45)
@@ -163,8 +180,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             _businessSettings,
             CategoryOptions,
             SaveBusinessSettings,
-            apiSettings,
-            settings => SaveApiSettings(apiSettingsPath, settings),
+            _apiSettings,
+            SaveApiSettings,
             TestApiConnectionAsync,
             ApplicationThemeService.Apply);
         CategoryManagement = new CategoryManagementViewModel(
@@ -301,6 +318,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         CancelImportConfirmationCommand = new RelayCommand(CancelImportConfirmation);
         CancelCurrentImportCommand = new RelayCommand(CancelCurrentImport);
         RefreshSummary();
+        SaveApplicationConfiguration();
+        BuildPcApiSettings.Disable(legacyApiSettingsPath);
     }
 
     public ObservableCollection<ComponentSlotViewModel> Slots { get; }
@@ -1023,6 +1042,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         _quoteRepository.SaveSettings(settings);
         _businessSettings = settings;
+        SaveApplicationConfiguration();
         ApplicationThemeService.Apply(settings.ThemeMode);
         FlexibleList.ApplySettings(settings);
         PriceLookup.ApplySettings(settings);
@@ -1047,6 +1067,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                     .ToDictionary()
             };
             _quoteRepository.SaveSettings(_businessSettings);
+            SaveApplicationConfiguration();
             RebuildCategoryOptions(categories);
             FlexibleList.UpdateCategories(CategoryOptions);
             FlexibleList.ApplySettings(_businessSettings);
@@ -1120,17 +1141,34 @@ public sealed class MainWindowViewModel : ViewModelBase
         CategoryOptions.FirstOrDefault(option => option.Value == category)?.Name ??
         category.ToString();
 
-    private static void SaveApiSettings(
-        string settingsPath,
-        BuildPcApiSettings? settings)
+    private void SaveApiSettings(BuildPcApiSettings? settings)
     {
-        if (settings is null)
-        {
-            BuildPcApiSettings.Disable(settingsPath);
-            return;
-        }
+        _apiSettings = settings;
+        SaveApplicationConfiguration();
+    }
 
-        settings.Save(settingsPath);
+    private void SaveApplicationConfiguration()
+    {
+        var importSourceUrls = ImportSources.ToDictionary(
+            source => ImportSourceConfigurationKey(
+                source.Category,
+                source.SourceKey),
+            source => source.Url,
+            StringComparer.OrdinalIgnoreCase);
+        _applicationSettingsStore.Save(new BuildPcApplicationConfiguration
+        {
+            Application = _businessSettings,
+            ApiSettings = _apiSettings,
+            ImportSourceUrls = importSourceUrls
+        });
+    }
+
+    private void ImportSourceConfigurationChanged(ImportSourceViewModel source)
+    {
+        _configuredImportSourceUrls[
+            ImportSourceConfigurationKey(source.Category, source.SourceKey)] =
+            source.Url;
+        SaveApplicationConfiguration();
     }
 
     private static async Task TestApiConnectionAsync(BuildPcApiSettings settings)
@@ -1147,16 +1185,47 @@ public sealed class MainWindowViewModel : ViewModelBase
         string path,
         IEnumerable<PcComponent> catalog,
         string sourceKey = "kabum") =>
-        new(
+        CreateImportSource(
             category,
             title,
             subtitle,
             icon,
-            BuildKabumUrl(path),
+            path,
+            catalog,
+            sourceKey);
+
+    private ImportSourceViewModel CreateImportSource(
+        ComponentCategory category,
+        string title,
+        string subtitle,
+        string icon,
+        string path,
+        IEnumerable<PcComponent> catalog,
+        string sourceKey)
+    {
+        var configurationKey = ImportSourceConfigurationKey(category, sourceKey);
+        var url = _configuredImportSourceUrls.TryGetValue(
+            configurationKey,
+            out var configuredUrl)
+            ? configuredUrl
+            : BuildKabumUrl(path);
+        return new ImportSourceViewModel(
+            category,
+            title,
+            subtitle,
+            icon,
+            url,
             sourceKey,
             catalog.Count(component => IsImported(component, category, sourceKey)),
             _catalogRepository.GetLastImport(category, sourceKey),
-            RequestImportSourceAsync);
+            RequestImportSourceAsync,
+            ImportSourceConfigurationChanged);
+    }
+
+    private static string ImportSourceConfigurationKey(
+        ComponentCategory category,
+        string sourceKey) =>
+        $"{sourceKey}:{category}";
 
     private void RequestImportAll()
     {

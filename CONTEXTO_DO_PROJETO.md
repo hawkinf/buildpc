@@ -32,7 +32,7 @@ dotnet build BuildPc.sln --no-restore
 dotnet test BuildPc.sln --no-build
 ```
 
-No estado documentado, a solução compila sem avisos e possui 102 testes
+No estado documentado, a solução compila sem avisos e possui 104 testes
 aprovados.
 
 ## O que o programa faz
@@ -260,6 +260,9 @@ Contém:
 - opção de desativar o servidor e voltar ao SQLite local.
 
 Mudanças de servidor entram em vigor depois de reiniciar o aplicativo.
+Ao salvar, as configurações gerais e de servidor são gravadas em
+`buildpc.config.json`, ao lado do executável. A chave da API nunca é gravada em
+texto aberto.
 
 ## Regras de preço e margem
 
@@ -401,9 +404,11 @@ Guardam cliente, telefone, data, observações, custo, venda, margem, itens e
 snapshot dos dados da empresa. O snapshot impede que uma configuração futura
 da empresa altere um orçamento já gravado.
 
-## Persistência local
+## Persistência local e configuração distribuível
 
-Sem `servidor.json` válido, o Desktop usa SQLite.
+O Desktop gera `buildpc.config.json` em `AppContext.BaseDirectory`, que no
+aplicativo publicado é a pasta do executável. Sem uma seção de servidor ativa e
+válida nesse arquivo, o Desktop usa SQLite.
 
 Diretório:
 
@@ -418,7 +423,53 @@ Arquivos relevantes:
 | `catalogo.db` | produtos, metadados de importação, configurações e orçamentos |
 | `produtos.json` | formato legado, usado apenas para migração quando aplicável |
 | `imagens-produtos\` | fotos adicionadas localmente |
-| `servidor.json` | URL base HTTPS e chave da API |
+| `servidor.json` | formato legado de servidor, removido após migração |
+
+Ao lado do executável:
+
+| Arquivo | Uso |
+|---|---|
+| `buildpc.config.json` | configurações do sistema, empresa, margens, categorias, links de importação e VPS/API |
+
+Formato conceitual:
+
+```json
+{
+  "schemaVersion": 1,
+  "application": {
+    "globalMarginPercent": 35,
+    "themeMode": "System"
+  },
+  "server": {
+    "enabled": true,
+    "baseUrl": "https://exemplo.com/buildpc-api/",
+    "encryptedApiKey": "dpapi-current-user:v1:..."
+  },
+  "importSourceUrls": {
+    "kabum:Processor": "https://www.kabum.com.br/hardware/processadores?..."
+  }
+}
+```
+
+`application` também contém margens por categoria, nomes das categorias, dados
+da empresa, logomarca e informações adicionais do orçamento. Os links dos
+cartões de importação são persistidos ao serem editados.
+
+A chave da API usa DPAPI com escopo do usuário atual do Windows e entropia
+própria do BuildPC. Portanto:
+
+- o valor aberto nunca aparece no JSON;
+- somente o mesmo usuário do Windows consegue descriptografá-lo;
+- ao distribuir o executável e o JSON para outro computador ou usuário, a
+  chave deve ser informada e salva novamente nessa instalação;
+- `servidor.json` antigo ainda é lido uma vez para migração e é removido apenas
+  depois que o arquivo unificado foi salvo com sucesso.
+
+Implementação:
+
+- `BuildPcApplicationSettingsStore`: leitura e gravação atômicas do JSON;
+- `BuildPcApiKeyProtector`: proteção DPAPI da chave;
+- `BuildPcApiSettings`: compatibilidade de leitura com o formato legado.
 
 Tabelas conceituais:
 
@@ -442,16 +493,9 @@ Implementações locais:
 
 ## API e PostgreSQL na VPS
 
-O Desktop usa `BuildPcApiClient` quando encontra um `servidor.json` válido.
-
-Formato:
-
-```json
-{
-  "baseUrl": "https://exemplo.com/buildpc-api/",
-  "apiKey": "CHAVE_SECRETA"
-}
-```
+O Desktop usa `BuildPcApiClient` quando a seção `server` de
+`buildpc.config.json` está ativa, contém uma URL válida e sua chave pode ser
+descriptografada.
 
 Regras de segurança:
 
@@ -555,7 +599,8 @@ dotnet test BuildPc.sln
 
 Os testes cobrem repositórios, filtro, margens, montagem, telefone, importação
 com múltiplas páginas, progresso/cancelamento, API, PDFs e gerenciamento de
-categorias.
+categorias. Também verificam a persistência completa da configuração e que a
+chave da API não aparece em texto aberto no JSON.
 
 ## Convenções obrigatórias de interface
 
@@ -617,6 +662,8 @@ categorias.
 - Consulta de Preços recebeu custo/venda, filtro, ordenação e preview.
 - Importações receberam confirmação destrutiva, acompanhamento por página,
   progresso percentual e cancelamento.
+- Configurações passaram a usar um JSON unificado ao lado do executável, com
+  chave da API protegida pelo Windows e migração do `servidor.json` legado.
 
 Ao adicionar uma nova capacidade importante, acrescente-a aqui e na seção
 correspondente, removendo informações que deixarem de ser verdadeiras.

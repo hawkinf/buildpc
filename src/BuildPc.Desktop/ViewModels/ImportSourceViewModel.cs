@@ -11,6 +11,7 @@ public sealed class ImportSourceViewModel : ViewModelBase
     private string _url;
     private int _importedCount;
     private DateTimeOffset? _lastImportedAt;
+    private readonly Action<ImportSourceViewModel>? _configurationChanged;
 
     public ImportSourceViewModel(
         ComponentCategory category,
@@ -21,7 +22,8 @@ public sealed class ImportSourceViewModel : ViewModelBase
         string sourceKey,
         int importedCount,
         DateTimeOffset? lastImportedAt,
-        Func<ImportSourceViewModel, Task> import)
+        Func<ImportSourceViewModel, Task> import,
+        Action<ImportSourceViewModel>? configurationChanged = null)
     {
         Category = category;
         Title = title;
@@ -31,6 +33,7 @@ public sealed class ImportSourceViewModel : ViewModelBase
         SourceKey = sourceKey;
         _importedCount = importedCount;
         _lastImportedAt = lastImportedAt;
+        _configurationChanged = configurationChanged;
         _statusMessage = "Pronto para importar.";
         ImportCommand = new AsyncRelayCommand(() => import(this));
     }
@@ -42,7 +45,13 @@ public sealed class ImportSourceViewModel : ViewModelBase
     public string Url
     {
         get => _url;
-        set => SetProperty(ref _url, value ?? string.Empty);
+        set
+        {
+            if (SetProperty(ref _url, value ?? string.Empty))
+            {
+                _configurationChanged?.Invoke(this);
+            }
+        }
     }
     public string SourceKey { get; }
     public ICommand ImportCommand { get; }

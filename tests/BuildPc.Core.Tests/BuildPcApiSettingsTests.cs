@@ -63,6 +63,11 @@ public sealed class BuildPcApiSettingsTests
     [Fact]
     public void SaveAndDisableManageConfigurationAtomically()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
         var path = CreateTemporaryPath();
         try
         {
@@ -74,6 +79,12 @@ public sealed class BuildPcApiSettingsTests
 
             expected.Save(path);
 
+            var json = File.ReadAllText(path);
+            Assert.DoesNotContain(expected.ApiKey, json, StringComparison.Ordinal);
+            Assert.Contains(
+                "\"encryptedApiKey\"",
+                json,
+                StringComparison.Ordinal);
             Assert.Equal(expected, BuildPcApiSettings.Load(path));
             Assert.Empty(Directory.GetFiles(
                 Path.GetDirectoryName(path)!,

@@ -1,11 +1,15 @@
 using System.Text.Json;
+using System.Security.Cryptography;
 
 namespace BuildPc.Core.Services;
 
 public sealed record BuildPcApiSettings
 {
     private static readonly JsonSerializerOptions JsonOptions =
-        new(JsonSerializerDefaults.Web);
+        new(JsonSerializerDefaults.Web)
+        {
+            WriteIndented = true
+        };
 
     public string BaseUrl { get; init; } = string.Empty;
     public string ApiKey { get; init; } = string.Empty;
@@ -28,9 +32,14 @@ public sealed record BuildPcApiSettings
         var temporaryPath = $"{path}.{Guid.NewGuid():N}.tmp";
         try
         {
+            var document = new PersistedSettings
+            {
+                BaseUrl = BaseUrl,
+                EncryptedApiKey = BuildPcApiKeyProtector.Protect(ApiKey)
+            };
             File.WriteAllText(
                 temporaryPath,
-                JsonSerializer.Serialize(this, JsonOptions));
+                JsonSerializer.Serialize(document, JsonOptions));
             File.Move(temporaryPath, path, overwrite: true);
         }
         finally
@@ -60,12 +69,33 @@ public sealed record BuildPcApiSettings
 
         try
         {
-            var settings = JsonSerializer.Deserialize<BuildPcApiSettings>(
+            var document = JsonSerializer.Deserialize<PersistedSettings>(
                 File.ReadAllText(path),
                 JsonOptions);
+            if (document is null)
+            {
+                return null;
+            }
+
+            var apiKey = !string.IsNullOrWhiteSpace(document.EncryptedApiKey)
+                ? BuildPcApiKeyProtector.Unprotect(document.EncryptedApiKey)
+                : document.ApiKey;
+            var settings = new BuildPcApiSettings
+            {
+                BaseUrl = document.BaseUrl,
+                ApiKey = apiKey ?? string.Empty
+            };
             return settings?.IsValid() == true ? settings : null;
         }
         catch (JsonException)
+        {
+            return null;
+        }
+        catch (CryptographicException)
+        {
+            return null;
+        }
+        catch (FormatException)
         {
             return null;
         }
@@ -75,4 +105,13 @@ public sealed record BuildPcApiSettings
         Uri.TryCreate(BaseUrl, UriKind.Absolute, out var uri) &&
         (uri.Scheme == Uri.UriSchemeHttps || uri.IsLoopback) &&
         !string.IsNullOrWhiteSpace(ApiKey);
+
+    private sealed record PersistedSettings
+    {
+        public string BaseUrl { get; init; } = string.Empty;
+        public string EncryptedApiKey { get; init; } = string.Empty;
+
+        // Compatibilidade somente de leitura com o servidor.json antigo.
+        public string? ApiKey { get; init; }
+    }
 }

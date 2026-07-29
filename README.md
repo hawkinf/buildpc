@@ -35,6 +35,10 @@ implantação e o checklist obrigatório para manter o projeto consistente.
   ordenação escolhida por descrição ou custo;
 - rodapé global com estado ONLINE/OFFLINE da API e barras de rolagem verticais
   reforçadas em todas as telas;
+- arquivo `buildpc.config.json` gerado ao lado do executável com tema, margens,
+  empresa, categorias, links de importação e acesso ao servidor;
+- chave da API protegida pelo cofre criptográfico do Windows e nunca gravada
+  em texto aberto no JSON;
 - montagem em linhas completas e listas zebradas com produto, descrição e valor destacados;
 - filtros instantâneos em cada lista, incluindo `*`, `?` e exclusões como `-note*`;
 - destaque visual das correspondências e ordenação alfabética ou por preço;
@@ -64,14 +68,23 @@ são mantidos no banco SQLite local do usuário. Cores, geometrias vetoriais de
 
 ## Servidor privado
 
-O aplicativo continua usando SQLite quando não existe o arquivo
-`%LocalAppData%\BuildPC\servidor.json`. Quando esse arquivo contém uma URL HTTPS
-e uma chave válidas, produtos, configurações e orçamentos passam a ser lidos e
+O aplicativo gera `buildpc.config.json` na mesma pasta do executável. O arquivo
+pode acompanhar a distribuição do programa e reúne as configurações do sistema,
+da empresa, das margens, das categorias, dos links de importação e da VPS/API.
+Quando a seção `server` está desativada, o programa usa SQLite local; quando
+está ativa e válida, produtos, configurações e orçamentos passam a ser lidos e
 gravados pela API `BuildPc.Api`.
 
 A seção **Configurações > Servidor de dados** permite testar e trocar a URL e a
 chave da API, ou voltar ao SQLite local. A alteração entra em vigor depois que o
-BuildPC é reiniciado; a senha do PostgreSQL permanece somente na VPS.
+BuildPC é reiniciado. A chave aparece no JSON somente em `encryptedApiKey`,
+protegida por DPAPI para o usuário atual do Windows. Ao copiar o arquivo para
+outro computador ou usuário do Windows, informe e salve novamente a chave da
+API. A senha do PostgreSQL permanece somente na VPS.
+
+O formato antigo `%LocalAppData%\BuildPC\servidor.json` é aceito apenas para
+migração: no primeiro início com a versão nova, seus dados são gravados no
+arquivo unificado com a chave criptografada e o arquivo antigo é removido.
 
 Na VPS, a API acessa o PostgreSQL por `127.0.0.1:5432` e o Nginx publica somente
 o caminho HTTPS `/buildpc-api/`. A porta do banco não deve ser liberada no

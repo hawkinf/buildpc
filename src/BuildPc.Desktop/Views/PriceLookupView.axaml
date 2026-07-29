@@ -2,7 +2,10 @@
     x:Class="BuildPc.Desktop.Views.PriceLookupView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="clr-namespace:BuildPc.Desktop.Controls">
+    xmlns:controls="clr-namespace:BuildPc.Desktop.Controls"
+    xmlns:vm="clr-namespace:BuildPc.Desktop.ViewModels"
+    x:CompileBindings="True"
+    x:DataType="vm:PriceLookupViewModel">
 
   <Grid RowDefinitions="Auto,*">
     <Border Grid.Row="0"
@@ -51,7 +54,7 @@
                         Height="38"
                         Padding="10,5">
                 <ComboBox.ItemTemplate>
-                  <DataTemplate>
+                  <DataTemplate x:DataType="vm:ProductCategoryFilterViewModel">
                     <TextBlock Text="{Binding DisplayName}" />
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
@@ -161,7 +164,7 @@
             </Style>
           </ListBox.Styles>
           <ListBox.ItemTemplate>
-            <DataTemplate>
+            <DataTemplate x:DataType="vm:PriceLookupItemViewModel">
               <Border x:Name="lookupProductRow"
                       Classes="catalog-row"
                       Classes.alternate="{Binding IsAlternate}"

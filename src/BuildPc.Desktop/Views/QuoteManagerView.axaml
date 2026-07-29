@@ -2,7 +2,10 @@
     x:Class="BuildPc.Desktop.Views.QuoteManagerView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="clr-namespace:BuildPc.Desktop.Controls">
+    xmlns:controls="clr-namespace:BuildPc.Desktop.Controls"
+    xmlns:vm="clr-namespace:BuildPc.Desktop.ViewModels"
+    x:CompileBindings="True"
+    x:DataType="vm:QuoteManagerViewModel">
 
   <Grid RowDefinitions="Auto,*">
     <Border BorderBrush="{DynamicResource Brush.Border}"
@@ -44,7 +47,7 @@
                       AutomationProperties.Name="Período dos orçamentos exibidos"
                       MinWidth="160">
               <ComboBox.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="vm:QuotePeriodOptionViewModel">
                   <TextBlock Text="{Binding Name}" />
                 </DataTemplate>
               </ComboBox.ItemTemplate>
@@ -203,7 +206,7 @@
                    SelectedItem="{Binding SelectedQuote, Mode=TwoWay}"
                    Padding="0,0,22,180">
             <ListBox.ItemTemplate>
-              <DataTemplate>
+              <DataTemplate x:DataType="vm:SavedQuoteListItemViewModel">
                 <Border Classes="catalog-row" Margin="0,0,0,6" Padding="12">
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Spacing="3">
@@ -250,7 +253,7 @@
             <ItemsControl ItemsSource="{Binding Items}"
                           Margin="0,0,36,180">
               <ItemsControl.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="vm:SavedQuoteItemListItemViewModel">
                   <Border x:Name="savedQuoteProductRow"
                           Classes="component-row"
                           Classes.alternate="{Binding IsAlternate}"

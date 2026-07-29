@@ -6,9 +6,9 @@
     Title="Editar produto"
     Icon="/Assets/Brand/buildpc.ico"
     Width="680"
-    Height="680"
-    MinWidth="560"
-    MinHeight="580"
+    Height="590"
+    MinWidth="580"
+    MinHeight="520"
     WindowStartupLocation="CenterOwner"
     Background="{DynamicResource Brush.AppBackground}">
 
@@ -16,26 +16,29 @@
     <Border Grid.Row="0"
             BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="0,0,0,1"
-            Padding="24,18">
-      <StackPanel Spacing="3">
-        <TextBlock Text="Editar produto" FontSize="20" FontWeight="Bold" />
+            Padding="20,14">
+      <StackPanel Spacing="2">
+        <TextBlock Text="Editar produto" FontSize="19" FontWeight="Bold" />
         <TextBlock Text="Altere os dados do produto selecionado no Catálogo Local."
                    Foreground="{DynamicResource Brush.TextBodyMuted}"
-                   FontSize="11" />
+                   FontSize="10" />
       </StackPanel>
     </Border>
 
     <ScrollViewer Grid.Row="1"
-                  Padding="24,20"
+                  Padding="20,14"
                   HorizontalScrollBarVisibility="Disabled">
-      <StackPanel Spacing="16">
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-          <StackPanel Grid.Column="0" Spacing="6">
+      <StackPanel Spacing="11">
+        <Grid ColumnDefinitions="*,94,*" ColumnSpacing="12">
+          <StackPanel Grid.Column="0" Spacing="5" VerticalAlignment="Top">
             <TextBlock Text="Categoria *"
-                       FontSize="11"
+                       FontSize="10"
                        Foreground="{DynamicResource Brush.TextLabel}" />
             <ComboBox ItemsSource="{Binding CategoryOptions}"
-                      SelectedItem="{Binding SelectedProductCategory, Mode=TwoWay}">
+                      SelectedItem="{Binding SelectedProductCategory, Mode=TwoWay}"
+                      MinHeight="38"
+                      Height="38"
+                      Padding="10,5">
               <ComboBox.ItemTemplate>
                 <DataTemplate>
                   <TextBlock Text="{Binding Name}" />
@@ -43,167 +46,210 @@
               </ComboBox.ItemTemplate>
             </ComboBox>
           </StackPanel>
-          <StackPanel Grid.Column="1" Spacing="6">
-            <TextBlock Text="Marca *"
-                       FontSize="11"
-                       Foreground="{DynamicResource Brush.TextLabel}" />
-            <TextBox Text="{Binding ProductBrand, Mode=TwoWay}"
-                     PlaceholderText="Ex.: AMD" />
-          </StackPanel>
-        </Grid>
 
-        <StackPanel Spacing="6">
-          <TextBlock Text="Título do produto *"
-                     FontSize="11"
-                     Foreground="{DynamicResource Brush.TextLabel}" />
-          <TextBox Text="{Binding ProductName, Mode=TwoWay}"
-                   PlaceholderText="Ex.: Ryzen 7 7700" />
-        </StackPanel>
-
-        <StackPanel Spacing="6">
-          <TextBlock Text="Descrição *"
-                     FontSize="11"
-                     Foreground="{DynamicResource Brush.TextLabel}" />
-          <TextBox Text="{Binding ProductDescription, Mode=TwoWay}"
-                   AcceptsReturn="True"
-                   TextWrapping="Wrap"
-                   MinHeight="88" />
-        </StackPanel>
-
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-          <StackPanel Grid.Column="0" Spacing="6">
-            <TextBlock Text="Valor de venda"
-                       FontSize="11"
-                       Foreground="{DynamicResource Brush.TextLabel}" />
-            <TextBox Text="{Binding ProductSalePrice}"
-                     IsReadOnly="True"
-                     TextAlignment="Right"
-                     FontWeight="SemiBold" />
-          </StackPanel>
-
-          <StackPanel Grid.Column="1" Spacing="6">
-            <TextBlock Text="Custo *"
-                       FontSize="11"
-                       Foreground="{DynamicResource Brush.TextLabel}" />
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-              <Button x:Name="productCostEyeButton"
-                      Classes="secondary"
-                      MinWidth="44"
-                      Padding="10"
-                      ToolTip.Tip="Mantenha pressionado para revelar custo e lucro">
-                <PathIcon Data="{StaticResource Icon.Eye}"
-                          Width="17"
-                          Height="17"
-                          Foreground="{DynamicResource Brush.AccentLight}" />
-              </Button>
-              <TextBox Grid.Column="1"
-                       Text="{Binding ProductPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                       PasswordChar="*"
-                       IsVisible="{Binding IsProductEditCostHidden}"
-                       PlaceholderText="********"
-                       Padding="30,8,12,8"
-                       TextAlignment="Right" />
-              <TextBox Grid.Column="1"
-                       Text="{Binding ProductPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                       IsVisible="{Binding IsProductEditCostVisible}"
-                       Padding="30,8,12,8"
-                       TextAlignment="Right" />
-              <TextBlock Grid.Column="1"
-                         Text="R$"
-                         Margin="10,0,0,0"
-                         HorizontalAlignment="Left"
-                         VerticalAlignment="Center"
-                         IsHitTestVisible="False"
-                         FontSize="10"
-                         Foreground="{DynamicResource Brush.TextSecondary}" />
-            </Grid>
-          </StackPanel>
-        </Grid>
-
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-          <StackPanel Grid.Column="0" Spacing="6">
-            <TextBlock Text="Lucro"
-                       FontSize="11"
-                       Foreground="{DynamicResource Brush.TextLabel}" />
-            <Grid>
-              <TextBox Text="********"
-                       IsReadOnly="True"
-                       IsVisible="{Binding IsProductEditCostHidden}"
-                       TextAlignment="Right" />
-              <TextBox Text="{Binding ProductProfit}"
-                       IsReadOnly="True"
-                       IsVisible="{Binding IsProductEditCostVisible}"
-                       TextAlignment="Right"
-                       FontWeight="SemiBold" />
-            </Grid>
-          </StackPanel>
-
-          <StackPanel Grid.Column="1" Spacing="6">
-            <TextBlock Text="% de lucro"
-                       FontSize="11"
-                       Foreground="{DynamicResource Brush.TextLabel}" />
-            <Grid>
-              <TextBox Text="********"
-                       IsReadOnly="True"
-                       IsVisible="{Binding IsProductEditCostHidden}"
-                       TextAlignment="Right" />
-              <TextBox Text="{Binding ProductProfitPercent}"
-                       IsReadOnly="True"
-                       IsVisible="{Binding IsProductEditCostVisible}"
-                       TextAlignment="Right"
-                       FontWeight="SemiBold" />
-            </Grid>
-          </StackPanel>
-        </Grid>
-
-        <Border Classes="input-group">
-          <Grid ColumnDefinitions="96,*" ColumnSpacing="14">
-            <Border Width="96"
-                    Height="96"
-                    CornerRadius="10"
+          <StackPanel Grid.Column="1"
+                      Spacing="4"
+                      HorizontalAlignment="Center">
+            <Border Width="82"
+                    Height="72"
+                    CornerRadius="8"
+                    BorderBrush="{DynamicResource Brush.InputBorder}"
+                    BorderThickness="1"
                     Background="White">
               <Grid>
                 <PathIcon Data="{StaticResource Icon.Products}"
-                          Width="30"
-                          Height="30"
+                          Width="25"
+                          Height="25"
                           Foreground="{DynamicResource Brush.TextMuted}"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center" />
                 <controls:RemoteImage Url="{Binding ProductImagePath}"
                                       Stretch="Uniform"
-                                      Margin="4" />
+                                      Margin="3" />
               </Grid>
             </Border>
-            <StackPanel Grid.Column="1"
-                        Spacing="8"
-                        VerticalAlignment="Center">
-              <TextBlock Text="Foto do produto"
-                         FontSize="13"
-                         FontWeight="SemiBold" />
-              <TextBlock Text="{Binding ProductImagePath}"
-                         TextTrimming="CharacterEllipsis"
-                         MaxLines="1"
+            <StackPanel Orientation="Horizontal"
+                        Spacing="4"
+                        HorizontalAlignment="Center">
+              <Button Classes="secondary"
+                      Click="SelectProductImage_Click"
+                      Width="39"
+                      MinWidth="39"
+                      Height="28"
+                      MinHeight="28"
+                      Padding="7,4"
+                      ToolTip.Tip="Adicionar ou trocar a foto">
+                <PathIcon Data="{StaticResource Icon.Add}"
+                          Width="13"
+                          Height="13"
+                          Foreground="{DynamicResource Brush.AccentLight}" />
+              </Button>
+              <Button Classes="secondary"
+                      Command="{Binding RemoveProductImageCommand}"
+                      IsEnabled="{Binding HasProductImage}"
+                      Width="39"
+                      MinWidth="39"
+                      Height="28"
+                      MinHeight="28"
+                      Padding="7,4"
+                      ToolTip.Tip="Remover a foto">
+                <PathIcon Data="{StaticResource Icon.Clear}"
+                          Width="12"
+                          Height="12"
+                          Foreground="{DynamicResource Brush.Error}" />
+              </Button>
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Grid.Column="2" Spacing="5" VerticalAlignment="Top">
+            <TextBlock Text="Marca *"
+                       FontSize="10"
+                       Foreground="{DynamicResource Brush.TextLabel}" />
+            <TextBox Text="{Binding ProductBrand, Mode=TwoWay}"
+                     PlaceholderText="Ex.: AMD"
+                     MinHeight="38"
+                     Height="38"
+                     Padding="10,5" />
+          </StackPanel>
+        </Grid>
+
+        <StackPanel Spacing="5">
+          <TextBlock Text="Título do produto *"
+                     FontSize="10"
+                     Foreground="{DynamicResource Brush.TextLabel}" />
+          <TextBox Text="{Binding ProductName, Mode=TwoWay}"
+                   PlaceholderText="Ex.: Ryzen 7 7700"
+                   MinHeight="38"
+                   Height="38"
+                   Padding="10,5" />
+        </StackPanel>
+
+        <StackPanel Spacing="5">
+          <TextBlock Text="Descrição *"
+                     FontSize="10"
+                     Foreground="{DynamicResource Brush.TextLabel}" />
+          <TextBox Text="{Binding ProductDescription, Mode=TwoWay}"
+                   AcceptsReturn="True"
+                   TextWrapping="Wrap"
+                   MinHeight="62"
+                   Height="62"
+                   Padding="10,7" />
+        </StackPanel>
+
+        <Border Classes="input-group" Padding="10,8">
+          <Grid ColumnDefinitions="*,1.35*,*,*" ColumnSpacing="8">
+            <StackPanel Grid.Column="0" Spacing="4">
+              <TextBlock Text="Valor de venda"
                          FontSize="9"
-                         Foreground="{DynamicResource Brush.TextSecondary}" />
-              <WrapPanel Orientation="Horizontal">
-                <Button Classes="secondary"
-                        Click="SelectProductImage_Click"
-                        Margin="0,0,8,0">
-                  <TextBlock Text="Adicionar / trocar foto" />
+                         Foreground="{DynamicResource Brush.TextLabel}" />
+              <Border Height="34"
+                      CornerRadius="7"
+                      BorderBrush="{DynamicResource Brush.InputBorder}"
+                      BorderThickness="1"
+                      Background="{DynamicResource Brush.InputBackground}"
+                      Padding="9,0">
+                <TextBlock Text="{Binding ProductSalePrice}"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"
+                           FontSize="11"
+                           FontWeight="SemiBold" />
+              </Border>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Spacing="4">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Custo *"
+                           FontSize="9"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource Brush.TextLabel}" />
+                <Button x:Name="productCostEyeButton"
+                        Grid.Column="1"
+                        Classes="list-header"
+                        Width="28"
+                        MinWidth="28"
+                        Height="20"
+                        MinHeight="20"
+                        Padding="5,2"
+                        ToolTip.Tip="Mantenha pressionado para revelar custo e lucro">
+                  <PathIcon Data="{StaticResource Icon.Eye}"
+                            Width="13"
+                            Height="13"
+                            Foreground="{DynamicResource Brush.AccentLight}" />
                 </Button>
-                <Button Classes="secondary"
-                        Command="{Binding RemoveProductImageCommand}"
-                        IsEnabled="{Binding HasProductImage}">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <PathIcon Data="{StaticResource Icon.Clear}"
-                              Width="13"
-                              Height="13"
-                              Foreground="{DynamicResource Brush.Error}" />
-                    <TextBlock Text="Remover"
-                               Foreground="{DynamicResource Brush.Error}" />
-                  </StackPanel>
-                </Button>
-              </WrapPanel>
+              </Grid>
+              <Grid>
+                <TextBox Text="{Binding ProductPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         PasswordChar="*"
+                         IsVisible="{Binding IsProductEditCostHidden}"
+                         PlaceholderText="********"
+                         MinHeight="34"
+                         Height="34"
+                         Padding="25,4,8,4"
+                         TextAlignment="Right" />
+                <TextBox Text="{Binding ProductPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         IsVisible="{Binding IsProductEditCostVisible}"
+                         MinHeight="34"
+                         Height="34"
+                         Padding="25,4,8,4"
+                         TextAlignment="Right" />
+                <TextBlock Text="R$"
+                           Margin="8,0,0,0"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           IsHitTestVisible="False"
+                           FontSize="9"
+                           Foreground="{DynamicResource Brush.TextSecondary}" />
+              </Grid>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Spacing="4">
+              <TextBlock Text="Lucro"
+                         FontSize="9"
+                         Foreground="{DynamicResource Brush.TextLabel}" />
+              <Border Height="34"
+                      CornerRadius="7"
+                      BorderBrush="{DynamicResource Brush.InputBorder}"
+                      BorderThickness="1"
+                      Background="{DynamicResource Brush.InputBackground}"
+                      Padding="8,0">
+                <Grid>
+                  <TextBlock Text="********"
+                             IsVisible="{Binding IsProductEditCostHidden}"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding ProductProfit}"
+                             IsVisible="{Binding IsProductEditCostVisible}"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Center"
+                             FontSize="10"
+                             FontWeight="SemiBold" />
+                </Grid>
+              </Border>
+            </StackPanel>
+
+            <StackPanel Grid.Column="3" Spacing="4">
+              <TextBlock Text="% de lucro"
+                         FontSize="9"
+                         Foreground="{DynamicResource Brush.TextLabel}" />
+              <Border Height="34"
+                      CornerRadius="7"
+                      BorderBrush="{DynamicResource Brush.InputBorder}"
+                      BorderThickness="1"
+                      Background="{DynamicResource Brush.InputBackground}"
+                      Padding="8,0">
+                <Grid>
+                  <TextBlock Text="********"
+                             IsVisible="{Binding IsProductEditCostHidden}"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding ProductProfitPercent}"
+                             IsVisible="{Binding IsProductEditCostVisible}"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Center"
+                             FontSize="10"
+                             FontWeight="SemiBold" />
+                </Grid>
+              </Border>
             </StackPanel>
           </Grid>
         </Border>
@@ -212,31 +258,35 @@
                    TextWrapping="Wrap"
                    IsVisible="{Binding IsProductFormError}"
                    Foreground="{DynamicResource Brush.Error}"
-                   FontSize="11" />
+                   FontSize="10" />
       </StackPanel>
     </ScrollViewer>
 
     <Border Grid.Row="2"
             BorderBrush="{DynamicResource Brush.Border}"
             BorderThickness="0,1,0,0"
-            Padding="24,14">
-      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+            Padding="20,11">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
         <TextBlock Text="Os campos com * são obrigatórios."
                    VerticalAlignment="Center"
                    Foreground="{DynamicResource Brush.TextSecondary}"
-                   FontSize="10" />
+                   FontSize="9" />
         <Button Grid.Column="1"
                 Classes="secondary"
-                Click="Cancel_Click">
+                Click="Cancel_Click"
+                MinHeight="36"
+                Padding="14,7">
           <TextBlock Text="Cancelar" />
         </Button>
         <Button Grid.Column="2"
                 Classes="primary"
-                Click="Save_Click">
-          <StackPanel Orientation="Horizontal" Spacing="8">
+                Click="Save_Click"
+                MinHeight="36"
+                Padding="14,7">
+          <StackPanel Orientation="Horizontal" Spacing="7">
             <PathIcon Data="{StaticResource Icon.Save}"
-                      Width="16"
-                      Height="16"
+                      Width="15"
+                      Height="15"
                       Foreground="White" />
             <TextBlock Text="Salvar alterações" Foreground="White" />
           </StackPanel>

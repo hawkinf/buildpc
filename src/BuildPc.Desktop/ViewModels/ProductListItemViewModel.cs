@@ -12,6 +12,7 @@ public sealed class ProductListItemViewModel : ViewModelBase
     private bool _isSelected;
     private bool _isBulkSelected;
     private bool _isAlternate;
+    private string _displayPrice;
 
     private ProductListItemViewModel(
         PcComponent component,
@@ -30,6 +31,7 @@ public sealed class ProductListItemViewModel : ViewModelBase
         Description = component.Description;
         ImageUrl = component.ImageUrl;
         Price = component.Price.ToString("C", MainWindowViewModel.BrazilianCulture);
+        _displayPrice = Price;
         PowerText = component.PowerWatts > 0 ? $"{component.PowerWatts} W" : "Não informado";
         SocketText = ValueOrNotInformed(component.Socket);
         MemoryTypeText = ValueOrNotInformed(component.MemoryType);
@@ -61,6 +63,11 @@ public sealed class ProductListItemViewModel : ViewModelBase
     public string? ImageUrl { get; }
     public bool HasImage => !string.IsNullOrWhiteSpace(ImageUrl);
     public string Price { get; }
+    public string DisplayPrice
+    {
+        get => _displayPrice;
+        private set => SetProperty(ref _displayPrice, value);
+    }
     public string PowerText { get; }
     public string SocketText { get; }
     public string MemoryTypeText { get; }
@@ -112,6 +119,9 @@ public sealed class ProductListItemViewModel : ViewModelBase
     public string KeepIcon => IsKept ? "Check" : "Pin";
 
     public void SetAlternate(bool isAlternate) => IsAlternate = isAlternate;
+
+    public void SetDisplayPrice(decimal price) =>
+        DisplayPrice = price.ToString("C", MainWindowViewModel.BrazilianCulture);
 
     public static ProductListItemViewModel From(
         PcComponent component,

@@ -132,6 +132,25 @@ public sealed class ProductCatalogSorterTests
             section.Rows.Select(row => row.Title));
     }
 
+    [Fact]
+    public void PriceSorting_UsesTheDisplayedPriceSelector()
+    {
+        var products = new[]
+        {
+            Product("Produto A", "Alfa", 100m),
+            Product("Produto B", "Beta", 200m)
+        };
+
+        var sorted = ProductCatalogSorter.Sort(
+            products,
+            ProductCatalogSortMode.PriceAscending,
+            product => product.Name == "Produto A" ? 300m : 250m);
+
+        Assert.Equal(
+            ["Produto B", "Produto A"],
+            sorted.Select(product => product.Name));
+    }
+
     private static IReadOnlyList<ProductListItemViewModel> CreateProducts() =>
     [
         Product("Produto Z", "Beta", 300m),

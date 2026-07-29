@@ -121,6 +121,25 @@
     <Setter Property="Foreground" Value="{DynamicResource Brush.AccentLight}" />
   </Style>
 
+  <Style Selector="Button.price-mode">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Padding" Value="9,5" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="MinWidth" Value="56" />
+  </Style>
+
+  <Style Selector="Button.price-mode:pointerover">
+    <Setter Property="Background" Value="{DynamicResource Brush.HoverBackground}" />
+  </Style>
+
+  <Style Selector="Button.price-mode.active">
+    <Setter Property="Background" Value="{DynamicResource Brush.Accent}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+
   <Style Selector="ComboBox:focus, TextBox:focus">
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Focus}" />
     <Setter Property="BorderThickness" Value="2" />

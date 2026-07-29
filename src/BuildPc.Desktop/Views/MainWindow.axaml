@@ -554,7 +554,7 @@
             <Border Grid.Row="1" BorderBrush="{DynamicResource Brush.Border}"
                     BorderThickness="0,0,0,1" Padding="18,12">
               <StackPanel Spacing="8">
-                <Grid ColumnDefinitions="180,*,Auto" ColumnSpacing="8">
+                <Grid ColumnDefinitions="180,*,Auto,Auto" ColumnSpacing="8">
                   <ComboBox ItemsSource="{Binding ProductCategoryFilters}"
                             SelectedItem="{Binding SelectedCatalogCategoryFilter, Mode=TwoWay}">
                     <ComboBox.ItemTemplate>
@@ -566,7 +566,26 @@
                   <TextBox Grid.Column="1"
                            Text="{Binding CatalogSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                            PlaceholderText="Palavras-chave: nvme 256 adata" />
-                  <TextBlock Grid.Column="2" Text="{Binding BulkSelectedText}"
+                  <Border Grid.Column="2"
+                          Background="{DynamicResource Brush.PanelBackground}"
+                          CornerRadius="7"
+                          Padding="3">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                      <Button Classes="price-mode"
+                              Classes.active="{Binding IsCatalogCostDisplayActive}"
+                              Command="{Binding ShowCatalogCostCommand}"
+                              ToolTip.Tip="Mostrar valores de custo">
+                        <TextBlock Text="Custo" />
+                      </Button>
+                      <Button Classes="price-mode"
+                              Classes.active="{Binding IsCatalogSaleDisplayActive}"
+                              Command="{Binding ShowCatalogSaleCommand}"
+                              ToolTip.Tip="Mostrar valores de venda">
+                        <TextBlock Text="Venda" />
+                      </Button>
+                    </StackPanel>
+                  </Border>
+                  <TextBlock Grid.Column="3" Text="{Binding BulkSelectedText}"
                              HorizontalAlignment="Right" VerticalAlignment="Center"
                              FontSize="9" Foreground="{DynamicResource Brush.TextSecondary}" />
                 </Grid>
@@ -654,7 +673,8 @@
                           Padding="6,4,6,2">
                     <StackPanel Orientation="Horizontal" Spacing="6"
                                 HorizontalAlignment="Right">
-                      <TextBlock Text="CUSTO" FontSize="9" FontWeight="Bold" />
+                      <TextBlock Text="{Binding CatalogPriceColumnTitle}"
+                                 FontSize="9" FontWeight="Bold" />
                       <PathIcon Data="{Binding CatalogCostSortIcon,
                                               Converter={StaticResource IconResourceConverter}}"
                                 IsVisible="{Binding IsCatalogCostSortActive}"
@@ -728,7 +748,7 @@
                                        MaxLines="1" />
                           </StackPanel>
                           <TextBlock Grid.Column="2"
-                                     Text="{Binding Price}"
+                                     Text="{Binding DisplayPrice}"
                                      Foreground="{DynamicResource Brush.Warning}"
                                      FontSize="11" FontWeight="SemiBold"
                                      TextAlignment="Right"

@@ -50,6 +50,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private ProductPriceTableOptionViewModel _selectedProductPriceTableOption = null!;
     private bool _isExportingProductPriceTable;
     private string _productPriceTableStatusMessage = string.Empty;
+    private bool _isCatalogShowingSalePrice;
 
     public static CultureInfo BrazilianCulture { get; } = CultureInfo.GetCultureInfo("pt-BR");
 
@@ -280,6 +281,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         CancelBulkDeleteCommand = new RelayCommand(CancelBulkDelete);
         SortCatalogByDescriptionCommand = new RelayCommand(SortCatalogByDescription);
         SortCatalogByCostCommand = new RelayCommand(SortCatalogByCost);
+        ShowCatalogCostCommand = new RelayCommand(() => SetCatalogPriceMode(false));
+        ShowCatalogSaleCommand = new RelayCommand(() => SetCatalogPriceMode(true));
         RemoveProductImageCommand = new RelayCommand(RemoveProductImage);
         CancelProductEditCommand = new RelayCommand(CancelProductEdit);
         ImportAllCommand = new AsyncRelayCommand(ImportAllAsync);
@@ -325,6 +328,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand CancelBulkDeleteCommand { get; }
     public ICommand SortCatalogByDescriptionCommand { get; }
     public ICommand SortCatalogByCostCommand { get; }
+    public ICommand ShowCatalogCostCommand { get; }
+    public ICommand ShowCatalogSaleCommand { get; }
     public ICommand RemoveProductImageCommand { get; }
     public ICommand CancelProductEditCommand { get; }
     public ICommand ImportAllCommand { get; }
@@ -522,6 +527,10 @@ public sealed class MainWindowViewModel : ViewModelBase
         SelectedCatalogSort.Mode is
             ProductCatalogSortMode.PriceAscending or
             ProductCatalogSortMode.PriceDescending;
+    public bool IsCatalogCostDisplayActive => !_isCatalogShowingSalePrice;
+    public bool IsCatalogSaleDisplayActive => _isCatalogShowingSalePrice;
+    public string CatalogPriceColumnTitle =>
+        _isCatalogShowingSalePrice ? "VENDA" : "CUSTO";
     public string CatalogDescriptionSortIcon =>
         SelectedCatalogSort.Mode == ProductCatalogSortMode.DescriptionDescending
             ? "SortDescending"
@@ -928,6 +937,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         ApplicationThemeService.Apply(settings.ThemeMode);
         FlexibleList.ApplySettings(settings);
         NotifyProductPricingChanged();
+        RefreshCatalogDisplayPrices();
+        RefreshProductFilter();
     }
 
     private string? SaveProductCategories(
@@ -1185,6 +1196,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             Products.Add(product);
         }
+        RefreshCatalogDisplayPrices();
 
         if (selectedCatalogProductId is not null)
         {
@@ -1410,7 +1422,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             ProductFilter.Matches(product.Component, CatalogSearchText));
         var visibleProducts = ProductCatalogSorter.Sort(
             filtered,
-            SelectedCatalogSort.Mode);
+            SelectedCatalogSort.Mode,
+            product => CatalogDisplayPrice(product.Component));
         FilteredProducts.Clear();
         for (var index = 0; index < visibleProducts.Count; index++)
         {
@@ -1486,6 +1499,36 @@ public sealed class MainWindowViewModel : ViewModelBase
             : ProductCatalogSortMode.PriceAscending;
         SelectedCatalogSort = CatalogSortOptions.Single(option => option.Mode == mode);
     }
+
+    private void SetCatalogPriceMode(bool showSalePrice)
+    {
+        if (_isCatalogShowingSalePrice == showSalePrice)
+        {
+            return;
+        }
+
+        _isCatalogShowingSalePrice = showSalePrice;
+        OnPropertyChanged(nameof(IsCatalogCostDisplayActive));
+        OnPropertyChanged(nameof(IsCatalogSaleDisplayActive));
+        OnPropertyChanged(nameof(CatalogPriceColumnTitle));
+        RefreshCatalogDisplayPrices();
+        RefreshProductFilter();
+    }
+
+    private void RefreshCatalogDisplayPrices()
+    {
+        foreach (var product in Products)
+        {
+            product.SetDisplayPrice(CatalogDisplayPrice(product.Component));
+        }
+    }
+
+    private decimal CatalogDisplayPrice(PcComponent component) =>
+        _isCatalogShowingSalePrice
+            ? FlexibleListItemViewModel.CalculateSalePrice(
+                component.Price,
+                _businessSettings.MarginFor(component.Category))
+            : component.Price;
 
     private void RequestBulkDelete()
     {

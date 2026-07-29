@@ -872,6 +872,14 @@ chave da API não aparece em texto aberto no JSON.
 12. Se mudar API, atualize cliente, contratos, servidor e testes juntos.
 13. Nunca grave segredos no repositório.
 14. Atualize este documento no mesmo commit da alteração.
+15. Nunca use `ConfigureAwait(false)` em `await`s dentro do caminho de
+    inicialização da interface (`MainWindowViewModel.CreateAsync` e afins).
+    Em modo local, o SQLite devolve tarefas já concluídas e o defeito fica
+    invisível; em modo servidor, a chamada HTTP real retorna numa thread do
+    pool e a construção de objetos do Avalonia (`DispatcherTimer`, tema) falha
+    com "The calling thread cannot access this object because a different
+    thread owns it". Isso só aparece testando o app de verdade contra a API,
+    nunca em testes unitários com SQLite/mocks.
 
 ## Checklist de conclusão para qualquer IA
 
@@ -895,6 +903,19 @@ chave da API não aparece em texto aberto no JSON.
   Montagem, Orçamentos e edição de produto não deixam o último conteúdo preso
   atrás do rodapé. Um teste estrutural protege a medição correta dos
   `ScrollViewer`.
+- `MainWindowViewModel.CreateAsync` tinha `ConfigureAwait(false)` nos awaits de
+  configurações, catálogo e últimas importações. Em modo servidor (API real)
+  isso derrubava o app no primeiro início com "The calling thread cannot
+  access this object because a different thread owns it", porque a
+  continuação voltava numa thread fora da UI e a construção do
+  `MainWindowViewModel` cria objetos do Avalonia. Corrigido removendo os
+  `ConfigureAwait(false)` e adicionando um guard defensivo com
+  `Dispatcher.UIThread.CheckAccess()`/`InvokeAsync` em volta da construção
+  final. Só foi encontrado rodando o executável publicado contra a API da VPS
+  — build e os 239 testes (SQLite/mocks) sempre passaram mesmo com o defeito
+  presente. A coluna de quantidade da montagem também estava estreita demais
+  (80px) para o `NumericUpDown` mostrar o número; ajustada para 110px em
+  `FlexibleListView.axaml`.
 - Preview animado compartilhado foi aplicado a todas as listas de produtos.
 - Gerenciador de Orçamentos recebeu folga para scrollbar e tabela financeira
   alinhada.

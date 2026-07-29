@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text.Json;
 using System.Windows.Input;
+using Avalonia.Threading;
 using BuildPc.Core.Models;
 using BuildPc.Core.Services;
 using BuildPc.Desktop.Services;
@@ -142,17 +143,22 @@ public sealed class MainWindowViewModel : ViewModelBase
             }
         }
 
+        // Sem ConfigureAwait(false) de propósito: o construtor abaixo cria
+        // objetos do Avalonia (DispatcherTimer, tema) que só existem na thread
+        // da interface. Com ConfigureAwait(false), a continuação de uma chamada
+        // HTTP real voltava numa thread do pool e a construção falhava com
+        // "The calling thread cannot access this object because a different
+        // thread owns it". Em modo local o defeito não aparecia, porque o SQLite
+        // devolve tarefas já concluídas e o await continua na mesma thread.
+        // A espera continua assíncrona: a interface não bloqueia durante o I/O.
         var businessSettings =
             applicationConfiguration?.Application ??
-            await quoteRepository.GetSettingsAsync(cancellationToken)
-                .ConfigureAwait(false);
-        var catalog = await catalogRepository.GetAllAsync(cancellationToken)
-            .ConfigureAwait(false);
+            await quoteRepository.GetSettingsAsync(cancellationToken);
+        var catalog = await catalogRepository.GetAllAsync(cancellationToken);
         var lastImports = await catalogRepository
-            .GetLastImportsAsync(cancellationToken)
-            .ConfigureAwait(false);
+            .GetLastImportsAsync(cancellationToken);
 
-        return new MainWindowViewModel(new StartupContext(
+        var context = new StartupContext(
             forceLocalDatabase,
             dataDirectory,
             applicationSettingsStore,
@@ -163,7 +169,15 @@ public sealed class MainWindowViewModel : ViewModelBase
             templateRepository,
             businessSettings,
             catalog,
-            lastImports));
+            lastImports);
+
+        // Defesa estrutural: a construção cria objetos do Avalonia e precisa da
+        // thread da interface. Marshalar aqui mantém a fábrica correta mesmo se
+        // alguém voltar a introduzir ConfigureAwait(false) acima.
+        return Dispatcher.UIThread.CheckAccess()
+            ? new MainWindowViewModel(context)
+            : await Dispatcher.UIThread.InvokeAsync(
+                () => new MainWindowViewModel(context));
     }
 
     /// <summary>Dados já carregados, para o construtor não fazer I/O.</summary>

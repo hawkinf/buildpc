@@ -102,7 +102,9 @@
       <StackPanel Spacing="18" MinWidth="0" Margin="0,0,36,0">
         <Border Classes="card" Padding="20">
           <StackPanel Spacing="15">
-            <Grid ColumnDefinitions="170,*,80,112" ColumnSpacing="12">
+            <!-- A coluna de quantidade estava com 80px, estreita demais para o
+                 NumericUpDown mostrar o número junto com as setas. -->
+            <Grid ColumnDefinitions="170,*,110,112" ColumnSpacing="12">
               <StackPanel Spacing="6">
                 <TextBlock Text="1. Categoria" FontSize="11"
                            Foreground="{DynamicResource Brush.TextLabel}" />

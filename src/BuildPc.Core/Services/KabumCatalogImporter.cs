@@ -526,7 +526,7 @@ public sealed partial class KabumCatalogImporter(HttpClient httpClient)
     private static partial Regex NextDataRegex();
 
     [GeneratedRegex(
-        @"\b(?:(?:no|na|do|da)\s+)?kabum!?\b",
+        @"\b(?:(?:no|na|do|da)\s+)?kabum\b!?",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex StoreMentionRegex();
 

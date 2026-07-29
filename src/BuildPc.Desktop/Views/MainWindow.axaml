@@ -35,14 +35,6 @@
             </StackPanel>
           </Button>
 
-          <Button Classes="nav" Classes.active="{Binding IsProductsView}"
-                  Command="{Binding ShowProductsCommand}">
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <PathIcon Data="{StaticResource Icon.Products}" Width="18" Height="18" />
-              <TextBlock Text="Listagem de Produtos" VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
-
           <Button Classes="nav" Classes.active="{Binding IsPriceLookupView}"
                   Command="{Binding ShowPriceLookupCommand}">
             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -90,8 +82,8 @@
             </Button>
 
             <Button Classes="nav"
-                    Classes.active="{Binding IsProductManagementView}"
-                    Command="{Binding ShowProductManagementCommand}"
+                    Classes.active="{Binding IsProductCatalogManagementActive}"
+                    Command="{Binding ShowProductsCommand}"
                     MinHeight="34"
                     Padding="10,7">
               <StackPanel Orientation="Horizontal" Spacing="10">
@@ -525,17 +517,29 @@
       <views:ProductManagementView DataContext="{Binding}" />
     </Grid>
 
-    <!-- Listagem de produtos e catálogo local -->
+    <!-- Gerenciamento de produtos e catálogo local -->
     <Grid Grid.Column="1" Grid.ColumnSpan="2" RowDefinitions="Auto,*"
           IsVisible="{Binding IsProductsView}">
       <Border Grid.Row="0" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="30,20">
-        <Grid ColumnDefinitions="*,Auto">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
           <StackPanel Spacing="4">
-            <TextBlock Text="Listagem de Produtos" FontSize="22" FontWeight="Bold" />
-            <TextBlock Text="Consulte, filtre e exporte os produtos disponíveis no Catálogo Local."
+            <TextBlock Text="Gerenciar Produtos" FontSize="22" FontWeight="Bold" />
+            <TextBlock Text="Consulte, edite, exclua e exporte os produtos do Catálogo Local."
                        Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="12" />
           </StackPanel>
-          <Border Grid.Column="1" Background="{DynamicResource Brush.AccentSurface}" CornerRadius="8" Padding="12,7"
+          <Button Grid.Column="1"
+                  Classes="primary"
+                  Command="{Binding ShowProductManagementCommand}"
+                  VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <PathIcon Data="{StaticResource Icon.Add}"
+                        Width="15"
+                        Height="15"
+                        Foreground="White" />
+              <TextBlock Text="Novo produto" Foreground="White" />
+            </StackPanel>
+          </Button>
+          <Border Grid.Column="2" Background="{DynamicResource Brush.AccentSurface}" CornerRadius="8" Padding="12,7"
                   VerticalAlignment="Center">
             <TextBlock Text="{Binding CatalogCountText}" Foreground="{DynamicResource Brush.AccentBadge}"
                        FontSize="11" FontWeight="SemiBold" />

@@ -259,7 +259,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         BalancedPresetCommand = new RelayCommand(ApplyBalancedPreset);
         PerformancePresetCommand = new RelayCommand(ApplyPerformancePreset);
         ShowFlexibleListCommand = new RelayCommand(() => ShowView("flexible-list"));
-        ShowProductsCommand = new RelayCommand(() => ShowView("products"));
+        ShowProductsCommand = new RelayCommand(() => ShowToolView("products"));
         ShowPriceLookupCommand = new RelayCommand(() => ShowView("price-lookup"));
         ShowProductManagementCommand = new RelayCommand(ShowProductManagement);
         ShowCategoryManagementCommand =
@@ -343,7 +343,10 @@ public sealed class MainWindowViewModel : ViewModelBase
     public bool IsImportsView => _currentView == "imports";
     public bool IsQuotesView => _currentView == "quotes";
     public bool IsSettingsView => _currentView == "settings";
+    public bool IsProductCatalogManagementActive =>
+        IsProductsView || IsProductManagementView;
     public bool IsToolsView =>
+        IsProductsView ||
         IsImportsView ||
         IsProductManagementView ||
         IsCategoryManagementView ||
@@ -879,6 +882,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsImportsView));
         OnPropertyChanged(nameof(IsQuotesView));
         OnPropertyChanged(nameof(IsSettingsView));
+        OnPropertyChanged(nameof(IsProductCatalogManagementActive));
         OnPropertyChanged(nameof(IsToolsView));
 
         if (IsQuotesView)
@@ -1329,6 +1333,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         if (IsProductManagementView)
         {
             SelectCatalogProduct(null);
+            ShowToolView("products");
             return;
         }
 
@@ -1585,6 +1590,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void SaveProduct()
     {
+        var returnToProductCatalog = IsProductManagementView;
         IsProductFormSuccess = false;
 
         if (SelectedProductCategory is null ||
@@ -1697,6 +1703,10 @@ public sealed class MainWindowViewModel : ViewModelBase
         ProductFormMessage = existing is null
             ? "Produto cadastrado e adicionado à montagem."
             : "Alterações do produto salvas.";
+        if (returnToProductCatalog)
+        {
+            ShowToolView("products");
+        }
     }
 
     private void ClearProductForm()

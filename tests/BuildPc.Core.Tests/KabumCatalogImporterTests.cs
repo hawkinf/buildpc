@@ -145,6 +145,7 @@ public sealed class KabumCatalogImporterTests
             "kabum",
             mouse.Description,
             StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Compre Melhor preço", mouse.Description);
     }
 
     [Fact]

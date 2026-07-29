@@ -70,6 +70,16 @@ public sealed class MainWindowViewModel : ViewModelBase
     public static CultureInfo BrazilianCulture { get; } = CultureInfo.GetCultureInfo("pt-BR");
 
     public MainWindowViewModel()
+        : this(forceLocalDatabase: false)
+    {
+    }
+
+    /// <param name="forceLocalDatabase">
+    /// Ignora a API configurada e usa o SQLite local nesta sessão. Serve para
+    /// abrir o programa quando o servidor não responde, sem alterar o arquivo
+    /// de configuração.
+    /// </param>
+    public MainWindowViewModel(bool forceLocalDatabase)
     {
         var dataDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -84,7 +94,10 @@ public sealed class MainWindowViewModel : ViewModelBase
         var legacyApiSettings = applicationConfiguration is null
             ? BuildPcApiSettings.Load(legacyApiSettingsPath)
             : null;
-        _apiSettings = applicationConfiguration?.ApiSettings ?? legacyApiSettings;
+        _apiSettings = forceLocalDatabase
+            ? null
+            : applicationConfiguration?.ApiSettings ?? legacyApiSettings;
+        IsUsingLocalDatabaseFallback = forceLocalDatabase;
         _isApiKeyUnreadable = applicationConfiguration?.IsApiKeyUnreadable ?? false;
         _configuredImportSourceUrls =
             applicationConfiguration?.ImportSourceUrls.ToDictionary(
@@ -380,6 +393,12 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand ConfirmImportCommand { get; }
     public ICommand CancelImportConfirmationCommand { get; }
     public ICommand CancelCurrentImportCommand { get; }
+
+    /// <summary>
+    /// Verdadeiro quando o usuário optou por abrir com o banco local porque o
+    /// servidor configurado não respondeu. A configuração permanece intacta.
+    /// </summary>
+    public bool IsUsingLocalDatabaseFallback { get; }
 
     public bool IsAssemblyView => false;
     public bool IsFlexibleListView => _currentView == "flexible-list";
@@ -1048,19 +1067,53 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             return null;
         }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
     }
 
-    private void SaveBusinessSettings(BusinessSettings settings)
+    private string? SaveBusinessSettings(BusinessSettings settings)
     {
-        _quoteRepository.SaveSettings(settings);
+        try
+        {
+            _quoteRepository.SaveSettings(settings);
+        }
+        catch (SqliteException)
+        {
+            return "Não foi possível salvar as configurações no banco de dados.";
+        }
+        catch (InvalidOperationException)
+        {
+            return "Não foi possível salvar as configurações no servidor.";
+        }
+
         _businessSettings = settings;
-        SaveApplicationConfiguration();
-        ApplicationThemeService.Apply(settings.ThemeMode);
-        FlexibleList.ApplySettings(settings);
-        PriceLookup.ApplySettings(settings);
-        NotifyProductPricingChanged();
-        RefreshCatalogDisplayPrices();
-        RefreshProductFilter();
+        try
+        {
+            SaveApplicationConfiguration();
+        }
+        catch (IOException)
+        {
+            return "As configurações foram aplicadas, mas o arquivo " +
+                   "buildpc.config.json não pôde ser gravado.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return "As configurações foram aplicadas, mas o aplicativo não tem " +
+                   "permissão para gravar buildpc.config.json.";
+        }
+        finally
+        {
+            ApplicationThemeService.Apply(settings.ThemeMode);
+            FlexibleList.ApplySettings(settings);
+            PriceLookup.ApplySettings(settings);
+            NotifyProductPricingChanged();
+            RefreshCatalogDisplayPrices();
+            RefreshProductFilter();
+        }
+
+        return null;
     }
 
     private string? SaveProductCategories(
@@ -1174,7 +1227,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             Application = _businessSettings,
             ApiSettings = _apiSettings,
             ImportSourceUrls = importSourceUrls,
-            IsApiKeyUnreadable = _isApiKeyUnreadable
+            IsApiKeyUnreadable = _isApiKeyUnreadable,
+            IsServerBypassed = IsUsingLocalDatabaseFallback
         });
     }
 
@@ -1445,7 +1499,6 @@ public sealed class MainWindowViewModel : ViewModelBase
                 source.SourceKey,
                 imported);
             RefreshCatalogCollections();
-            RefreshImportCounts();
             source.LastImportedAt = result.ImportedAt;
             source.StatusMessage =
                 $"{result.Imported} importados • {result.Removed} anteriores removidos" +
@@ -1495,6 +1548,12 @@ public sealed class MainWindowViewModel : ViewModelBase
             source.StatusMessage =
                 "Não foi possível atualizar o banco de dados SQLite.";
         }
+        catch (InvalidOperationException)
+        {
+            source.StatusMessage =
+                "Os produtos foram lidos, mas o servidor recusou a gravação. " +
+                "Verifique a conexão e tente novamente.";
+        }
         finally
         {
             source.IsImporting = false;
@@ -1510,10 +1569,39 @@ public sealed class MainWindowViewModel : ViewModelBase
             total,
             currentCategoryProgress);
 
+    /// <summary>
+    /// Lê o catálogo tratando a indisponibilidade do banco ou do servidor.
+    /// Devolve <c>null</c> quando a leitura falha, mantendo as coleções atuais.
+    /// </summary>
+    private IReadOnlyList<PcComponent>? TryReadCatalog()
+    {
+        try
+        {
+            return _catalogRepository.GetAll();
+        }
+        catch (SqliteException)
+        {
+            BulkStatusMessage =
+                "Não foi possível ler o catálogo no banco de dados local.";
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            BulkStatusMessage =
+                "Não foi possível ler o catálogo no servidor. " +
+                "A lista exibida pode estar desatualizada.";
+            return null;
+        }
+    }
+
     private void RefreshCatalogCollections(bool refreshCategoryManagement = true)
     {
+        if (TryReadCatalog() is not { } catalog)
+        {
+            return;
+        }
+
         var selectedCatalogProductId = SelectedCatalogProduct?.Id;
-        var catalog = _catalogRepository.GetAll();
         FlexibleList.UpdateCatalog(catalog);
         PriceLookup.UpdateCatalog(catalog);
         foreach (var slot in Slots)
@@ -1564,11 +1652,15 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
         RefreshProductFilter();
         BulkSelectionChanged();
+        RefreshImportCounts(catalog);
     }
 
-    private void RefreshImportCounts()
+    /// <summary>
+    /// Recebe o catálogo já lido para evitar uma segunda varredura completa —
+    /// no modo servidor cada leitura é uma chamada HTTP.
+    /// </summary>
+    private void RefreshImportCounts(IReadOnlyList<PcComponent> catalog)
     {
-        var catalog = _catalogRepository.GetAll();
         foreach (var source in ImportSources)
         {
             source.ImportedCount = catalog.Count(component =>
@@ -1599,6 +1691,10 @@ public sealed class MainWindowViewModel : ViewModelBase
             return _catalogRepository.SetKeepOnImport(product.Id, !product.IsKept);
         }
         catch (SqliteException)
+        {
+            return false;
+        }
+        catch (InvalidOperationException)
         {
             return false;
         }
@@ -1940,6 +2036,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             BulkStatusMessage = "Não foi possível apagar os produtos selecionados.";
         }
+        catch (InvalidOperationException)
+        {
+            BulkStatusMessage =
+                "Não foi possível apagar os produtos selecionados no servidor.";
+        }
     }
 
     private void ApplyBulkDescription()
@@ -1969,6 +2070,10 @@ public sealed class MainWindowViewModel : ViewModelBase
         catch (SqliteException)
         {
             BulkStatusMessage = "Não foi possível atualizar as descrições no banco de dados.";
+        }
+        catch (InvalidOperationException)
+        {
+            BulkStatusMessage = "Não foi possível atualizar as descrições no servidor.";
         }
     }
 

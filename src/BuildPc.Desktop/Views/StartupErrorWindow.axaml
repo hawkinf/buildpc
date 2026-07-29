@@ -1,0 +1,49 @@
+<Window
+    x:Class="BuildPc.Desktop.Views.StartupErrorWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="BuildPC — não foi possível iniciar"
+    Icon="/Assets/Brand/buildpc.ico"
+    Width="620"
+    Height="360"
+    CanResize="False"
+    WindowStartupLocation="CenterScreen">
+
+  <Border Background="{DynamicResource Brush.AppBackground}" Padding="30">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Border Width="42" Height="42" CornerRadius="10"
+                Background="{DynamicResource Brush.WarningBackground}">
+          <PathIcon Data="{StaticResource Icon.Warning}" Width="22" Height="22"
+                    Foreground="{DynamicResource Brush.Warning}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <StackPanel VerticalAlignment="Center" Spacing="2">
+          <TextBlock Text="O BuildPC não conseguiu iniciar" FontSize="17" FontWeight="Bold" />
+          <TextBlock Text="O servidor de dados configurado não respondeu."
+                     FontSize="11"
+                     Foreground="{DynamicResource Brush.TextSecondary}" />
+        </StackPanel>
+      </StackPanel>
+
+      <Border Grid.Row="1" Classes="card" Padding="14">
+        <TextBlock x:Name="detailText" TextWrapping="Wrap" FontSize="11"
+                   Foreground="{DynamicResource Brush.TextBody}" />
+      </Border>
+
+      <TextBlock Grid.Row="2" TextWrapping="Wrap" FontSize="10"
+                 VerticalAlignment="Top"
+                 Foreground="{DynamicResource Brush.TextMuted}"
+                 Text="Você pode tentar novamente depois de verificar a conexão, ou abrir o programa usando o banco de dados local deste computador. Nenhuma configuração é alterada ao abrir localmente: o servidor volta a ser usado no próximo início bem-sucedido." />
+
+      <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+        <Button Grid.Column="1" Classes="secondary" Click="UseLocalDatabase_Click">
+          <TextBlock Text="Abrir com o banco local" />
+        </Button>
+        <Button Grid.Column="2" Classes="primary" Click="Retry_Click">
+          <TextBlock Text="Tentar novamente" Foreground="White" />
+        </Button>
+      </Grid>
+    </Grid>
+  </Border>
+</Window>

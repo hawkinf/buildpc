@@ -18,6 +18,16 @@ public sealed record BuildPcApplicationConfiguration
     /// permanecem válidas e não devem ser descartadas.
     /// </summary>
     public bool IsApiKeyUnreadable { get; init; }
+
+    /// <summary>
+    /// Verdadeiro quando o servidor está sendo ignorado apenas nesta sessão,
+    /// por escolha do usuário no aviso de início. O arquivo não pode perder o
+    /// acesso já configurado.
+    /// </summary>
+    public bool IsServerBypassed { get; init; }
+
+    internal bool MustKeepStoredServerSection =>
+        ApiSettings is null && (IsApiKeyUnreadable || IsServerBypassed);
 }
 
 public sealed class BuildPcApplicationSettingsStore
@@ -133,11 +143,11 @@ public sealed class BuildPcApplicationSettingsStore
                     configuration.ApiSettings.ApiKey)
             };
         }
-        else if (configuration.IsApiKeyUnreadable)
+        else if (configuration.MustKeepStoredServerSection)
         {
-            // A chave pertence a outro usuário do Windows. Preservar o bloco
-            // original evita que salvar margens ou dados da empresa destrua o
-            // acesso ao servidor configurado na instalação de origem.
+            // A chave pertence a outro usuário do Windows, ou o servidor foi
+            // ignorado só nesta sessão. Preservar o bloco original evita que
+            // salvar margens ou dados da empresa destrua o acesso configurado.
             server = ReadServerSectionFromDisk() ?? new ServerSettingsDocument();
         }
         else

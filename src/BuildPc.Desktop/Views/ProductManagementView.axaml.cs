@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
+using BuildPc.Desktop.Services;
 using BuildPc.Desktop.ViewModels;
 
 namespace BuildPc.Desktop.Views;
@@ -26,23 +27,30 @@ public sealed partial class ProductManagementView : UserControl
             return;
         }
 
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(
-            new FilePickerOpenOptions
-            {
-                Title = "Selecionar foto do produto",
-                AllowMultiple = false,
-                FileTypeFilter =
-                [
-                    new FilePickerFileType("Imagens")
-                    {
-                        Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp"]
-                    }
-                ]
-            });
-        var selected = files.FirstOrDefault();
-        if (selected is not null)
+        try
         {
-            viewModel.SetProductImage(selected.Path.LocalPath);
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(
+                new FilePickerOpenOptions
+                {
+                    Title = "Selecionar foto do produto",
+                    AllowMultiple = false,
+                    FileTypeFilter =
+                    [
+                        new FilePickerFileType("Imagens")
+                        {
+                            Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp"]
+                        }
+                    ]
+                });
+            var selected = files.FirstOrDefault();
+            if (selected is not null)
+            {
+                viewModel.SetProductImage(selected.Path.LocalPath);
+            }
+        }
+        catch (Exception exception)
+        {
+            CrashLogService.Record("Seleção de foto", exception);
         }
     }
 }

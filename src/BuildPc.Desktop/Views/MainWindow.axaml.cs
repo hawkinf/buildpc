@@ -26,14 +26,30 @@ public sealed partial class MainWindow : Window
     private async void WindowOpened(object? sender, EventArgs e)
     {
         _connectionStatusTimer.Start();
-        await RefreshConnectionStatusAsync();
+        try
+        {
+            await RefreshConnectionStatusAsync();
+        }
+        catch (Exception exception)
+        {
+            CrashLogService.Record("Estado da conexão", exception);
+        }
     }
 
     private void WindowClosed(object? sender, EventArgs e) =>
         _connectionStatusTimer.Stop();
 
-    private async void RefreshConnectionStatus(object? sender, EventArgs e) =>
-        await RefreshConnectionStatusAsync();
+    private async void RefreshConnectionStatus(object? sender, EventArgs e)
+    {
+        try
+        {
+            await RefreshConnectionStatusAsync();
+        }
+        catch (Exception exception)
+        {
+            CrashLogService.Record("Estado da conexão", exception);
+        }
+    }
 
     private async Task RefreshConnectionStatusAsync()
     {
@@ -52,22 +68,30 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        try
         {
-            Title = "Selecionar foto do produto",
-            AllowMultiple = false,
-            FileTypeFilter =
-            [
-                new FilePickerFileType("Imagens")
+            var files = await StorageProvider.OpenFilePickerAsync(
+                new FilePickerOpenOptions
                 {
-                    Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp"]
-                }
-            ]
-        });
-        var selected = files.FirstOrDefault();
-        if (selected is not null)
+                    Title = "Selecionar foto do produto",
+                    AllowMultiple = false,
+                    FileTypeFilter =
+                    [
+                        new FilePickerFileType("Imagens")
+                        {
+                            Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp"]
+                        }
+                    ]
+                });
+            var selected = files.FirstOrDefault();
+            if (selected is not null)
+            {
+                viewModel.SetProductImage(selected.Path.LocalPath);
+            }
+        }
+        catch (Exception exception)
         {
-            viewModel.SetProductImage(selected.Path.LocalPath);
+            CrashLogService.Record("Seleção de foto", exception);
         }
     }
 
@@ -120,10 +144,17 @@ public sealed partial class MainWindow : Window
         }
 
         e.Handled = true;
-        var editor = new ProductEditWindow
+        try
         {
-            DataContext = viewModel
-        };
-        await editor.ShowDialog(this);
+            var editor = new ProductEditWindow
+            {
+                DataContext = viewModel
+            };
+            await editor.ShowDialog(this);
+        }
+        catch (Exception exception)
+        {
+            CrashLogService.Record("Edição de produto", exception);
+        }
     }
 }

@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
+using BuildPc.Desktop.Services;
 using BuildPc.Desktop.ViewModels;
 
 namespace BuildPc.Desktop.Views;
@@ -72,22 +73,30 @@ public sealed partial class ProductEditWindow : Window
             return;
         }
 
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        try
         {
-            Title = "Selecionar foto do produto",
-            AllowMultiple = false,
-            FileTypeFilter =
-            [
-                new FilePickerFileType("Imagens")
+            var files = await StorageProvider.OpenFilePickerAsync(
+                new FilePickerOpenOptions
                 {
-                    Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp"]
-                }
-            ]
-        });
-        var selected = files.FirstOrDefault();
-        if (selected is not null)
+                    Title = "Selecionar foto do produto",
+                    AllowMultiple = false,
+                    FileTypeFilter =
+                    [
+                        new FilePickerFileType("Imagens")
+                        {
+                            Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp"]
+                        }
+                    ]
+                });
+            var selected = files.FirstOrDefault();
+            if (selected is not null)
+            {
+                viewModel.SetProductImage(selected.Path.LocalPath);
+            }
+        }
+        catch (Exception exception)
         {
-            viewModel.SetProductImage(selected.Path.LocalPath);
+            CrashLogService.Record("Seleção de foto", exception);
         }
     }
 

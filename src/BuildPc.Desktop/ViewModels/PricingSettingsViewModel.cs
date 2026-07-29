@@ -10,7 +10,7 @@ namespace BuildPc.Desktop.ViewModels;
 public sealed class PricingSettingsViewModel : ViewModelBase
 {
     private readonly IReadOnlyList<CategoryOptionViewModel> _categories;
-    private readonly Action<BusinessSettings> _save;
+    private readonly Func<BusinessSettings, string?> _save;
     private readonly Action<AppThemeMode> _applyTheme;
     private List<ProductCategoryDefinition>? _productCategories;
     private CategoryOptionViewModel? _selectedCategory;
@@ -31,7 +31,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
     public PricingSettingsViewModel(
         BusinessSettings settings,
         IReadOnlyList<CategoryOptionViewModel> categories,
-        Action<BusinessSettings> save,
+        Func<BusinessSettings, string?> save,
         BuildPcApiSettings? apiSettings,
         Action<BuildPcApiSettings?> saveApiSettings,
         Func<BuildPcApiSettings, Task> testApiConnection,
@@ -216,7 +216,13 @@ public sealed class PricingSettingsViewModel : ViewModelBase
             AdditionalQuoteInfo = AdditionalQuoteInfo.Trim(),
             ThemeMode = SelectedThemeOption.Mode
         };
-        _save(settings);
+        var error = _save(settings);
+        if (error is not null)
+        {
+            Fail(error);
+            return;
+        }
+
         IsSuccess = true;
         StatusMessage = "Configurações salvas e margens aplicadas à montagem.";
         OnPropertyChanged(nameof(IsError));

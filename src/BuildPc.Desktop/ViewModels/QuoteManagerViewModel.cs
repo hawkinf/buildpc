@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using BuildPc.Core.Models;
 using BuildPc.Core.Services;
+using Microsoft.Data.Sqlite;
 
 namespace BuildPc.Desktop.ViewModels;
 
@@ -42,9 +43,27 @@ public sealed class QuoteManagerViewModel : ViewModelBase
 
     public void Refresh()
     {
+        IReadOnlyList<SavedQuote> quotes;
+        try
+        {
+            quotes = _repository.GetQuotes();
+        }
+        catch (SqliteException)
+        {
+            StatusMessage = "Não foi possível ler os orçamentos do banco local.";
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            StatusMessage =
+                "Não foi possível ler os orçamentos no servidor. " +
+                "A lista pode estar desatualizada.";
+            return;
+        }
+
         var selectedId = SelectedQuote?.Quote.Id;
         Quotes.Clear();
-        foreach (var quote in _repository.GetQuotes())
+        foreach (var quote in quotes)
         {
             Quotes.Add(new SavedQuoteListItemViewModel(quote));
         }

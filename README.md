@@ -1,7 +1,7 @@
 # BuildPC
 
-Aplicação desktop em C# e Avalonia para montar configurações de computadores,
-somar custos e verificar compatibilidade básica entre componentes.
+Aplicação desktop em C# e Avalonia para manter um catálogo de componentes,
+consultar preços, montar orçamentos de venda e gerar PDFs para clientes.
 
 ## Continuidade do desenvolvimento
 
@@ -15,9 +15,7 @@ implantação e o checklist obrigatório para manter o projeto consistente.
 - catálogo inicial com 24 componentes e preços ilustrativos em reais;
 - categorias próprias para processadores, coolers, placas-mãe, memória, GPU,
   discos rígidos (HD), SSD/NVMe, fontes, gabinetes, monitores, mouses e teclados;
-- total e consumo estimado recalculados em tempo real;
-- validações de soquete, tipo de memória, formato do gabinete, cooler e potência;
-- presets de configuração equilibrada e de alta performance;
+- total de venda recalculado em tempo real;
 - cadastro de novos produtos com persistência no catálogo local;
 - seleção no catálogo com painel de características e proteção “Manter”;
 - importações separadas da KaBuM! para cada categoria do catálogo;

@@ -11,9 +11,6 @@ namespace BuildPc.Desktop.ViewModels;
 
 public sealed class MainWindowViewModel : ViewModelBase
 {
-    private const int TotalSlots = 12;
-    private readonly PcBuild _build = new();
-    private readonly CompatibilityService _compatibilityService = new();
     private readonly IComponentCatalogRepository _catalogRepository;
     private readonly KabumCatalogImporter _kabumCatalogImporter;
     private readonly IQuoteRepository _quoteRepository;
@@ -30,12 +27,6 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _productBrand = string.Empty;
     private string _productDescription = string.Empty;
     private string _productPrice = string.Empty;
-    private string _productPower = string.Empty;
-    private string _productSocket = string.Empty;
-    private string _productMemoryType = string.Empty;
-    private string _productFormFactor = string.Empty;
-    private string _supportedSockets = string.Empty;
-    private string _supportedFormFactors = string.Empty;
     private string _productFormMessage = string.Empty;
     private bool _isProductFormSuccess;
     private bool _isProductEditCostVisible;
@@ -128,28 +119,6 @@ public sealed class MainWindowViewModel : ViewModelBase
             Timeout = TimeSpan.FromSeconds(45)
         });
         var catalog = _catalogRepository.GetAll();
-        Slots =
-        [
-            Slot("processor", ComponentCategory.Processor, "Processador", "O cérebro da máquina", "CPU", catalog),
-            Slot("motherboard", ComponentCategory.Motherboard, "Placa-mãe", "Conecta todos os componentes", "MB", catalog),
-            Slot("memory", ComponentCategory.Memory, "Memória", "Velocidade para multitarefa", "RAM", catalog),
-            Slot("graphics", ComponentCategory.GraphicsCard, "Placa de vídeo", "Desempenho gráfico", "GPU", catalog),
-            Slot("storage-primary", ComponentCategory.Storage, "Armazenamento 1", "SSD SATA ou NVMe principal", "Storage", catalog),
-            Slot("storage-secondary", ComponentCategory.Storage, "Armazenamento 2", "SSD SATA ou NVMe adicional", "Storage", catalog),
-            Slot("power-supply", ComponentCategory.PowerSupply, "Fonte", "Energia estável e segura", "PSU", catalog),
-            Slot("case", ComponentCategory.Case, "Gabinete", "Espaço, ventilação e estilo", "CASE", catalog),
-            Slot("cooler", ComponentCategory.Cooler, "Cooler", "Mantém a temperatura sob controle", "COOL", catalog),
-            Slot("monitor", ComponentCategory.Monitor, "Monitor", "A imagem da configuração", "Monitor", catalog),
-            Slot("mouse", ComponentCategory.Mouse, "Mouse", "Controle e precisão", "Mouse", catalog),
-            Slot("keyboard", ComponentCategory.Keyboard, "Teclado", "Comandos e produtividade", "Keyboard", catalog)
-        ];
-        for (var index = 0; index < Slots.Count; index++)
-        {
-            Slots[index].IsAlternate = index % 2 == 1;
-        }
-
-        SelectedItems = [];
-        Issues = [];
         var categoryDefinitions = _businessSettings.EffectiveProductCategories();
         CategoryOptions = new ObservableCollection<CategoryOptionViewModel>(
             categoryDefinitions.Select(category =>
@@ -302,9 +271,6 @@ public sealed class MainWindowViewModel : ViewModelBase
                 catalog)
         ];
         SelectedProductCategory = CategoryOptions[0];
-        ClearCommand = new RelayCommand(Clear);
-        BalancedPresetCommand = new RelayCommand(ApplyBalancedPreset);
-        PerformancePresetCommand = new RelayCommand(ApplyPerformancePreset);
         ShowFlexibleListCommand = new RelayCommand(() => ShowView("flexible-list"));
         ShowProductsCommand = new RelayCommand(() => ShowToolView("products"));
         ShowPriceLookupCommand = new RelayCommand(() => ShowView("price-lookup"));
@@ -335,7 +301,6 @@ public sealed class MainWindowViewModel : ViewModelBase
         ConfirmImportCommand = new AsyncRelayCommand(ConfirmImportAsync);
         CancelImportConfirmationCommand = new RelayCommand(CancelImportConfirmation);
         CancelCurrentImportCommand = new RelayCommand(CancelCurrentImport);
-        RefreshSummary();
         if (applicationConfiguration is null)
         {
             // Primeiro início ou migração do formato legado: só aqui o arquivo
@@ -347,9 +312,6 @@ public sealed class MainWindowViewModel : ViewModelBase
         BuildPcApiSettings.Disable(legacyApiSettingsPath);
     }
 
-    public ObservableCollection<ComponentSlotViewModel> Slots { get; }
-    public ObservableCollection<SelectedLineViewModel> SelectedItems { get; }
-    public ObservableCollection<CompatibilityIssueViewModel> Issues { get; }
     public ObservableCollection<ProductListItemViewModel> Products { get; }
     public ObservableCollection<ProductListItemViewModel> FilteredProducts { get; }
     public ObservableCollection<CategoryOptionViewModel> CategoryOptions { get; }
@@ -363,9 +325,6 @@ public sealed class MainWindowViewModel : ViewModelBase
     public PricingSettingsViewModel PricingSettings { get; }
     public CategoryManagementViewModel CategoryManagement { get; }
     public ConnectionStatusViewModel ConnectionStatus { get; }
-    public ICommand ClearCommand { get; }
-    public ICommand BalancedPresetCommand { get; }
-    public ICommand PerformancePresetCommand { get; }
     public ICommand ShowFlexibleListCommand { get; }
     public ICommand ShowProductsCommand { get; }
     public ICommand ShowPriceLookupCommand { get; }
@@ -402,7 +361,6 @@ public sealed class MainWindowViewModel : ViewModelBase
     /// </summary>
     public bool IsUsingLocalDatabaseFallback { get; }
 
-    public bool IsAssemblyView => false;
     public bool IsFlexibleListView => _currentView == "flexible-list";
     public bool IsProductsView => _currentView == "products";
     public bool IsPriceLookupView => _currentView == "price-lookup";
@@ -873,42 +831,6 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    public string ProductPower
-    {
-        get => _productPower;
-        set => SetProperty(ref _productPower, value);
-    }
-
-    public string ProductSocket
-    {
-        get => _productSocket;
-        set => SetProperty(ref _productSocket, value);
-    }
-
-    public string ProductMemoryType
-    {
-        get => _productMemoryType;
-        set => SetProperty(ref _productMemoryType, value);
-    }
-
-    public string ProductFormFactor
-    {
-        get => _productFormFactor;
-        set => SetProperty(ref _productFormFactor, value);
-    }
-
-    public string SupportedSockets
-    {
-        get => _supportedSockets;
-        set => SetProperty(ref _supportedSockets, value);
-    }
-
-    public string SupportedFormFactors
-    {
-        get => _supportedFormFactors;
-        set => SetProperty(ref _supportedFormFactors, value);
-    }
-
     public string ProductFormMessage
     {
         get => _productFormMessage;
@@ -936,93 +858,6 @@ public sealed class MainWindowViewModel : ViewModelBase
     public bool IsProductFormError =>
         !IsProductFormSuccess && !string.IsNullOrWhiteSpace(ProductFormMessage);
 
-    public string TotalCost => _build.TotalCost.ToString("C", BrazilianCulture);
-    public string EstimatedPower => $"{_build.EstimatedPowerWatts} W";
-    public string ProgressText => $"{_build.CompletedSlots} de {TotalSlots} itens";
-    public double ProgressValue => (double)_build.CompletedSlots / TotalSlots * 100;
-    public bool HasItems => _build.CompletedSlots > 0;
-    public string CompatibilityTitle =>
-        _compatibilityService.Evaluate(_build).Any(issue => issue.Severity == IssueSeverity.Error)
-            ? "Atenção à compatibilidade"
-            : "Compatibilidade";
-
-    private ComponentSlotViewModel Slot(
-        string slotId,
-        ComponentCategory category,
-        string title,
-        string subtitle,
-        string icon,
-        IEnumerable<PcComponent> catalog) =>
-        new(
-            slotId,
-            category,
-            title,
-            subtitle,
-            icon,
-            catalog.Where(item => item.Category == category),
-            SelectionChanged);
-
-    private void SelectionChanged(ComponentSlotViewModel slot)
-    {
-        _build.Select(slot.Selected, slot.Category, slot.SlotId, slot.Quantity);
-        RefreshSummary();
-    }
-
-    private void RefreshSummary()
-    {
-        SelectedItems.Clear();
-        foreach (var slot in Slots.Where(slot => slot.Selected is not null))
-        {
-            SelectedItems.Add(SelectedLineViewModel.From(slot, slot.Selected!));
-        }
-
-        Issues.Clear();
-        foreach (var issue in _compatibilityService.Evaluate(_build))
-        {
-            Issues.Add(new CompatibilityIssueViewModel(issue));
-        }
-
-        OnPropertyChanged(nameof(TotalCost));
-        OnPropertyChanged(nameof(EstimatedPower));
-        OnPropertyChanged(nameof(ProgressText));
-        OnPropertyChanged(nameof(ProgressValue));
-        OnPropertyChanged(nameof(HasItems));
-        OnPropertyChanged(nameof(CompatibilityTitle));
-    }
-
-    private void Clear()
-    {
-        foreach (var slot in Slots)
-        {
-            slot.Selected = null;
-        }
-
-        _build.Clear();
-        RefreshSummary();
-    }
-
-    private void ApplyBalancedPreset() =>
-        ApplyPreset("cpu-7600", "mb-b650m", "ram-32", "gpu-4060", "ssd-1tb", "psu-550", "case-air", "cooler-ag400");
-
-    private void ApplyPerformancePreset() =>
-        ApplyPreset("cpu-7800x3d", "mb-b650", "ram-32", "gpu-4070s", "ssd-2tb", "psu-850", "case-north", "cooler-ak620");
-
-    private void ApplyPreset(params string[] componentIds)
-    {
-        var usedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var slot in Slots)
-        {
-            slot.FilterText = string.Empty;
-            slot.Selected = slot.Options.FirstOrDefault(item =>
-                componentIds.Contains(item.Id) && !usedIds.Contains(item.Id))?.Component;
-
-            if (slot.Selected is not null)
-            {
-                usedIds.Add(slot.Selected.Id);
-            }
-        }
-    }
-
     private void ShowView(string view)
     {
         if (string.Equals(_currentView, view, StringComparison.Ordinal))
@@ -1031,7 +866,6 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
 
         _currentView = view;
-        OnPropertyChanged(nameof(IsAssemblyView));
         OnPropertyChanged(nameof(IsFlexibleListView));
         OnPropertyChanged(nameof(IsProductsView));
         OnPropertyChanged(nameof(IsPriceLookupView));
@@ -1605,22 +1439,6 @@ public sealed class MainWindowViewModel : ViewModelBase
         var selectedCatalogProductId = SelectedCatalogProduct?.Id;
         FlexibleList.UpdateCatalog(catalog);
         PriceLookup.UpdateCatalog(catalog);
-        foreach (var slot in Slots)
-        {
-            var selectedId = slot.Selected?.Id;
-            var selectedQuantity = slot.Quantity;
-            slot.Selected = null;
-            slot.ReplaceOptions(catalog.Where(item => item.Category == slot.Category));
-
-            if (selectedId is not null)
-            {
-                slot.Selected = catalog.FirstOrDefault(item =>
-                    item.Category == slot.Category &&
-                    string.Equals(item.Id, selectedId, StringComparison.OrdinalIgnoreCase));
-                slot.Quantity = selectedQuantity;
-            }
-        }
-
         SelectCatalogProduct(null);
         Products.Clear();
         foreach (var product in catalog.Select((component, index) =>
@@ -1768,12 +1586,6 @@ public sealed class MainWindowViewModel : ViewModelBase
         ProductDescription = selected.Description;
         ProductPrice = selected.Price.ToString("N2", BrazilianCulture);
         ProductImagePath = selected.ImageUrl ?? string.Empty;
-        ProductPower = selected.PowerWatts.ToString(CultureInfo.InvariantCulture);
-        ProductSocket = selected.Socket ?? string.Empty;
-        ProductMemoryType = selected.MemoryType ?? string.Empty;
-        ProductFormFactor = selected.FormFactor ?? string.Empty;
-        SupportedSockets = string.Join(", ", selected.SupportedSockets);
-        SupportedFormFactors = string.Join(", ", selected.SupportedFormFactors);
         ProductFormMessage = string.Empty;
         IsProductFormSuccess = false;
     }
@@ -2219,12 +2031,6 @@ public sealed class MainWindowViewModel : ViewModelBase
         ProductBrand = string.Empty;
         ProductDescription = string.Empty;
         ProductPrice = string.Empty;
-        ProductPower = string.Empty;
-        ProductSocket = string.Empty;
-        ProductMemoryType = string.Empty;
-        ProductFormFactor = string.Empty;
-        SupportedSockets = string.Empty;
-        SupportedFormFactors = string.Empty;
         ProductImagePath = string.Empty;
     }
 
@@ -2288,12 +2094,4 @@ public sealed class MainWindowViewModel : ViewModelBase
     private static bool TryParsePrice(string value, out decimal price) =>
         decimal.TryParse(value, NumberStyles.Currency, BrazilianCulture, out price) ||
         decimal.TryParse(value, NumberStyles.Currency, CultureInfo.InvariantCulture, out price);
-
-    private static string? NullIfEmpty(string value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-    private static HashSet<string> SplitValues(string value) =>
-        new HashSet<string>(
-            value.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
-            StringComparer.OrdinalIgnoreCase);
 }

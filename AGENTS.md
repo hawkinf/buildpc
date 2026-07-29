@@ -11,8 +11,8 @@
    concluir.
 6. O projeto de interface usado pelo usuário é `BuildPc.Desktop`;
    `BuildPc.Api` é apenas o servidor privado.
-7. A Montagem ativa é `FlexibleListView`; a montagem antiga de
-   `MainWindow.axaml` está desativada.
+7. A única Montagem é `FlexibleListView`; a montagem antiga baseada em `Slots`
+   foi removida de `MainWindow.axaml`.
 8. Nunca exponha chaves de API, senhas, strings de conexão ou outros segredos.
 9. O usuário exige commit e push para `origin/main` ao final de cada
    solicitação concluída.

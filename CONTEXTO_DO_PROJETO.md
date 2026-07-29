@@ -105,10 +105,16 @@ Comportamento:
 - a exportação gera uma prévia PDF e abre o visualizador do sistema; é no
   visualizador que o usuário salva ou imprime.
 
-Importante: `MainWindow.axaml` ainda contém uma montagem antiga baseada em
-`Slots`, mas ela está desativada por `MainWindowViewModel.IsAssemblyView =>
-false`. A tela chamada **Montagem** no menu é a `FlexibleListView`. Não
-implemente recursos novos apenas na montagem antiga.
+Importante: a montagem antiga baseada em `Slots` foi removida de
+`MainWindow.axaml` e de `MainWindowViewModel`, junto com o painel lateral de
+resumo, os presets e as propriedades `IsAssemblyView`, `Slots`,
+`SelectedItems`, `Issues`, `ProgressText`, `ProgressValue`, `EstimatedPower`,
+`TotalCost` e `CompatibilityTitle`. A única Montagem é a `FlexibleListView`.
+
+`CompatibilityService`, `PcBuild` e `CompatibilityIssue` continuam em
+`BuildPc.Core` com seus testes, mas **nenhuma tela os utiliza hoje**. São a base
+pronta caso a verificação de compatibilidade volte a ser exibida na Montagem
+nova; não descreva a compatibilidade como recurso disponível ao usuário.
 
 ### Consultar preço
 
@@ -403,6 +409,10 @@ BuildPc.Desktop (Avalonia/MVVM)
 `MainWindowViewModel.cs` e `MainWindow.axaml` são grandes porque ainda hospedam
 o catálogo e a área de importações. Ao alterar uma função, confirme qual
 propriedade `Is...View` torna a região visível.
+
+A janela principal usa duas colunas: `230` para a navegação e `*` para o
+conteúdo. A terceira coluna de `320 px` existia apenas para o resumo da
+montagem antiga e foi removida.
 
 ## Modelos principais
 

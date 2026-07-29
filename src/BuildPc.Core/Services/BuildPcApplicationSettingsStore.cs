@@ -11,6 +11,13 @@ public sealed record BuildPcApplicationConfiguration
     public BuildPcApiSettings? ApiSettings { get; init; }
     public Dictionary<string, string> ImportSourceUrls { get; init; } =
         new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Verdadeiro quando o arquivo pede o servidor, mas a chave gravada não pôde
+    /// ser lida neste computador ou usuário do Windows. As demais configurações
+    /// permanecem válidas e não devem ser descartadas.
+    /// </summary>
+    public bool IsApiKeyUnreadable { get; init; }
 }
 
 public sealed class BuildPcApplicationSettingsStore
@@ -39,50 +46,67 @@ public sealed class BuildPcApplicationSettingsStore
             return null;
         }
 
+        SettingsDocument? document;
         try
         {
-            var document = JsonSerializer.Deserialize<SettingsDocument>(
+            document = JsonSerializer.Deserialize<SettingsDocument>(
                 File.ReadAllText(_path),
                 JsonOptions);
-            if (document is null ||
-                document.SchemaVersion is < 1 or > CurrentSchemaVersion)
-            {
-                return null;
-            }
-
-            BuildPcApiSettings? apiSettings = null;
-            if (document.Server.Enabled)
-            {
-                var apiKey = BuildPcApiKeyProtector.Unprotect(
-                    document.Server.EncryptedApiKey);
-                apiSettings = new BuildPcApiSettings
-                {
-                    BaseUrl = document.Server.BaseUrl.Trim(),
-                    ApiKey = apiKey
-                };
-                if (!apiSettings.IsValid())
-                {
-                    return null;
-                }
-            }
-
-            return new BuildPcApplicationConfiguration
-            {
-                Application = document.Application ?? new BusinessSettings(),
-                ApiSettings = apiSettings,
-                ImportSourceUrls = NormalizeImportSourceUrls(
-                    document.ImportSourceUrls)
-            };
         }
         catch (JsonException)
         {
             return null;
+        }
+
+        if (document is null ||
+            document.SchemaVersion is < 1 or > CurrentSchemaVersion)
+        {
+            return null;
+        }
+
+        // Uma chave de API ilegível nunca pode descartar empresa, margens,
+        // categorias e links já configurados: apenas o acesso ao servidor é
+        // desativado até que a chave seja informada novamente.
+        var apiSettings = TryReadApiSettings(document.Server);
+        return new BuildPcApplicationConfiguration
+        {
+            Application = document.Application ?? new BusinessSettings(),
+            ApiSettings = apiSettings,
+            ImportSourceUrls = NormalizeImportSourceUrls(document.ImportSourceUrls),
+            IsApiKeyUnreadable = document.Server.Enabled && apiSettings is null
+        };
+    }
+
+    private static BuildPcApiSettings? TryReadApiSettings(
+        ServerSettingsDocument server)
+    {
+        if (!server.Enabled)
+        {
+            return null;
+        }
+
+        try
+        {
+            var settings = new BuildPcApiSettings
+            {
+                BaseUrl = server.BaseUrl.Trim(),
+                ApiKey = BuildPcApiKeyProtector.Unprotect(server.EncryptedApiKey)
+            };
+            return settings.IsValid() ? settings : null;
         }
         catch (CryptographicException)
         {
             return null;
         }
         catch (FormatException)
+        {
+            return null;
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (PlatformNotSupportedException)
         {
             return null;
         }
@@ -98,15 +122,29 @@ public sealed class BuildPcApplicationSettingsStore
                 "Informe uma URL HTTPS e uma chave de acesso válidas.");
         }
 
-        var server = configuration.ApiSettings is null
-            ? new ServerSettingsDocument()
-            : new ServerSettingsDocument
+        ServerSettingsDocument server;
+        if (configuration.ApiSettings is not null)
+        {
+            server = new ServerSettingsDocument
             {
                 Enabled = true,
                 BaseUrl = configuration.ApiSettings.BaseUrl,
                 EncryptedApiKey = BuildPcApiKeyProtector.Protect(
                     configuration.ApiSettings.ApiKey)
             };
+        }
+        else if (configuration.IsApiKeyUnreadable)
+        {
+            // A chave pertence a outro usuário do Windows. Preservar o bloco
+            // original evita que salvar margens ou dados da empresa destrua o
+            // acesso ao servidor configurado na instalação de origem.
+            server = ReadServerSectionFromDisk() ?? new ServerSettingsDocument();
+        }
+        else
+        {
+            server = new ServerSettingsDocument();
+        }
+
         var document = new SettingsDocument
         {
             SchemaVersion = CurrentSchemaVersion,
@@ -136,6 +174,29 @@ public sealed class BuildPcApplicationSettingsStore
             {
                 File.Delete(temporaryPath);
             }
+        }
+    }
+
+    private ServerSettingsDocument? ReadServerSectionFromDisk()
+    {
+        if (!File.Exists(_path))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer
+                .Deserialize<SettingsDocument>(File.ReadAllText(_path), JsonOptions)?
+                .Server;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
         }
     }
 

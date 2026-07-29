@@ -59,6 +59,20 @@
                     TextWrapping="Wrap" />
               </StackPanel>
 
+              <Border
+                  IsVisible="{Binding IsApiKeyUnreadable}"
+                  Background="{DynamicResource Brush.WarningBackground}"
+                  BorderBrush="{DynamicResource Brush.Warning}"
+                  BorderThickness="1"
+                  CornerRadius="7"
+                  Padding="11,9">
+                <TextBlock
+                    Text="{Binding ApiKeyUnreadableMessage}"
+                    TextWrapping="Wrap"
+                    FontSize="10"
+                    Foreground="{DynamicResource Brush.Warning}" />
+              </Border>
+
               <CheckBox
                   IsChecked="{Binding UseServer, Mode=TwoWay}"
                   Content="Usar API em uma VPS" />

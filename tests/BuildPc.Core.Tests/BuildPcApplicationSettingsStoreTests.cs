@@ -121,6 +121,94 @@ public sealed class BuildPcApplicationSettingsStoreTests
         }
     }
 
+    [Fact]
+    public void LoadKeepsApplicationSettingsWhenApiKeyCannotBeDecrypted()
+    {
+        var path = CreateTemporaryPath();
+        try
+        {
+            File.WriteAllText(
+                path,
+                """
+                {
+                  "schemaVersion": 1,
+                  "application": {
+                    "globalMarginPercent": 42,
+                    "companyName": "Loja preservada",
+                    "companyPhone": "(11) 98888-7777"
+                  },
+                  "server": {
+                    "enabled": true,
+                    "baseUrl": "https://vps.example/buildpc-api/",
+                    "encryptedApiKey": "dpapi-current-user:v1:chave-de-outro-usuario"
+                  },
+                  "importSourceUrls": {
+                    "kabum:Processor": "https://www.kabum.com.br/hardware/processadores"
+                  }
+                }
+                """);
+
+            var loaded = new BuildPcApplicationSettingsStore(path).Load();
+
+            Assert.NotNull(loaded);
+            Assert.Null(loaded.ApiSettings);
+            Assert.True(loaded.IsApiKeyUnreadable);
+            Assert.Equal("Loja preservada", loaded.Application.CompanyName);
+            Assert.Equal(42m, loaded.Application.GlobalMarginPercent);
+            Assert.Equal(
+                "https://www.kabum.com.br/hardware/processadores",
+                loaded.ImportSourceUrls["kabum:Processor"]);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void SaveKeepsUnreadableServerSectionUntouched()
+    {
+        var path = CreateTemporaryPath();
+        const string encryptedKey = "dpapi-current-user:v1:chave-de-outro-usuario";
+        try
+        {
+            File.WriteAllText(
+                path,
+                $$"""
+                {
+                  "schemaVersion": 1,
+                  "application": { "companyName": "Antes" },
+                  "server": {
+                    "enabled": true,
+                    "baseUrl": "https://vps.example/buildpc-api/",
+                    "encryptedApiKey": "{{encryptedKey}}"
+                  },
+                  "importSourceUrls": {}
+                }
+                """);
+            var store = new BuildPcApplicationSettingsStore(path);
+            var loaded = store.Load()!;
+
+            store.Save(loaded with
+            {
+                Application = loaded.Application with { CompanyName = "Depois" }
+            });
+
+            var json = File.ReadAllText(path);
+            Assert.Contains(encryptedKey, json, StringComparison.Ordinal);
+            Assert.Contains(
+                "https://vps.example/buildpc-api/",
+                json,
+                StringComparison.Ordinal);
+            Assert.Contains("\"enabled\": true", json, StringComparison.Ordinal);
+            Assert.Equal("Depois", store.Load()!.Application.CompanyName);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     private static string CreateTemporaryPath() =>
         Path.Combine(
             Path.GetTempPath(),

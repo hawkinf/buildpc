@@ -21,6 +21,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private readonly Dictionary<string, string> _configuredImportSourceUrls;
     private readonly string _productImagesDirectory;
     private BuildPcApiSettings? _apiSettings;
+    private bool _isApiKeyUnreadable;
     private BusinessSettings _businessSettings;
     private string _currentView = "flexible-list";
     private CategoryOptionViewModel? _selectedProductCategory;
@@ -84,6 +85,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             ? BuildPcApiSettings.Load(legacyApiSettingsPath)
             : null;
         _apiSettings = applicationConfiguration?.ApiSettings ?? legacyApiSettings;
+        _isApiKeyUnreadable = applicationConfiguration?.IsApiKeyUnreadable ?? false;
         _configuredImportSourceUrls =
             applicationConfiguration?.ImportSourceUrls.ToDictionary(
                 entry => entry.Key,
@@ -183,7 +185,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             _apiSettings,
             SaveApiSettings,
             TestApiConnectionAsync,
-            ApplicationThemeService.Apply);
+            ApplicationThemeService.Apply,
+            _isApiKeyUnreadable);
         CategoryManagement = new CategoryManagementViewModel(
             categoryDefinitions,
             CategoryProductCount,
@@ -318,7 +321,14 @@ public sealed class MainWindowViewModel : ViewModelBase
         CancelImportConfirmationCommand = new RelayCommand(CancelImportConfirmation);
         CancelCurrentImportCommand = new RelayCommand(CancelCurrentImport);
         RefreshSummary();
-        SaveApplicationConfiguration();
+        if (applicationConfiguration is null)
+        {
+            // Primeiro início ou migração do formato legado: só aqui o arquivo
+            // distribuível precisa ser criado. Gravar em todo início apagaria
+            // configurações que este computador não consegue ler.
+            SaveApplicationConfiguration();
+        }
+
         BuildPcApiSettings.Disable(legacyApiSettingsPath);
     }
 
@@ -1147,6 +1157,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void SaveApiSettings(BuildPcApiSettings? settings)
     {
         _apiSettings = settings;
+        _isApiKeyUnreadable = false;
         SaveApplicationConfiguration();
     }
 
@@ -1162,7 +1173,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             Application = _businessSettings,
             ApiSettings = _apiSettings,
-            ImportSourceUrls = importSourceUrls
+            ImportSourceUrls = importSourceUrls,
+            IsApiKeyUnreadable = _isApiKeyUnreadable
         });
     }
 

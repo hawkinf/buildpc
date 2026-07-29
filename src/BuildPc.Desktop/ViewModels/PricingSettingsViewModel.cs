@@ -35,7 +35,8 @@ public sealed class PricingSettingsViewModel : ViewModelBase
         BuildPcApiSettings? apiSettings,
         Action<BuildPcApiSettings?> saveApiSettings,
         Func<BuildPcApiSettings, Task> testApiConnection,
-        Action<AppThemeMode> applyTheme)
+        Action<AppThemeMode> applyTheme,
+        bool isApiKeyUnreadable = false)
     {
         _categories = categories;
         _save = save;
@@ -65,7 +66,8 @@ public sealed class PricingSettingsViewModel : ViewModelBase
         ServerSettings = new DataServerSettingsViewModel(
             apiSettings,
             saveApiSettings,
-            testApiConnection);
+            testApiConnection,
+            isApiKeyUnreadable);
         CategoryMargins = [];
         foreach (var entry in settings.CategoryMargins)
         {

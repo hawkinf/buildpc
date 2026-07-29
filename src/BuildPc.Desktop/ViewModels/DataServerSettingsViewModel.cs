@@ -19,13 +19,15 @@ public sealed class DataServerSettingsViewModel : ViewModelBase
     public DataServerSettingsViewModel(
         BuildPcApiSettings? settings,
         Action<BuildPcApiSettings?> save,
-        Func<BuildPcApiSettings, Task> testConnection)
+        Func<BuildPcApiSettings, Task> testConnection,
+        bool isApiKeyUnreadable = false)
     {
         _save = save;
         _testConnection = testConnection;
-        _useServer = settings is not null;
+        _useServer = settings is not null || isApiKeyUnreadable;
         _serverUrl = settings?.BaseUrl ?? string.Empty;
         _apiKey = settings?.ApiKey ?? string.Empty;
+        IsApiKeyUnreadable = isApiKeyUnreadable;
         _testConnectionCommand = new AsyncRelayCommand(
             TestConnectionAsync,
             () => UseServer);
@@ -35,6 +37,13 @@ public sealed class DataServerSettingsViewModel : ViewModelBase
 
     public ICommand TestConnectionCommand { get; }
     public ICommand SaveCommand { get; }
+
+    public bool IsApiKeyUnreadable { get; }
+
+    public string ApiKeyUnreadableMessage =>
+        "A chave de acesso gravada pertence a outro computador ou usuário do " +
+        "Windows. O BuildPC está usando o banco local até que a chave seja " +
+        "informada e salva novamente. As demais configurações foram preservadas.";
 
     public bool UseServer
     {
@@ -138,7 +147,9 @@ public sealed class DataServerSettingsViewModel : ViewModelBase
         }
         catch (Exception exception)
         {
-            Fail($"Não foi possível conectar: {exception.Message}");
+            Fail(FriendlyMessage(
+                "Não foi possível conectar ao servidor.",
+                exception));
         }
         finally
         {
@@ -172,9 +183,21 @@ public sealed class DataServerSettingsViewModel : ViewModelBase
         }
         catch (Exception exception)
         {
-            Fail($"Não foi possível salvar o acesso: {exception.Message}");
+            Fail(FriendlyMessage(
+                "Não foi possível salvar o acesso ao servidor.",
+                exception));
         }
     }
+
+    /// <summary>
+    /// Mensagens técnicas do .NET não devem chegar ao usuário. Só o texto das
+    /// exceções escritas pelo próprio BuildPC é aproveitado.
+    /// </summary>
+    private static string FriendlyMessage(string fallback, Exception exception) =>
+        exception is InvalidOperationException or ArgumentException &&
+        !string.IsNullOrWhiteSpace(exception.Message)
+            ? exception.Message
+            : fallback;
 
     private bool TryCreateSettings(out BuildPcApiSettings settings)
     {

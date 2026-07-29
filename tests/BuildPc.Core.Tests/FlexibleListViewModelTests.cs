@@ -472,6 +472,86 @@ public sealed class FlexibleListViewModelTests
         Assert.False(viewModel.IsDirty);
     }
 
+    [Fact]
+    public void Discount_ReducesTheFinalPriceAndFeedsTheDraft()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, "Processador", 100m);
+        var viewModel = CreateViewModel(processor);
+        viewModel.ProductPicker.Selected = processor;
+        viewModel.AddCommand.Execute(null);
+        var total = viewModel.TotalPriceValue;
+
+        viewModel.DiscountText = "30,00";
+        viewModel.ValidityDays = 20;
+        viewModel.PaymentTerms = "2x no cartão";
+        viewModel.DeliveryTerms = "3 dias úteis";
+
+        Assert.Equal(30m, viewModel.DiscountValue);
+        Assert.True(viewModel.HasDiscount);
+        Assert.Equal(total - 30m, viewModel.FinalPriceValue);
+
+        var draft = viewModel.BuildQuoteDraft(new BusinessSettings());
+        Assert.Equal(30m, draft.DiscountAmount);
+        Assert.Equal(20, draft.ValidityDays);
+        Assert.Equal("2x no cartão", draft.PaymentTerms);
+        Assert.Equal("3 dias úteis", draft.DeliveryTerms);
+    }
+
+    [Fact]
+    public void InvalidDiscountTextIsTreatedAsNoDiscount()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, "Processador", 100m);
+        var viewModel = CreateViewModel(processor);
+        viewModel.ProductPicker.Selected = processor;
+        viewModel.AddCommand.Execute(null);
+
+        viewModel.DiscountText = "abc";
+        Assert.Equal(0m, viewModel.DiscountValue);
+
+        viewModel.DiscountText = "-50";
+        Assert.Equal(0m, viewModel.DiscountValue);
+        Assert.Equal(viewModel.TotalPriceValue, viewModel.FinalPriceValue);
+    }
+
+    [Fact]
+    public void ClearAndLoadQuoteResetTheCommercialTerms()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, "Processador", 100m);
+        var viewModel = CreateViewModel(processor);
+        viewModel.ProductPicker.Selected = processor;
+        viewModel.AddCommand.Execute(null);
+        viewModel.DiscountText = "25,00";
+        viewModel.ValidityDays = 30;
+        viewModel.PaymentTerms = "À vista";
+
+        viewModel.RequestClearCommand.Execute(null);
+        viewModel.ConfirmClearCommand.Execute(null);
+
+        Assert.Equal(0m, viewModel.DiscountValue);
+        Assert.Equal(0, viewModel.ValidityDays);
+        Assert.Equal(string.Empty, viewModel.PaymentTerms);
+
+        viewModel.LoadQuote(new SavedQuote
+        {
+            Id = Guid.NewGuid(),
+            Number = 5,
+            CreatedAt = DateTimeOffset.Now,
+            ClientName = "Volta",
+            ClientPhone = "(11) 93333-0000",
+            Items = [],
+            DiscountAmount = 40m,
+            ValidityDays = 7,
+            PaymentTerms = "Boleto",
+            DeliveryTerms = "Imediata"
+        });
+
+        Assert.Equal(40m, viewModel.DiscountValue);
+        Assert.Equal(7, viewModel.ValidityDays);
+        Assert.Equal("Boleto", viewModel.PaymentTerms);
+        Assert.Equal("Imediata", viewModel.DeliveryTerms);
+        Assert.False(viewModel.IsDirty);
+    }
+
     private static FlexibleListViewModel CreateViewModel(params PcComponent[] products) =>
         new(
             products,

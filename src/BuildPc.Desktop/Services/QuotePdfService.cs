@@ -58,6 +58,7 @@ public sealed class QuotePdfService
         AddClient(section, quote);
         AddItems(section, quote);
         AddTotals(section, quote);
+        AddCommercialTerms(section, quote);
         AddNotes(section, quote);
         AddFooter(section, quote);
         return document;
@@ -114,6 +115,18 @@ public sealed class QuotePdfService
         date.Format.Font.Size = 9;
         date.Format.Font.Color = Color.FromRgb(91, 103, 117);
         date.Format.SpaceAfter = Unit.FromCentimeter(0.35);
+
+        if (quote.ValidUntil is { } validUntil)
+        {
+            var validity = section.AddParagraph();
+            validity.Format.SpaceAfter = Unit.FromCentimeter(0.35);
+            var validityText = validity.AddFormattedText(
+                $"Proposta válida até {validUntil.LocalDateTime:dd/MM/yyyy} " +
+                $"({quote.ValidityDays} dias).",
+                TextFormat.Bold);
+            validityText.Font.Size = 9.5;
+            validityText.Font.Color = Color.FromRgb(146, 83, 0);
+        }
     }
 
     private static void AddClient(Section section, SavedQuote quote)
@@ -200,11 +213,72 @@ public sealed class QuotePdfService
         row.BottomPadding = Unit.FromMillimeter(4);
         var total = row.Cells[1].AddParagraph();
         total.Format.Alignment = ParagraphAlignment.Right;
+
+        // Com desconto o cliente precisa ver subtotal e abatimento, senão a
+        // conta do PDF não fecha com a soma dos itens.
+        if (quote.HasDiscount)
+        {
+            var subtotal = total.AddFormattedText(
+                $"Subtotal: {Money(quote.TotalPrice)}");
+            subtotal.Font.Size = 9.5;
+            subtotal.Font.Color = Color.FromRgb(91, 103, 117);
+            total.AddLineBreak();
+            var discount = total.AddFormattedText(
+                $"Desconto: -{Money(quote.DiscountAmount)}",
+                TextFormat.Bold);
+            discount.Font.Size = 9.5;
+            discount.Font.Color = Color.FromRgb(4, 120, 87);
+            total.AddLineBreak();
+        }
+
         total.AddFormattedText("TOTAL DO ORÇAMENTO", TextFormat.Bold);
         total.AddLineBreak();
-        var value = total.AddFormattedText(Money(quote.TotalPrice), TextFormat.Bold);
+        var value = total.AddFormattedText(Money(quote.FinalPrice), TextFormat.Bold);
         value.Font.Size = 17;
         value.Font.Color = Color.FromRgb(30, 86, 160);
+    }
+
+    /// <summary>
+    /// Condições comerciais do orçamento. Ficam em bloco próprio, separadas das
+    /// observações livres, para o cliente localizar prazo e pagamento.
+    /// </summary>
+    private static void AddCommercialTerms(Section section, SavedQuote quote)
+    {
+        var terms = new List<(string Label, string Value)>();
+        if (!string.IsNullOrWhiteSpace(quote.PaymentTerms))
+        {
+            terms.Add(("CONDIÇÕES DE PAGAMENTO", quote.PaymentTerms));
+        }
+
+        if (!string.IsNullOrWhiteSpace(quote.DeliveryTerms))
+        {
+            terms.Add(("PRAZO DE ENTREGA", quote.DeliveryTerms));
+        }
+
+        if (terms.Count == 0)
+        {
+            return;
+        }
+
+        var table = section.AddTable();
+        table.Borders.Width = 0.5;
+        table.Borders.Color = Color.FromRgb(205, 213, 223);
+        table.Shading.Color = Color.FromRgb(245, 248, 252);
+        table.Rows.LeftIndent = 0;
+        foreach (var _ in terms)
+        {
+            table.AddColumn(Unit.FromCentimeter(17.0 / terms.Count));
+        }
+
+        var row = table.AddRow();
+        row.TopPadding = Unit.FromMillimeter(3);
+        row.BottomPadding = Unit.FromMillimeter(3);
+        for (var index = 0; index < terms.Count; index++)
+        {
+            AddLabelValue(row.Cells[index], terms[index].Label, terms[index].Value);
+        }
+
+        section.AddParagraph().Format.SpaceAfter = Unit.FromCentimeter(0.12);
     }
 
     private static void AddNotes(Section section, SavedQuote quote)
@@ -238,6 +312,8 @@ public sealed class QuotePdfService
         footer.AddText($"Orçamento #{quote.Number:000000} • ");
         footer.AddText("Página ");
         footer.AddPageField();
+        footer.AddText(" de ");
+        footer.AddNumPagesField();
     }
 
     private static void AddLine(Paragraph paragraph, string value, bool bold = false)
@@ -263,8 +339,20 @@ public sealed class QuotePdfService
         labelText.Font.Bold = true;
         labelText.Font.Color = Color.FromRgb(91, 103, 117);
         paragraph.AddLineBreak();
-        var valueText = paragraph.AddFormattedText(value, TextFormat.Bold);
-        valueText.Font.Size = 10;
+
+        // As condições comerciais podem vir com várias linhas; sem a quebra
+        // explícita o MigraDoc concatenaria tudo em um parágrafo só.
+        var lines = value.ReplaceLineEndings("\n").Split('\n');
+        for (var index = 0; index < lines.Length; index++)
+        {
+            if (index > 0)
+            {
+                paragraph.AddLineBreak();
+            }
+
+            var valueText = paragraph.AddFormattedText(lines[index], TextFormat.Bold);
+            valueText.Font.Size = 10;
+        }
     }
 
     private static void SetCellText(

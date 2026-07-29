@@ -30,7 +30,15 @@
                        FontSize="8"
                        TextAlignment="Right"
                        Foreground="{DynamicResource Brush.TextMuted}" />
+            <!-- Com desconto, o valor grande é o que o cliente paga; o total
+                 dos itens aparece riscado acima para a conta ficar clara. -->
             <TextBlock Text="{Binding TotalPrice}"
+                       IsVisible="{Binding HasDiscount}"
+                       FontSize="10"
+                       TextAlignment="Right"
+                       TextDecorations="Strikethrough"
+                       Foreground="{DynamicResource Brush.TextMuted}" />
+            <TextBlock Text="{Binding FinalPrice}"
                        FontSize="16"
                        FontWeight="Bold"
                        TextAlignment="Right"
@@ -289,6 +297,58 @@
                          Foreground="{DynamicResource Brush.TextLabel}" />
               <TextBox Text="{Binding Notes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                        PlaceholderText="Informações específicas para este cliente" />
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- Condições comerciais: desconto, validade, pagamento e entrega. -->
+        <Border Classes="card" IsVisible="{Binding HasItems}">
+          <Grid ColumnDefinitions="180,150,1.1*,1.1*" ColumnSpacing="12">
+            <StackPanel Spacing="5">
+              <TextBlock Text="Desconto (R$)" FontSize="10"
+                         Foreground="{DynamicResource Brush.TextLabel}" />
+              <Grid>
+                <TextBox Text="{Binding DiscountText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                         Padding="30,8,12,8"
+                         TextAlignment="Right"
+                         PlaceholderText="0,00" />
+                <TextBlock Text="R$" Margin="12,0,0,0"
+                           HorizontalAlignment="Left" VerticalAlignment="Center"
+                           FontSize="10"
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           IsHitTestVisible="False" />
+              </Grid>
+              <TextBlock Text="{Binding FinalPrice, StringFormat='Cliente paga: {0}'}"
+                         IsVisible="{Binding HasDiscount}"
+                         FontSize="10" FontWeight="SemiBold"
+                         Foreground="{DynamicResource Brush.Success}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Spacing="5">
+              <TextBlock Text="Validade (dias)" FontSize="10"
+                         Foreground="{DynamicResource Brush.TextLabel}" />
+              <NumericUpDown Value="{Binding ValidityDays, Mode=TwoWay}"
+                             Minimum="0" Maximum="365"
+                             Increment="1"
+                             FormatString="0"
+                             ParsingNumberStyle="Integer"
+                             ShowButtonSpinner="True" />
+              <TextBlock Text="0 = sem prazo" FontSize="9"
+                         Foreground="{DynamicResource Brush.TextMuted}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Spacing="5">
+              <TextBlock Text="Condições de pagamento" FontSize="10"
+                         Foreground="{DynamicResource Brush.TextLabel}" />
+              <TextBox Text="{Binding PaymentTerms, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="Ex.: 3x sem juros no cartão" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="3" Spacing="5">
+              <TextBlock Text="Prazo de entrega" FontSize="10"
+                         Foreground="{DynamicResource Brush.TextLabel}" />
+              <TextBox Text="{Binding DeliveryTerms, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="Ex.: 5 dias úteis" />
             </StackPanel>
           </Grid>
         </Border>

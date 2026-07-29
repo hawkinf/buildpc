@@ -181,6 +181,63 @@ public sealed class QuotePdfServiceTests
         }
     }
 
+    [Fact]
+    public void Export_WithDiscountAndTermsProducesAValidPdf()
+    {
+        var path = Path.Combine(
+            Path.GetTempPath(),
+            $"buildpc-desconto-{Guid.NewGuid():N}.pdf");
+        try
+        {
+            var quote = new SavedQuote
+            {
+                Id = Guid.NewGuid(),
+                Number = 77,
+                CreatedAt = DateTimeOffset.Now,
+                ClientName = "Cliente Com Desconto",
+                ClientPhone = "(11) 90000-1111",
+                TotalCost = 800m,
+                TotalPrice = 1000m,
+                DiscountAmount = 100m,
+                ValidityDays = 10,
+                PaymentTerms = "3x sem juros",
+                DeliveryTerms = "5 dias úteis",
+                CompanySnapshot = new BusinessSettings { CompanyName = "BuildPC" },
+                Items = [Item("Processador", "CPU Teste", 1, 1000m)]
+            };
+
+            new QuotePdfService().Export(quote, path);
+
+            Assert.True(File.Exists(path));
+            Assert.True(new FileInfo(path).Length > 0);
+            Assert.Equal(900m, quote.FinalPrice);
+            Assert.Equal(quote.CreatedAt.AddDays(10), quote.ValidUntil);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void FinalPriceNeverGoesBelowZeroAndValidUntilIsOptional()
+    {
+        var quote = new SavedQuote
+        {
+            TotalPrice = 100m,
+            DiscountAmount = 250m
+        };
+
+        // O modelo protege o total mesmo se um desconto maior for gravado por
+        // uma versão anterior ou por outra origem de dados.
+        Assert.Equal(0m, quote.FinalPrice);
+        Assert.Null(quote.ValidUntil);
+
+        var withoutDiscount = new SavedQuote { TotalPrice = 100m };
+        Assert.Equal(100m, withoutDiscount.FinalPrice);
+        Assert.False(withoutDiscount.HasDiscount);
+    }
+
     private static SavedQuoteItem Item(
         string category,
         string name,

@@ -687,11 +687,39 @@ Ao encerrar essa instância de teste, localize o PID pela porta
 própria linha de comando por SSH**: o padrão casa com o próprio comando e mata a
 sessão.
 
-**Pendência que depende de decisão do usuário:**
+**Cópia externa do backup — resolvida reaproveitando o pipeline da VPS**
 
-- O backup existe apenas na própria VPS. Uma cópia externa (outro host, bucket,
-  armazenamento offsite) precisa de um destino e credenciais definidos pelo
-  usuário; sem isso, uma falha de disco perde os 14 dias.
+A VPS já tinha uma infraestrutura de backup pronta que o BuildPC não usava:
+
+- `system-backup.service` / `.timer` (03:10 diário) roda
+  `/usr/local/bin/system_backup.sh`, que faz `restic backup` e depois
+  `rclone copy` para `gdrive:Backups/VPS-hawk-server/restic`;
+- `restic` cifra o repositório, faz deduplicação e já guarda ~29 GB no Drive;
+- existem ainda `system-backup-check.timer`, `backup-restore-test.timer` e
+  `hawk-backup-watchdog.timer` cobrindo verificação e alerta por e-mail.
+
+O problema era só de cobertura: a lista de caminhos do `restic` incluía
+`/var/backups/system` mas **não** `/var/backups/buildpc`, então os dumps do
+BuildPC nunca saíam da máquina. A correção foi acrescentar esse diretório à
+linha do `restic backup` em `/usr/local/bin/system_backup.sh` (backup do script
+original em `/root/system_backup.sh.bak-*`).
+
+Verificado em 29/07/2026: o snapshot `5b695bda` contém
+`buildpc-20260729-131635.dump` e `buildpc-20260729-205937.dump`, e esse mesmo
+snapshot foi confirmado em `gdrive:Backups/VPS-hawk-server/restic/snapshots`.
+
+Não crie um pipeline separado para o BuildPC: basta que
+`/var/backups/buildpc` continue na lista de caminhos do `restic`.
+
+Observações sobre esse pipeline:
+
+- o `rclone copy` do script **não** apaga no destino, então o Drive acumula mais
+  snapshots que o repositório local (151 contra 25). É mais seguro, mas cresce;
+- o sync para o Drive falha de vez em quando por cota da API do Google
+  (`Error 403: Quota exceeded ... Queries per minute`). O script trata isso como
+  aviso e mantém o backup local, e a execução seguinte recupera o atraso;
+- `msmtp` não consegue escrever em `/var/log/systembackup/msmtp.log`
+  (permissão), mas o e-mail de alerta é enviado normalmente.
 
 **Verificado e sem ação necessária:**
 

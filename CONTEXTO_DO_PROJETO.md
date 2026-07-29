@@ -32,8 +32,9 @@ dotnet build BuildPc.sln --no-restore
 dotnet test BuildPc.sln --no-build
 ```
 
-No estado documentado, a solução compila sem avisos e possui 121 testes
-aprovados.
+No estado documentado, a solução compila sem avisos e possui 148 testes
+aprovados. O GitHub Actions repete build em Release e testes a cada push e
+pull request (`.github/workflows/build.yml`).
 
 ## O que o programa faz
 
@@ -275,9 +276,12 @@ Regras da importação:
 - a URL da miniatura é salva em `PcComponent.ImageUrl`;
 - a importação não grava o arquivo remoto da imagem em disco. `RemoteImage`
   baixa a imagem quando ela precisa ser exibida e mantém os bytes num cache
-  apenas em memória, compartilhado durante a execução do programa;
+  em memória compartilhado, **limitado a 96 MB** e com descarte do item usado
+  menos recentemente (`Services/BoundedImageCache.cs`);
 - fotos adicionadas manualmente são copiadas de forma persistente para
-  `%LocalAppData%\BuildPC\imagens-produtos`;
+  `%LocalAppData%\BuildPC\imagens-produtos` por `Services/ProductImageStore.cs`,
+  que também apaga a foto quando ela deixa de ser referenciada. Arquivos fora
+  dessa pasta nunca são excluídos: pertencem ao usuário;
 - importar uma categoria substitui os importados anteriores daquela categoria;
 - produtos manuais nunca são removidos pela importação;
 - produtos importados marcados como `KeepOnImport`/“Manter” são preservados;
@@ -387,6 +391,8 @@ Serviços:
 Regras:
 
 - sempre gerar e abrir a prévia antes de o usuário salvar ou imprimir;
+- as prévias ficam em `%TEMP%\BuildPC\visualizacoes-pdf` e expiram em 1 hora,
+  porque incluem tabelas de custo e dados de clientes;
 - orçamento precisa estar gravado e sem alterações pendentes;
 - PDF do cliente nunca mostra custo ou lucro;
 - PDF de catálogo respeita filtro, categoria e ordenação da tela;
@@ -435,7 +441,21 @@ propriedade `Is...View` torna a região visível.
 
 A janela principal usa duas colunas: `230` para a navegação e `*` para o
 conteúdo. A terceira coluna de `320 px` existia apenas para o resumo da
-montagem antiga e foi removida.
+montagem antiga e foi removida. Com isso a largura mínima caiu para `1100 px`.
+
+A folga inferior das telas roláveis vem do estilo `Border.scroll-safe-area`
+em `Styles/Controls.axaml`. Não repita `Height="180"` nas views: um teste
+estrutural (`ScrollableLayoutTests`) falha se o valor voltar a ser fixo.
+
+### Compiled bindings
+
+`AvaloniaUseCompiledBindingsByDefault` está `false` de propósito. Ligar a
+opção hoje produz **622 erros de compilação**, porque cada `DataTemplate`
+precisaria de `x:DataType` e cada binding teria de resolver estaticamente.
+A migração é possível, mas deve ser feita **uma view por vez**, com
+`x:CompileBindings="True"` no elemento raiz da view migrada, validando a tela
+no aplicativo antes de seguir para a próxima. Não ligue a opção globalmente
+de uma só vez.
 
 ## Modelos principais
 
@@ -567,6 +587,12 @@ Regras de segurança:
 - a API exige o cabeçalho `X-BuildPc-Key`;
 - `/health` é público; as demais rotas exigem chave;
 - a comparação da chave usa SHA-256 e tempo constante;
+- há limite de 1200 requisições por minuto e por endereço, para encurtar
+  tentativas de força bruta contra a chave, que é única e não expira;
+- o nível de log de `Microsoft.AspNetCore` é `Warning`: o padrão gravava duas
+  linhas por requisição e enchia o journal do servidor;
+- `--import-sqlite` apaga produtos, orçamentos e configurações antes de gravar
+  o snapshot, portanto exige `--force` explícito;
 - o PostgreSQL deve escutar apenas em `127.0.0.1:5432` na VPS;
 - nunca liberar a porta 5432 no firewall;
 - somente o endpoint HTTPS da API deve ser publicado pelo proxy reverso;
@@ -590,6 +616,7 @@ Rotas principais:
 - `GET`/`PUT /settings`
 - `GET`/`POST /quotes`
 - `DELETE /quotes/{id}`
+- `GET /imports/last-all`
 
 Arquivos de implantação:
 
@@ -605,15 +632,48 @@ O alias SSH usado anteriormente pelo usuário foi `contaslite`; ele depende do
 arquivo SSH local da máquina e deve ser confirmado antes de qualquer operação
 remota.
 
+### Estado verificado do servidor (29/07/2026)
+
+Auditoria somente de leitura via `ssh contaslite`:
+
+| Item | Estado |
+|---|---|
+| `buildpc-api`, `postgresql`, `nginx` | ativos; API em `127.0.0.1:8125` |
+| PostgreSQL | 14.23, escutando só em `127.0.0.1:5432` |
+| Firewall (ufw) | ativo; 5432 e 8125 não expostos |
+| Porta 80 | redireciona 301 para HTTPS |
+| `/buildpc-api/health` sem chave | 200 |
+| `/buildpc-api/products` sem chave | 401 |
+| `/etc/buildpc-api.env` | `600 root:root`; `ASPNETCORE_ENVIRONMENT=Production` |
+| TLS | válido até 07/09/2026, `certbot.timer` ativo |
+| `unattended-upgrades` | habilitado |
+| Base `buildpc` | 11 MB, 1420 produtos, 2 orçamentos |
+| Disco | 73% usado (11 GB livres) |
+| Memória | 2,4 GB totais, folga pequena |
+
+**Pendências no servidor, ainda não aplicadas:**
+
+1. `client_max_body_size` continua `10m` em
+   `/etc/nginx/sites-enabled/contaslite.conf`. O repositório já usa `64m`; sem
+   esse ajuste no servidor, importar uma categoria grande falha com 413.
+2. `app_metadata` tem 577 marcas `deleted_product:` inúteis. A poda automática
+   já está no código e roda no próximo início do serviço, depois do deploy.
+3. O timer de backup nunca executou (`LAST n/a`); existe apenas o `pg_dump`
+   manual de 29/07. O backup fica só na própria VPS, sem copia externa.
+4. O journal do systemd ocupa 1 GB. O nível de log já foi reduzido no código;
+   considere também `SystemMaxUse` em `journald.conf`.
+
 ### Migração SQLite para PostgreSQL
 
 A API possui modos de linha de comando:
 
 ```powershell
 dotnet run --project src/BuildPc.Api -- --backup-sqlite CAMINHO_ORIGEM CAMINHO_BACKUP
-dotnet run --project src/BuildPc.Api -- --import-sqlite CAMINHO_BACKUP
+dotnet run --project src/BuildPc.Api -- --import-sqlite CAMINHO_BACKUP --force
 ```
 
+`--import-sqlite` **apaga** produtos, orçamentos e configurações do PostgreSQL
+antes de gravar o snapshot. Sem `--force` o comando recusa e explica o risco.
 Faça backup antes de migrar e nunca exponha diretamente o banco.
 
 ## Executar, testar e publicar
@@ -683,7 +743,10 @@ chave da API não aparece em texto aberto no JSON.
   excedente pode ficar fora do cálculo da área rolável do Avalonia;
 - a janela principal aceita altura mínima de 640 px e as telas devem continuar
   utilizáveis nesse tamanho;
-- rodapé global mostra ONLINE em verde ou OFFLINE em vermelho;
+- rodapé global mostra `LOCAL` em cinza quando o programa usa o SQLite deste
+  computador, `ONLINE` em verde quando o servidor responde e `OFFLINE` em
+  vermelho só quando existe servidor configurado e ele falhou. Nunca alarme o
+  usuário por estar no modo local, que é o modo de uso normal;
 - usar recursos de cor dinâmica para Claro/Escuro/Sistema;
 - evitar valores de cor fixos fora de overlays, sombras ou casos justificados;
 - exportações sempre abrem a prévia;

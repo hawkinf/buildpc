@@ -122,6 +122,24 @@ public sealed class MainWindowViewModel : ViewModelBase
             var localQuotes = new QuoteRepository(databasePath);
             quoteRepository = localQuotes;
             templateRepository = localQuotes;
+
+            // O modo servidor tem backup diario na VPS; o modo local nao tinha
+            // nenhum. A copia roda apos os repositorios criarem o schema, e uma
+            // falha aqui nunca impede o programa de abrir.
+            try
+            {
+                new LocalDatabaseBackupService(
+                        databasePath,
+                        Path.Combine(dataDirectory, "backups"))
+                    .CreateDailyBackup(DateTimeOffset.Now);
+            }
+            catch (Exception exception)
+                when (exception is IOException
+                          or UnauthorizedAccessException
+                          or SqliteException)
+            {
+                CrashLogService.Record("Backup do banco local", exception);
+            }
         }
 
         var businessSettings =

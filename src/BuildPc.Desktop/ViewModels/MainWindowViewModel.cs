@@ -34,6 +34,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _productFormMessage = string.Empty;
     private bool _isProductFormSuccess;
     private bool _isImportingAll;
+    private bool _isToolsMenuExpanded;
     private ProductListItemViewModel? _selectedCatalogProduct;
     private string? _editingProductId;
     private bool _isDeleteConfirmationVisible;
@@ -126,6 +127,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             new(ComponentCategory.Mouse, "Mouses"),
             new(ComponentCategory.Keyboard, "Teclados")
         ];
+        CategorySummaries = [];
+        RefreshCategorySummaries();
         ProductCategoryFilters =
         [
             new(null, "Todos"),
@@ -265,9 +268,12 @@ public sealed class MainWindowViewModel : ViewModelBase
         ShowFlexibleListCommand = new RelayCommand(() => ShowView("flexible-list"));
         ShowProductsCommand = new RelayCommand(() => ShowView("products"));
         ShowProductManagementCommand = new RelayCommand(ShowProductManagement);
-        ShowImportsCommand = new RelayCommand(() => ShowView("imports"));
+        ShowCategoryManagementCommand =
+            new RelayCommand(() => ShowToolView("category-management"));
+        ShowImportsCommand = new RelayCommand(() => ShowToolView("imports"));
         ShowQuotesCommand = new RelayCommand(() => ShowView("quotes"));
-        ShowSettingsCommand = new RelayCommand(() => ShowView("settings"));
+        ShowSettingsCommand = new RelayCommand(() => ShowToolView("settings"));
+        ToggleToolsMenuCommand = new RelayCommand(ToggleToolsMenu);
         SaveProductCommand = new RelayCommand(SaveProduct);
         NewProductCommand = new RelayCommand(BeginNewProduct);
         EditProductCommand = new RelayCommand(BeginEditProduct);
@@ -292,6 +298,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ObservableCollection<ProductListItemViewModel> Products { get; }
     public ObservableCollection<ProductListItemViewModel> FilteredProducts { get; }
     public ObservableCollection<CategoryOptionViewModel> CategoryOptions { get; }
+    public ObservableCollection<CategorySummaryViewModel> CategorySummaries { get; }
     public IReadOnlyList<ProductCategoryFilterViewModel> ProductCategoryFilters { get; }
     public IReadOnlyList<ProductCatalogSortOptionViewModel> CatalogSortOptions { get; }
     public IReadOnlyList<ProductPriceTableOptionViewModel> ProductPriceTableOptions { get; }
@@ -307,9 +314,11 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand ShowFlexibleListCommand { get; }
     public ICommand ShowProductsCommand { get; }
     public ICommand ShowProductManagementCommand { get; }
+    public ICommand ShowCategoryManagementCommand { get; }
     public ICommand ShowImportsCommand { get; }
     public ICommand ShowQuotesCommand { get; }
     public ICommand ShowSettingsCommand { get; }
+    public ICommand ToggleToolsMenuCommand { get; }
     public ICommand SaveProductCommand { get; }
     public ICommand NewProductCommand { get; }
     public ICommand EditProductCommand { get; }
@@ -330,12 +339,33 @@ public sealed class MainWindowViewModel : ViewModelBase
     public bool IsFlexibleListView => _currentView == "flexible-list";
     public bool IsProductsView => _currentView == "products";
     public bool IsProductManagementView => _currentView == "product-management";
+    public bool IsCategoryManagementView => _currentView == "category-management";
     public bool IsImportsView => _currentView == "imports";
     public bool IsQuotesView => _currentView == "quotes";
     public bool IsSettingsView => _currentView == "settings";
+    public bool IsToolsView =>
+        IsImportsView ||
+        IsProductManagementView ||
+        IsCategoryManagementView ||
+        IsSettingsView;
+
+    public bool IsToolsMenuExpanded
+    {
+        get => _isToolsMenuExpanded;
+        private set
+        {
+            if (SetProperty(ref _isToolsMenuExpanded, value))
+            {
+                OnPropertyChanged(nameof(ToolsMenuIndicator));
+            }
+        }
+    }
+
+    public string ToolsMenuIndicator => IsToolsMenuExpanded ? "▾" : "›";
 
     public int CatalogCount => Products.Count;
     public string CatalogCountText => $"{CatalogCount} produtos disponíveis";
+    public string CategoryCountText => $"{CategorySummaries.Count} categorias";
 
     public ProductPriceTableOptionViewModel SelectedProductPriceTableOption
     {
@@ -758,9 +788,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsFlexibleListView));
         OnPropertyChanged(nameof(IsProductsView));
         OnPropertyChanged(nameof(IsProductManagementView));
+        OnPropertyChanged(nameof(IsCategoryManagementView));
         OnPropertyChanged(nameof(IsImportsView));
         OnPropertyChanged(nameof(IsQuotesView));
         OnPropertyChanged(nameof(IsSettingsView));
+        OnPropertyChanged(nameof(IsToolsView));
 
         if (IsQuotesView)
         {
@@ -979,8 +1011,31 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(CatalogCount));
         OnPropertyChanged(nameof(CatalogCountText));
+        RefreshCategorySummaries();
         RefreshProductFilter();
         BulkSelectionChanged();
+    }
+
+    private void RefreshCategorySummaries()
+    {
+        CategorySummaries.Clear();
+        for (var index = 0; index < CategoryOptions.Count; index++)
+        {
+            var category = CategoryOptions[index];
+            CategorySummaries.Add(CategorySummaryViewModel.From(
+                category,
+                Products.Count(product =>
+                    product.Component.Category == category.Value),
+                index % 2 == 1,
+                ShowCategoryProducts));
+        }
+    }
+
+    private void ShowCategoryProducts(ComponentCategory category)
+    {
+        SelectedCatalogCategoryFilter = ProductCategoryFilters.First(filter =>
+            filter.Value == category);
+        ShowView("products");
     }
 
     private void RefreshImportCounts()
@@ -1057,8 +1112,17 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void ShowProductManagement()
     {
         BeginNewProduct();
-        ShowView("product-management");
+        ShowToolView("product-management");
     }
+
+    private void ShowToolView(string view)
+    {
+        IsToolsMenuExpanded = true;
+        ShowView(view);
+    }
+
+    private void ToggleToolsMenu() =>
+        IsToolsMenuExpanded = !IsToolsMenuExpanded;
 
     private void BeginEditProduct()
     {

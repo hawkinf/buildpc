@@ -43,22 +43,6 @@
             </StackPanel>
           </Button>
 
-          <Button Classes="nav" Classes.active="{Binding IsProductManagementView}"
-                  Command="{Binding ShowProductManagementCommand}">
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <PathIcon Data="{StaticResource Icon.Add}" Width="18" Height="18" />
-              <TextBlock Text="Gerenciar Produtos" VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
-
-          <Button Classes="nav" Classes.active="{Binding IsImportsView}"
-                  Command="{Binding ShowImportsCommand}">
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <PathIcon Data="{StaticResource Icon.Imports}" Width="18" Height="18" />
-              <TextBlock Text="Importações" VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
-
           <Button Classes="nav" Classes.active="{Binding IsQuotesView}"
                   Command="{Binding ShowQuotesCommand}">
             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -67,13 +51,75 @@
             </StackPanel>
           </Button>
 
-          <Button Classes="nav" Classes.active="{Binding IsSettingsView}"
-                  Command="{Binding ShowSettingsCommand}">
-            <StackPanel Orientation="Horizontal" Spacing="12">
+          <Button Classes="nav" Classes.active="{Binding IsToolsView}"
+                  Command="{Binding ToggleToolsMenuCommand}">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
               <PathIcon Data="{StaticResource Icon.Settings}" Width="18" Height="18" />
-              <TextBlock Text="Configurações" VerticalAlignment="Center" />
-            </StackPanel>
+              <TextBlock Grid.Column="1"
+                         Text="Ferramentas"
+                         VerticalAlignment="Center" />
+              <TextBlock Grid.Column="2"
+                         Text="{Binding ToolsMenuIndicator}"
+                         FontSize="16"
+                         VerticalAlignment="Center" />
+            </Grid>
           </Button>
+
+          <StackPanel IsVisible="{Binding IsToolsMenuExpanded}"
+                      Spacing="4"
+                      Margin="18,0,0,0">
+            <Button Classes="nav"
+                    Classes.active="{Binding IsImportsView}"
+                    Command="{Binding ShowImportsCommand}"
+                    MinHeight="34"
+                    Padding="10,7">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <PathIcon Data="{StaticResource Icon.Imports}" Width="15" Height="15" />
+                <TextBlock Text="Importações"
+                           FontSize="12"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <Button Classes="nav"
+                    Classes.active="{Binding IsProductManagementView}"
+                    Command="{Binding ShowProductManagementCommand}"
+                    MinHeight="34"
+                    Padding="10,7">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <PathIcon Data="{StaticResource Icon.Products}" Width="15" Height="15" />
+                <TextBlock Text="Gerenciar Produtos"
+                           FontSize="12"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <Button Classes="nav"
+                    Classes.active="{Binding IsCategoryManagementView}"
+                    Command="{Binding ShowCategoryManagementCommand}"
+                    MinHeight="34"
+                    Padding="10,7">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <PathIcon Data="{StaticResource Icon.Components}" Width="15" Height="15" />
+                <TextBlock Text="Gerenciar Categorias"
+                           FontSize="12"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <Button Classes="nav"
+                    Classes.active="{Binding IsSettingsView}"
+                    Command="{Binding ShowSettingsCommand}"
+                    MinHeight="34"
+                    Padding="10,7">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <PathIcon Data="{StaticResource Icon.Settings}" Width="15" Height="15" />
+                <TextBlock Text="Configurações"
+                           FontSize="12"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
 
         </StackPanel>
 
@@ -455,6 +501,137 @@
     <Grid Grid.Column="1" Grid.ColumnSpan="2"
           IsVisible="{Binding IsSettingsView}">
       <views:PricingSettingsView DataContext="{Binding PricingSettings}" />
+    </Grid>
+
+    <!-- Gerenciamento de categorias -->
+    <Grid Grid.Column="1" Grid.ColumnSpan="2" RowDefinitions="Auto,*"
+          IsVisible="{Binding IsCategoryManagementView}">
+      <Border Grid.Row="0"
+              BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="0,0,0,1"
+              Padding="30,20">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Gerenciar Categorias"
+                       FontSize="22"
+                       FontWeight="Bold" />
+            <TextBlock Text="Consulte as categorias utilizadas no catálogo e acesse seus produtos."
+                       Foreground="{DynamicResource Brush.TextBodyMuted}"
+                       FontSize="12" />
+          </StackPanel>
+          <Border Grid.Column="1"
+                  Background="{DynamicResource Brush.AccentSurface}"
+                  CornerRadius="8"
+                  Padding="12,7"
+                  VerticalAlignment="Center">
+            <TextBlock Text="{Binding CategoryCountText}"
+                       Foreground="{DynamicResource Brush.AccentBadge}"
+                       FontSize="11"
+                       FontWeight="SemiBold" />
+          </Border>
+        </Grid>
+      </Border>
+
+      <ScrollViewer Grid.Row="1"
+                    Padding="30,22"
+                    HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16">
+          <Border Background="{DynamicResource Brush.InfoPanelBackground}"
+                  BorderBrush="{DynamicResource Brush.InfoBorder}"
+                  BorderThickness="1"
+                  CornerRadius="10"
+                  Padding="16">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+              <Border Width="38"
+                      Height="38"
+                      CornerRadius="9"
+                      Background="{DynamicResource Brush.AccentSurface}">
+                <PathIcon Data="{StaticResource Icon.Components}"
+                          Width="18"
+                          Height="18"
+                          Foreground="{DynamicResource Brush.AccentLight}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Grid.Column="1"
+                          Spacing="3"
+                          VerticalAlignment="Center">
+                <TextBlock Text="Categorias do Catálogo Local"
+                           FontSize="12"
+                           FontWeight="SemiBold" />
+                <TextBlock Text="Use “Ver produtos” para abrir a listagem com o filtro da categoria aplicado."
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource Brush.TextBody}"
+                           FontSize="10" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <ItemsControl ItemsSource="{Binding CategorySummaries}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal"
+                           ItemWidth="440" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Classes="component-row"
+                        Classes.alternate="{Binding IsAlternate}"
+                        Width="424"
+                        Margin="0,0,16,16">
+                  <Grid ColumnDefinitions="Auto,*,Auto"
+                        ColumnSpacing="13">
+                    <Border Width="46"
+                            Height="46"
+                            CornerRadius="10"
+                            Background="{DynamicResource Brush.AccentSurface}"
+                            VerticalAlignment="Center">
+                      <PathIcon Data="{Binding Icon, Converter={StaticResource IconResourceConverter}}"
+                                Width="22"
+                                Height="22"
+                                Foreground="{DynamicResource Brush.AccentLight}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+                    </Border>
+
+                    <StackPanel Grid.Column="1"
+                                Spacing="3"
+                                VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}"
+                                 FontSize="13"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource Brush.AccentPale}" />
+                      <TextBlock Text="{Binding Description}"
+                                 FontSize="10"
+                                 TextWrapping="Wrap"
+                                 Foreground="{DynamicResource Brush.TextSecondary}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2"
+                                Spacing="5"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+                      <TextBlock Text="{Binding ProductCountText}"
+                                 TextAlignment="Right"
+                                 FontSize="10"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource Brush.Warning}" />
+                      <Button Classes="secondary"
+                              Command="{Binding ViewProductsCommand}"
+                              MinHeight="30"
+                              Padding="9,5">
+                        <TextBlock Text="Ver produtos"
+                                   FontSize="10" />
+                      </Button>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
     </Grid>
 
     <!-- Cadastro manual de produtos -->

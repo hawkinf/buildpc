@@ -365,6 +365,114 @@
           </Grid>
         </Border>
 
+        <!--
+          Modelos de montagem: combinações mais vendidas reaproveitadas. Guardam
+          só produto e quantidade, então os preços vêm do catálogo atual.
+        -->
+        <Expander Header="Modelos de montagem"
+                  DataContext="{Binding $parent[UserControl].DataContext.Templates}"
+                  AutomationProperties.Name="Modelos de montagem reutilizáveis">
+          <Grid ColumnDefinitions="1.2*,*" ColumnSpacing="16" Margin="0,10,0,0">
+            <StackPanel Spacing="8">
+              <TextBlock Text="MODELOS SALVOS" FontSize="10" FontWeight="Bold"
+                         Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBlock Text="Nenhum modelo salvo ainda."
+                         IsVisible="{Binding IsEmpty}"
+                         FontSize="11"
+                         Foreground="{DynamicResource Brush.TextSecondary}" />
+              <ListBox ItemsSource="{Binding Templates}"
+                       SelectedItem="{Binding SelectedTemplate, Mode=TwoWay}"
+                       IsVisible="{Binding HasTemplates}"
+                       AutomationProperties.Name="Modelos salvos"
+                       MaxHeight="170"
+                       Background="Transparent"
+                       BorderThickness="0">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Spacing="1" Margin="0,2">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                 FontSize="11" />
+                      <TextBlock Text="{Binding Description}"
+                                 IsVisible="{Binding HasDescription}"
+                                 FontSize="9"
+                                 TextTrimming="CharacterEllipsis"
+                                 Foreground="{DynamicResource Brush.TextSecondary}" />
+                      <TextBlock Text="{Binding QuantityText}" FontSize="9"
+                                 Foreground="{DynamicResource Brush.TextMuted}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="primary"
+                        Command="{Binding ApplyCommand}"
+                        IsEnabled="{Binding HasSelection}"
+                        AutomationProperties.Name="Aplicar o modelo selecionado à montagem"
+                        ToolTip.Tip="Substitui a montagem pelos itens do modelo, com os preços atuais">
+                  <TextBlock Text="Aplicar modelo" Foreground="White" />
+                </Button>
+                <Button Classes="secondary"
+                        Command="{Binding RequestDeleteCommand}"
+                        IsEnabled="{Binding HasSelection}"
+                        MinWidth="36" Padding="9,8"
+                        AutomationProperties.Name="Excluir o modelo selecionado"
+                        ToolTip.Tip="Excluir o modelo selecionado">
+                  <PathIcon Data="{StaticResource Icon.Clear}" Width="14" Height="14"
+                            Foreground="{DynamicResource Brush.Error}" />
+                </Button>
+              </StackPanel>
+
+              <Border IsVisible="{Binding IsDeleteConfirmationVisible}"
+                      Background="{DynamicResource Brush.WarningBackground}"
+                      BorderBrush="{DynamicResource Brush.Warning}"
+                      BorderThickness="1" CornerRadius="7" Padding="11,9">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="{Binding DeleteConfirmationMessage}"
+                             TextWrapping="Wrap" FontSize="10"
+                             Foreground="{DynamicResource Brush.Warning}" />
+                  <StackPanel Orientation="Horizontal" Spacing="8"
+                              HorizontalAlignment="Right">
+                    <Button Classes="secondary" Command="{Binding CancelDeleteCommand}">
+                      <TextBlock Text="Cancelar" />
+                    </Button>
+                    <Button Classes="secondary" Command="{Binding ConfirmDeleteCommand}">
+                      <TextBlock Text="Sim, excluir"
+                                 Foreground="{DynamicResource Brush.Error}" />
+                    </Button>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Spacing="8">
+              <TextBlock Text="SALVAR A MONTAGEM ATUAL COMO MODELO"
+                         FontSize="10" FontWeight="Bold"
+                         Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBox Text="{Binding NewTemplateName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       AutomationProperties.Name="Nome do novo modelo"
+                       PlaceholderText="Ex.: PC Gamer básico" />
+              <TextBox Text="{Binding NewTemplateDescription, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       AutomationProperties.Name="Descrição do novo modelo"
+                       PlaceholderText="Descrição opcional" />
+              <Button Classes="secondary"
+                      Command="{Binding SaveCommand}"
+                      IsEnabled="{Binding CanSave}"
+                      HorizontalAlignment="Left"
+                      AutomationProperties.Name="Salvar a montagem atual como modelo"
+                      ToolTip.Tip="Guarda os produtos e as quantidades da montagem atual">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <PathIcon Data="{StaticResource Icon.Save}" Width="15" Height="15" />
+                  <TextBlock Text="Salvar como modelo" />
+                </StackPanel>
+              </Button>
+              <TextBlock Text="{Binding StatusMessage}"
+                         IsVisible="{Binding HasStatus}"
+                         TextWrapping="Wrap" FontSize="10"
+                         Foreground="{DynamicResource Brush.TextLabel}" />
+            </StackPanel>
+          </Grid>
+        </Expander>
+
         <Border Classes="card" IsVisible="{Binding IsEmpty}" Padding="28">
           <StackPanel HorizontalAlignment="Center" Spacing="8">
             <PathIcon Data="{StaticResource Icon.FlexibleList}" Width="34" Height="34"

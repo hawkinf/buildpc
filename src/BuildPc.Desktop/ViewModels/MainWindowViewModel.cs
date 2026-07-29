@@ -248,6 +248,10 @@ public sealed class MainWindowViewModel : ViewModelBase
             _quoteRepository,
             OpenQuoteInAssembly,
             DuplicateQuoteInAssembly);
+        Templates = new AssemblyTemplateListViewModel(
+            context.TemplateRepository,
+            ApplyTemplateToAssemblyAsync,
+            () => FlexibleList.BuildTemplateItems());
         PricingSettings = new PricingSettingsViewModel(
             _businessSettings,
             CategoryOptions,
@@ -421,6 +425,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public FlexibleListViewModel FlexibleList { get; }
     public PriceLookupViewModel PriceLookup { get; }
     public QuoteManagerViewModel QuoteManager { get; }
+    public AssemblyTemplateListViewModel Templates { get; }
     public PricingSettingsViewModel PricingSettings { get; }
     public CategoryManagementViewModel CategoryManagement { get; }
     public ConnectionStatusViewModel ConnectionStatus { get; }
@@ -980,6 +985,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             _ = QuoteManager.RefreshAsync();
         }
+
+        if (IsFlexibleListView)
+        {
+            _ = Templates.RefreshAsync();
+        }
     }
 
     private void OpenQuoteInAssembly(SavedQuote quote)
@@ -992,6 +1002,21 @@ public sealed class MainWindowViewModel : ViewModelBase
     /// Abre uma cópia do orçamento na Montagem. Gravar cria um número novo e o
     /// original permanece na lista.
     /// </summary>
+    /// <summary>
+    /// Aplica um modelo à Montagem usando os preços atuais do catálogo, e avisa
+    /// se algum produto do modelo já não existe.
+    /// </summary>
+    private async Task ApplyTemplateToAssemblyAsync(AssemblyTemplate template)
+    {
+        if (await TryReadCatalogAsync() is not { } catalog)
+        {
+            return;
+        }
+
+        FlexibleList.ApplyTemplate(template, catalog);
+        ShowView("flexible-list");
+    }
+
     private void DuplicateQuoteInAssembly(SavedQuote quote)
     {
         FlexibleList.LoadQuoteAsCopy(quote);

@@ -490,6 +490,66 @@ public sealed class FlexibleListViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Substitui a montagem pelos itens de um modelo, com os preços atuais do
+    /// catálogo.
+    /// </summary>
+    /// <remarks>
+    /// Diferente de reabrir um orçamento, aqui os valores não são congelados: o
+    /// modelo é uma combinação de produtos, não uma proposta já acordada.
+    /// Produtos que saíram do catálogo são ignorados e informados no aviso.
+    /// </remarks>
+    public void ApplyTemplate(
+        AssemblyTemplate template,
+        IReadOnlyList<PcComponent> catalog)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        ArgumentNullException.ThrowIfNull(catalog);
+
+        IsClearConfirmationVisible = false;
+        Items.Clear();
+        var byId = catalog.ToDictionary(
+            component => component.Id,
+            component => component,
+            StringComparer.OrdinalIgnoreCase);
+        var missing = 0;
+
+        foreach (var templateItem in template.Items)
+        {
+            if (!byId.TryGetValue(templateItem.ComponentId, out var component))
+            {
+                missing++;
+                continue;
+            }
+
+            Items.Add(new FlexibleListItemViewModel(
+                component,
+                CategoryNameFor(component.Category),
+                templateItem.Quantity,
+                _settings.MarginFor(component.Category),
+                Remove,
+                ItemChanged,
+                Move));
+        }
+
+        RefreshAlternatingRows();
+        RefreshMovability();
+        SavedQuote = null;
+        IsDirty = Items.Count > 0;
+        IsStatusSuccess = missing == 0;
+        StatusMessage = missing == 0
+            ? $"Modelo “{template.Name}” aplicado com {Items.Count} produtos."
+            : $"Modelo “{template.Name}” aplicado com {Items.Count} produtos. " +
+              (missing == 1
+                  ? "1 produto do modelo já não está no catálogo."
+                  : $"{missing} produtos do modelo já não estão no catálogo.");
+        RefreshSummary();
+    }
+
+    private string CategoryNameFor(ComponentCategory category) =>
+        Categories.FirstOrDefault(option => option.Value == category)?.Name ??
+        category.ToString();
+
+    /// <summary>
     /// Carrega os itens e as condições de um orçamento como uma nova montagem,
     /// sem vínculo com o número original.
     /// </summary>

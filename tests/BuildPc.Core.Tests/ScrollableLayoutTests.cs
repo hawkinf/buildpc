@@ -24,6 +24,54 @@ public sealed class ScrollableLayoutTests
             string.Join(", ", invalidLayouts));
     }
 
+    [Fact]
+    public void ScrollSafeAreaComesFromTheSharedStyle()
+    {
+        var desktopDirectory = Path.Combine(
+            FindRepositoryRoot(),
+            "src",
+            "BuildPc.Desktop");
+        var hardCodedSpacers = Directory
+            .EnumerateFiles(
+                Path.Combine(desktopDirectory, "Views"),
+                "*.axaml",
+                SearchOption.AllDirectories)
+            .SelectMany(FindHardCodedSafeAreaSpacers)
+            .ToList();
+
+        Assert.True(
+            hardCodedSpacers.Count == 0,
+            "A folga inferior das telas roláveis deve usar " +
+            "Classes=\"scroll-safe-area\", para o valor não divergir entre " +
+            "telas: " + string.Join(", ", hardCodedSpacers));
+    }
+
+    private static IEnumerable<string> FindHardCodedSafeAreaSpacers(string path)
+    {
+        var document = XDocument.Load(path, LoadOptions.SetLineInfo);
+        foreach (var border in document
+                     .Descendants()
+                     .Where(element => element.Name.LocalName == "Border"))
+        {
+            // Um Border vazio com altura fixa alta só existe como folga de
+            // rolagem; separadores finos e cartões com conteúdo não contam.
+            if (border.HasElements ||
+                border.Attribute("Height") is not { } height ||
+                !double.TryParse(
+                    height.Value,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var value) ||
+                value < 100)
+            {
+                continue;
+            }
+
+            var lineInfo = (IXmlLineInfo)border;
+            yield return
+                $"{Path.GetRelativePath(FindRepositoryRoot(), path)}:{lineInfo.LineNumber}";
+        }
+    }
+
     private static IEnumerable<string> FindInvalidScrollableGrids(string path)
     {
         var document = XDocument.Load(path, LoadOptions.SetLineInfo);

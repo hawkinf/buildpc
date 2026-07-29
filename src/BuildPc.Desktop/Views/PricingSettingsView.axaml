@@ -285,8 +285,7 @@
           </Border>
         </StackPanel>
         </Grid>
-        <Border Height="180"
-                IsHitTestVisible="False" />
+        <Border Classes="scroll-safe-area" />
       </StackPanel>
     </ScrollViewer>
   </Grid>

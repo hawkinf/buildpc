@@ -331,4 +331,14 @@
   <Style Selector="PathIcon.issue-icon.success">
     <Setter Property="Foreground" Value="{DynamicResource Brush.Success}" />
   </Style>
+
+  <!--
+    Folga no fim de toda tela rolável, para o último controle poder subir
+    inteiramente acima do rodapé fixo. Antes o valor estava repetido em cinco
+    views e podia divergir entre elas.
+  -->
+  <Style Selector="Border.scroll-safe-area">
+    <Setter Property="Height" Value="180" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
 </Styles>

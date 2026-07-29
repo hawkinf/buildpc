@@ -14,10 +14,16 @@
                      FontSize="12"
                      TextWrapping="Wrap" />
         </StackPanel>
-        <StackPanel Grid.Column="1"
-                    Orientation="Horizontal"
-                    Spacing="12"
-                    VerticalAlignment="Center">
+        <!--
+          Cinco controles lado a lado passavam da largura disponível quando a
+          janela se aproximava do mínimo, e os últimos ficavam cortados. O
+          WrapPanel quebra para uma segunda linha em vez de cortar.
+        -->
+        <WrapPanel Grid.Column="1"
+                   Orientation="Horizontal"
+                   ItemSpacing="12"
+                   LineSpacing="8"
+                   VerticalAlignment="Center">
           <StackPanel MinWidth="112"
                       VerticalAlignment="Center">
             <TextBlock Text="PREÇO DE VENDA"
@@ -70,7 +76,7 @@
               <TextBlock Text="Limpar montagem" />
             </StackPanel>
           </Button>
-        </StackPanel>
+        </WrapPanel>
       </Grid>
     </Border>
 
@@ -394,7 +400,7 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Border Height="180" IsHitTestVisible="False"
+        <Border Classes="scroll-safe-area"
                 IsVisible="{Binding HasItems}" />
       </StackPanel>
     </ScrollViewer>

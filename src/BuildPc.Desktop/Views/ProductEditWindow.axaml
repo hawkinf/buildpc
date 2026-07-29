@@ -262,8 +262,7 @@
                    IsVisible="{Binding IsProductFormError}"
                    Foreground="{DynamicResource Brush.Error}"
                    FontSize="10" />
-        <Border Height="140"
-                IsHitTestVisible="False" />
+        <Border Classes="scroll-safe-area" />
       </StackPanel>
     </ScrollViewer>
 

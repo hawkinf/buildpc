@@ -189,6 +189,15 @@ public sealed class QuoteRepository : IQuoteRepository
         return quotes;
     }
 
+    public bool DeleteQuote(Guid quoteId)
+    {
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM quotes WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", quoteId.ToString("D"));
+        return command.ExecuteNonQuery() > 0;
+    }
+
     private void Initialize()
     {
         using var connection = OpenConnection();

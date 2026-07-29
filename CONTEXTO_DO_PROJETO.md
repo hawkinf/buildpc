@@ -161,7 +161,10 @@ Comportamento:
 - o PDF do orçamento mostra somente dados apropriados ao cliente: itens,
   quantidade, preço unitário de venda e total de venda;
 - custo, lucro e percentual de lucro nunca devem aparecer no PDF do cliente;
-- ao exportar, a prévia PDF é aberta antes de salvar ou imprimir.
+- ao exportar, a prévia PDF é aberta antes de salvar ou imprimir;
+- o orçamento selecionado pode ser excluído pela lixeira ao lado de
+  “Exportar PDF”, sempre com confirmação destrutiva;
+- excluir não reaproveita o número: a numeração continua de `MAX(number) + 1`.
 
 ### Ferramentas > Gerenciar Produtos
 
@@ -566,6 +569,7 @@ Rotas principais:
 - `GET /imports/last`
 - `GET`/`PUT /settings`
 - `GET`/`POST /quotes`
+- `DELETE /quotes/{id}`
 
 Arquivos de implantação:
 

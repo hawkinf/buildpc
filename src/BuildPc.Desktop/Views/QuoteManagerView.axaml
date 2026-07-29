@@ -24,7 +24,7 @@
 
         <Grid Grid.Row="1"
               DataContext="{Binding SelectedQuote}"
-              ColumnDefinitions="*,*,*,*,Auto"
+              ColumnDefinitions="*,*,*,*,Auto,Auto"
               ColumnSpacing="18">
           <StackPanel>
             <TextBlock Text="TOTAL"
@@ -74,7 +74,48 @@
               <TextBlock Text="Exportar PDF" Foreground="White" />
             </StackPanel>
           </Button>
+          <Button Grid.Column="5"
+                  Classes="secondary"
+                  Command="{Binding $parent[UserControl].DataContext.RequestDeleteCommand}"
+                  IsEnabled="{Binding $parent[UserControl].DataContext.HasSelection}"
+                  MinHeight="36"
+                  MinWidth="36"
+                  Padding="9,8"
+                  ToolTip.Tip="Excluir o orçamento selecionado">
+            <PathIcon Data="{StaticResource Icon.Clear}" Width="15" Height="15"
+                      Foreground="{DynamicResource Brush.Error}" />
+          </Button>
         </Grid>
+      </Grid>
+    </Border>
+
+    <Border Grid.Row="1"
+            IsVisible="{Binding IsDeleteConfirmationVisible}"
+            ZIndex="900"
+            VerticalAlignment="Top"
+            Margin="30,10,46,0"
+            Background="{DynamicResource Brush.WarningBackground}"
+            BorderBrush="{DynamicResource Brush.Warning}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="16,13">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+        <TextBlock Text="{Binding DeleteConfirmationMessage}"
+                   TextWrapping="Wrap"
+                   FontSize="11"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource Brush.Warning}" />
+        <Button Grid.Column="1"
+                Classes="secondary"
+                Command="{Binding CancelDeleteCommand}">
+          <TextBlock Text="Cancelar" />
+        </Button>
+        <Button Grid.Column="2"
+                Classes="secondary"
+                Command="{Binding ConfirmDeleteCommand}">
+          <TextBlock Text="Sim, excluir"
+                     Foreground="{DynamicResource Brush.Error}" />
+        </Button>
       </Grid>
     </Border>
 

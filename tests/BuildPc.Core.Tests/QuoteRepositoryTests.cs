@@ -98,4 +98,60 @@ public sealed class QuoteRepositoryTests
             Directory.Delete(directory, true);
         }
     }
+
+    [Fact]
+    public void DeleteQuoteRemovesOnlyTheRequestedQuoteAndKeepsNumbering()
+    {
+        var directory = Path.Combine(
+            Path.GetTempPath(),
+            $"buildpc-quote-delete-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var repository = new QuoteRepository(Path.Combine(directory, "catalogo.db"));
+            var first = SaveQuote(repository, "Ana");
+            var second = SaveQuote(repository, "Bruno");
+            Assert.Equal(1, first.Number);
+            Assert.Equal(2, second.Number);
+
+            Assert.True(repository.DeleteQuote(first.Id));
+
+            var remaining = Assert.Single(repository.GetQuotes());
+            Assert.Equal(second.Id, remaining.Id);
+            Assert.Equal(2, remaining.Number);
+
+            // Um orçamento já excluído não é erro, apenas não altera nada.
+            Assert.False(repository.DeleteQuote(first.Id));
+            Assert.False(repository.DeleteQuote(Guid.NewGuid()));
+
+            // O número apagado nunca volta a ser usado.
+            Assert.Equal(3, SaveQuote(repository, "Carla").Number);
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
+    private static SavedQuote SaveQuote(QuoteRepository repository, string clientName) =>
+        repository.SaveQuote(
+            null,
+            clientName,
+            "(11) 90000-0000",
+            string.Empty,
+            [
+                new SavedQuoteItem
+                {
+                    ComponentId = "cpu",
+                    Category = ComponentCategory.Processor,
+                    CategoryName = "Processador",
+                    Name = "CPU Teste",
+                    Description = "Descrição",
+                    Quantity = 1,
+                    UnitCost = 100m,
+                    MarginPercent = 25m,
+                    UnitPrice = 125m
+                }
+            ],
+            new BusinessSettings());
 }

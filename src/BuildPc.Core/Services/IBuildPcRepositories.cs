@@ -33,4 +33,10 @@ public interface IQuoteRepository
         IReadOnlyList<SavedQuoteItem> items,
         BusinessSettings companySnapshot);
     IReadOnlyList<SavedQuote> GetQuotes();
+
+    /// <summary>
+    /// Remove um orçamento gravado. Devolve <c>false</c> quando o orçamento já
+    /// não existe. O número não é reaproveitado.
+    /// </summary>
+    bool DeleteQuote(Guid quoteId);
 }

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Input;
 using BuildPc.Core.Models;
 using BuildPc.Core.Services;
 using Microsoft.Data.Sqlite;
@@ -10,15 +11,22 @@ public sealed class QuoteManagerViewModel : ViewModelBase
     private readonly IQuoteRepository _repository;
     private SavedQuoteListItemViewModel? _selectedQuote;
     private string _statusMessage = string.Empty;
+    private bool _isDeleteConfirmationVisible;
 
     public QuoteManagerViewModel(IQuoteRepository repository)
     {
         _repository = repository;
         Quotes = [];
+        RequestDeleteCommand = new RelayCommand(RequestDelete);
+        ConfirmDeleteCommand = new RelayCommand(ConfirmDelete);
+        CancelDeleteCommand = new RelayCommand(CancelDelete);
         Refresh();
     }
 
     public ObservableCollection<SavedQuoteListItemViewModel> Quotes { get; }
+    public ICommand RequestDeleteCommand { get; }
+    public ICommand ConfirmDeleteCommand { get; }
+    public ICommand CancelDeleteCommand { get; }
 
     public SavedQuoteListItemViewModel? SelectedQuote
     {
@@ -27,6 +35,7 @@ public sealed class QuoteManagerViewModel : ViewModelBase
         {
             if (SetProperty(ref _selectedQuote, value))
             {
+                IsDeleteConfirmationVisible = false;
                 OnPropertyChanged(nameof(HasSelection));
             }
         }
@@ -35,6 +44,19 @@ public sealed class QuoteManagerViewModel : ViewModelBase
     public bool HasSelection => SelectedQuote is not null;
     public bool HasQuotes => Quotes.Count > 0;
     public bool IsEmpty => !HasQuotes;
+
+    public bool IsDeleteConfirmationVisible
+    {
+        get => _isDeleteConfirmationVisible;
+        private set => SetProperty(ref _isDeleteConfirmationVisible, value);
+    }
+
+    public string DeleteConfirmationMessage =>
+        SelectedQuote is null
+            ? string.Empty
+            : $"Excluir o orçamento #{SelectedQuote.Quote.Number:000000} de " +
+              $"{SelectedQuote.Quote.ClientName}? Esta ação não pode ser desfeita " +
+              "e o número não será reaproveitado.";
     public string StatusMessage
     {
         get => _statusMessage;
@@ -72,6 +94,56 @@ public sealed class QuoteManagerViewModel : ViewModelBase
                         Quotes.FirstOrDefault();
         OnPropertyChanged(nameof(HasQuotes));
         OnPropertyChanged(nameof(IsEmpty));
+    }
+
+    private void RequestDelete()
+    {
+        if (SelectedQuote is not null)
+        {
+            StatusMessage = string.Empty;
+            IsDeleteConfirmationVisible = true;
+            OnPropertyChanged(nameof(DeleteConfirmationMessage));
+        }
+    }
+
+    private void CancelDelete() => IsDeleteConfirmationVisible = false;
+
+    private void ConfirmDelete()
+    {
+        if (SelectedQuote is not { } selected)
+        {
+            IsDeleteConfirmationVisible = false;
+            return;
+        }
+
+        var number = selected.Quote.Number;
+        try
+        {
+            if (!_repository.DeleteQuote(selected.Quote.Id))
+            {
+                StatusMessage = "O orçamento já não estava mais gravado.";
+                IsDeleteConfirmationVisible = false;
+                Refresh();
+                return;
+            }
+        }
+        catch (SqliteException)
+        {
+            StatusMessage = "Não foi possível excluir o orçamento do banco local.";
+            IsDeleteConfirmationVisible = false;
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            StatusMessage = "Não foi possível excluir o orçamento no servidor.";
+            IsDeleteConfirmationVisible = false;
+            return;
+        }
+
+        IsDeleteConfirmationVisible = false;
+        SelectedQuote = null;
+        Refresh();
+        StatusMessage = $"Orçamento #{number:000000} excluído.";
     }
 
     public void CompletePdfPreview(bool opened)

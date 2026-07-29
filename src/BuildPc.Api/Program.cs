@@ -221,6 +221,11 @@ app.MapPost(
             request.Items,
             request.CompanySnapshot)));
 
+app.MapDelete(
+    "/quotes/{id:guid}",
+    (Guid id, PostgresBuildPcRepository repository) =>
+        Results.Ok(new BooleanResponse(repository.DeleteQuote(id))));
+
 app.Run();
 
 static bool KeysMatch(string supplied, string expected)

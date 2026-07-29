@@ -155,6 +155,11 @@ public sealed class BuildPcApiClient :
     public IReadOnlyList<SavedQuote> GetQuotes() =>
         Send<List<SavedQuote>>(HttpMethod.Get, "quotes");
 
+    public bool DeleteQuote(Guid quoteId) =>
+        Send<BooleanResponse>(
+            HttpMethod.Delete,
+            $"quotes/{Escape(quoteId.ToString("D"))}").Value;
+
     public async Task TestConnectionAsync()
     {
         using var response = await _httpClient

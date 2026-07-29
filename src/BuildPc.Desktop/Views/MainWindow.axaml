@@ -684,9 +684,8 @@
                                 VerticalAlignment="Center"
                                 ToolTip.Tip="Marcar para alteração em massa" />
                       <Button Grid.Column="1" Classes="catalog-item"
-                              Command="{Binding SelectCommand}"
-                              DoubleTapped="CatalogProduct_DoubleTapped"
-                              ToolTip.Tip="Clique duas vezes para editar o produto">
+                              Click="CatalogProduct_Click"
+                              ToolTip.Tip="Clique para editar o produto">
                         <Border Classes="catalog-row"
                                 Classes.alternate="{Binding IsAlternate}"
                                 Classes.selected="{Binding IsSelected}">

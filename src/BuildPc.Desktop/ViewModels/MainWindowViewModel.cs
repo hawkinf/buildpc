@@ -575,7 +575,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             if (SetProperty(ref _selectedProductCategory, value))
             {
-                OnPropertyChanged(nameof(ProductSalePrice));
+                NotifyProductPricingChanged();
             }
         }
     }
@@ -605,7 +605,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             if (SetProperty(ref _productPrice, value))
             {
-                OnPropertyChanged(nameof(ProductSalePrice));
+                NotifyProductPricingChanged();
             }
         }
     }
@@ -628,6 +628,36 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
+    public string ProductProfit
+    {
+        get
+        {
+            if (!TryGetProductPricing(out var cost, out var salePrice))
+            {
+                return "R$ —";
+            }
+
+            return (salePrice - cost).ToString("C", BrazilianCulture);
+        }
+    }
+
+    public string ProductProfitPercent
+    {
+        get
+        {
+            if (!TryGetProductPricing(out var cost, out var salePrice))
+            {
+                return "—";
+            }
+
+            var profitPercent = decimal.Round(
+                (salePrice / cost - 1m) * 100m,
+                2,
+                MidpointRounding.AwayFromZero);
+            return $"{profitPercent.ToString("N2", BrazilianCulture)}%";
+        }
+    }
+
     public bool IsProductEditCostVisible
     {
         get => _isProductEditCostVisible;
@@ -644,6 +674,32 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public void SetProductEditCostVisible(bool visible) =>
         IsProductEditCostVisible = visible;
+
+    private bool TryGetProductPricing(
+        out decimal cost,
+        out decimal salePrice)
+    {
+        if (SelectedProductCategory is null ||
+            !TryParsePrice(ProductPrice, out cost) ||
+            cost <= 0)
+        {
+            cost = 0;
+            salePrice = 0;
+            return false;
+        }
+
+        salePrice = FlexibleListItemViewModel.CalculateSalePrice(
+            cost,
+            _businessSettings.MarginFor(SelectedProductCategory.Value));
+        return true;
+    }
+
+    private void NotifyProductPricingChanged()
+    {
+        OnPropertyChanged(nameof(ProductSalePrice));
+        OnPropertyChanged(nameof(ProductProfit));
+        OnPropertyChanged(nameof(ProductProfitPercent));
+    }
 
     public string ProductImagePath
     {
@@ -871,6 +927,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         _businessSettings = settings;
         ApplicationThemeService.Apply(settings.ThemeMode);
         FlexibleList.ApplySettings(settings);
+        NotifyProductPricingChanged();
     }
 
     private string? SaveProductCategories(

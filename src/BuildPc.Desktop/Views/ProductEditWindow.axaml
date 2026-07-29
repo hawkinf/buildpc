@@ -90,7 +90,7 @@
                       Classes="secondary"
                       MinWidth="44"
                       Padding="10"
-                      ToolTip.Tip="Mantenha pressionado para revelar o custo">
+                      ToolTip.Tip="Mantenha pressionado para revelar custo e lucro">
                 <PathIcon Data="{StaticResource Icon.Eye}"
                           Width="17"
                           Height="17"
@@ -116,6 +116,42 @@
                          IsHitTestVisible="False"
                          FontSize="10"
                          Foreground="{DynamicResource Brush.TextSecondary}" />
+            </Grid>
+          </StackPanel>
+        </Grid>
+
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+          <StackPanel Grid.Column="0" Spacing="6">
+            <TextBlock Text="Lucro"
+                       FontSize="11"
+                       Foreground="{DynamicResource Brush.TextLabel}" />
+            <Grid>
+              <TextBox Text="********"
+                       IsReadOnly="True"
+                       IsVisible="{Binding IsProductEditCostHidden}"
+                       TextAlignment="Right" />
+              <TextBox Text="{Binding ProductProfit}"
+                       IsReadOnly="True"
+                       IsVisible="{Binding IsProductEditCostVisible}"
+                       TextAlignment="Right"
+                       FontWeight="SemiBold" />
+            </Grid>
+          </StackPanel>
+
+          <StackPanel Grid.Column="1" Spacing="6">
+            <TextBlock Text="% de lucro"
+                       FontSize="11"
+                       Foreground="{DynamicResource Brush.TextLabel}" />
+            <Grid>
+              <TextBox Text="********"
+                       IsReadOnly="True"
+                       IsVisible="{Binding IsProductEditCostHidden}"
+                       TextAlignment="Right" />
+              <TextBox Text="{Binding ProductProfitPercent}"
+                       IsReadOnly="True"
+                       IsVisible="{Binding IsProductEditCostVisible}"
+                       TextAlignment="Right"
+                       FontWeight="SemiBold" />
             </Grid>
           </StackPanel>
         </Grid>

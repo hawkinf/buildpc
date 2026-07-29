@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -100,9 +99,9 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async void CatalogProduct_DoubleTapped(
+    private async void CatalogProduct_Click(
         object? sender,
-        TappedEventArgs e)
+        Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (sender is not Control
             {

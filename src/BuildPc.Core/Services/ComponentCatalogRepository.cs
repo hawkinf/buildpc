@@ -270,6 +270,33 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
             : null;
     }
 
+    public IReadOnlyDictionary<string, DateTimeOffset> GetLastImports()
+    {
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT key, value FROM app_metadata WHERE key LIKE $prefix;";
+        command.Parameters.AddWithValue("$prefix", $"{ImportKeys.MetadataPrefix}%");
+
+        using var reader = command.ExecuteReader();
+        var result = new Dictionary<string, DateTimeOffset>(
+            StringComparer.OrdinalIgnoreCase);
+        while (reader.Read())
+        {
+            if (DateTimeOffset.TryParse(
+                    reader.GetString(1),
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind,
+                    out var importedAt))
+            {
+                result[reader.GetString(0)[ImportKeys.MetadataPrefix.Length..]] =
+                    importedAt;
+            }
+        }
+
+        return result;
+    }
+
     public bool SetKeepOnImport(string componentId, bool keep)
     {
         using var connection = OpenConnection();
@@ -637,7 +664,7 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
     }
 
     private static string ImportMetadataKey(ComponentCategory category, string source) =>
-        $"last_import:{source.Trim().ToLowerInvariant()}:{(int)category}";
+        ImportKeys.MetadataKey(category, source);
 
     private const string DeletedProductKeyPrefix = "deleted_product:";
 

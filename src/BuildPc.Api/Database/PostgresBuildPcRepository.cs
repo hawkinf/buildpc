@@ -22,6 +22,7 @@ public sealed class PostgresBuildPcRepository :
         _dataSource = dataSource;
         Initialize();
         MigrateHardDriveCategory();
+        PruneUnnecessaryDeletionMarkers();
         SeedDefaultCatalog();
     }
 
@@ -95,11 +96,18 @@ public sealed class PostgresBuildPcRepository :
             if (command.ExecuteNonQuery() > 0)
             {
                 deleted++;
-                SetMetadata(
-                    connection,
-                    transaction,
-                    DeletedProductKey(id),
-                    DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+
+                // A marca de exclusão só impede que o catálogo inicial seja
+                // semeado outra vez. Gravá-la para produtos importados fazia
+                // app_metadata crescer sem limite.
+                if (ComponentCatalog.DefaultIds.Contains(id))
+                {
+                    SetMetadata(
+                        connection,
+                        transaction,
+                        DeletedProductKey(id),
+                        DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+                }
             }
         }
 
@@ -241,6 +249,33 @@ public sealed class PostgresBuildPcRepository :
             out var importedAt)
             ? importedAt
             : null;
+    }
+
+    public IReadOnlyDictionary<string, DateTimeOffset> GetLastImports()
+    {
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT key, value FROM app_metadata WHERE key LIKE @prefix;";
+        command.Parameters.AddWithValue("prefix", $"{ImportKeys.MetadataPrefix}%");
+
+        using var reader = command.ExecuteReader();
+        var result = new Dictionary<string, DateTimeOffset>(
+            StringComparer.OrdinalIgnoreCase);
+        while (reader.Read())
+        {
+            if (DateTimeOffset.TryParse(
+                    reader.GetString(1),
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind,
+                    out var importedAt))
+            {
+                result[reader.GetString(0)[ImportKeys.MetadataPrefix.Length..]] =
+                    importedAt;
+            }
+        }
+
+        return result;
     }
 
     public bool SetKeepOnImport(string componentId, bool keep)
@@ -477,6 +512,45 @@ public sealed class PostgresBuildPcRepository :
             CREATE INDEX IF NOT EXISTS ix_quotes_created_at
                 ON quotes(created_at DESC);
             """);
+    }
+
+    /// <summary>
+    /// Remove marcas de exclusão que não pertencem ao catálogo inicial. Bases
+    /// criadas antes desta correção acumularam uma linha permanente por produto
+    /// importado que já foi apagado.
+    /// </summary>
+    private void PruneUnnecessaryDeletionMarkers()
+    {
+        using var connection = OpenConnection();
+        var obsoleteKeys = new List<string>();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText =
+                "SELECT key FROM app_metadata WHERE key LIKE 'deleted_product:%';";
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var key = reader.GetString(0);
+                if (!ComponentCatalog.DefaultIds.Contains(
+                        key[DeletedProductKeyPrefix.Length..]))
+                {
+                    obsoleteKeys.Add(key);
+                }
+            }
+        }
+
+        if (obsoleteKeys.Count == 0)
+        {
+            return;
+        }
+
+        using var transaction = connection.BeginTransaction();
+        using var delete = connection.CreateCommand();
+        delete.Transaction = transaction;
+        delete.CommandText = "DELETE FROM app_metadata WHERE key = ANY(@keys);";
+        delete.Parameters.AddWithValue("keys", obsoleteKeys.ToArray());
+        delete.ExecuteNonQuery();
+        transaction.Commit();
     }
 
     private void MigrateHardDriveCategory()
@@ -873,8 +947,10 @@ public sealed class PostgresBuildPcRepository :
     private static string ImportMetadataKey(
         ComponentCategory category,
         string source) =>
-        $"last_import:{source.Trim().ToLowerInvariant()}:{(int)category}";
+        ImportKeys.MetadataKey(category, source);
+
+    private const string DeletedProductKeyPrefix = "deleted_product:";
 
     private static string DeletedProductKey(string componentId) =>
-        $"deleted_product:{componentId.Trim().ToLowerInvariant()}";
+        $"{DeletedProductKeyPrefix}{componentId.Trim().ToLowerInvariant()}";
 }

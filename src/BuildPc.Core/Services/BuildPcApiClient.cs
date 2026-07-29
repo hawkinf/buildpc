@@ -119,6 +119,11 @@ public sealed class BuildPcApiClient :
         return Deserialize<DateTimeOffset>(response);
     }
 
+    public IReadOnlyDictionary<string, DateTimeOffset> GetLastImports() =>
+        Send<Dictionary<string, DateTimeOffset>>(
+            HttpMethod.Get,
+            "imports/last-all");
+
     public bool SetKeepOnImport(string componentId, bool keep) =>
         Send<BooleanResponse>(
             HttpMethod.Put,

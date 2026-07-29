@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.RateLimiting;
 using BuildPc.Api.Database;
+using Microsoft.AspNetCore.RateLimiting;
 using BuildPc.Core.Models;
 using BuildPc.Core.Services;
 using Microsoft.AspNetCore.Diagnostics;
@@ -18,6 +20,28 @@ var connectionString =
     builder.Configuration.GetConnectionString("BuildPc") ??
     throw new InvalidOperationException(
         "A conexão PostgreSQL 'BuildPc' não foi configurada.");
+
+// O padrão registra "Request starting" e "Request finished" para cada
+// requisição. Com o rodapé do aplicativo consultando /connection a cada 30
+// segundos, isso enche o journal do servidor sem informação útil.
+builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
+
+// A chave de acesso é única e não expira. O limite por endereço encurta
+// qualquer tentativa de descobri-la por força bruta, com folga muito acima do
+// que o aplicativo usa (uma importação completa fica perto de 400 requisições).
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
+        context => RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 1200,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
 
 builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
 builder.Services.AddSingleton<PostgresBuildPcRepository>();
@@ -79,6 +103,8 @@ app.UseExceptionHandler(errorApp =>
             .ExecuteAsync(context);
     });
 });
+
+app.UseRateLimiter();
 
 app.Use(async (context, next) =>
 {
@@ -203,6 +229,11 @@ app.MapGet(
             ? Results.NoContent()
             : Results.Ok(importedAt.Value);
     });
+
+app.MapGet(
+    "/imports/last-all",
+    (PostgresBuildPcRepository repository) =>
+        Results.Ok(repository.GetLastImports()));
 
 app.MapGet(
     "/settings",

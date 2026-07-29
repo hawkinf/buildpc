@@ -468,6 +468,59 @@ public sealed class ComponentCatalogRepositoryTests
         }
     }
 
+    [Fact]
+    public void GetLastImports_ReturnsEveryCategoryInASingleRead()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"buildpc-tests-{Guid.NewGuid():N}");
+        var filePath = Path.Combine(directory, "catalogo.db");
+        try
+        {
+            var repository = new ComponentCatalogRepository(filePath);
+            repository.ReplaceImported(
+                ComponentCategory.Processor,
+                "kabum",
+                [CreateProcessor("kabum-1", "Processador Um", 100m)]);
+            repository.ReplaceImported(
+                ComponentCategory.HardDrive,
+                "kabum-hd",
+                [CreateHardDrive("kabum-hd-1")]);
+
+            var lastImports = repository.GetLastImports();
+
+            // Cada categoria importada aparece com a mesma data devolvida pela
+            // consulta individual, sem precisar de uma leitura por cartão.
+            Assert.Equal(2, lastImports.Count);
+            Assert.Equal(
+                repository.GetLastImport(ComponentCategory.Processor, "kabum"),
+                lastImports[ImportKeys.For(ComponentCategory.Processor, "kabum")]);
+            Assert.Equal(
+                repository.GetLastImport(ComponentCategory.HardDrive, "kabum-hd"),
+                lastImports[ImportKeys.For(ComponentCategory.HardDrive, "kabum-hd")]);
+            Assert.False(
+                lastImports.ContainsKey(
+                    ImportKeys.For(ComponentCategory.Memory, "kabum")));
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    private static PcComponent CreateHardDrive(string id) =>
+        new()
+        {
+            Id = id,
+            Category = ComponentCategory.HardDrive,
+            Name = $"HD {id}",
+            Brand = "Teste",
+            Description = "Produto de teste",
+            Price = 300m,
+            ImportSource = "kabum-hd"
+        };
+
     private static void InsertMetadata(string databasePath, string key, string value)
     {
         using var connection = new SqliteConnection(

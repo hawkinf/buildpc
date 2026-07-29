@@ -17,6 +17,13 @@ public sealed class MainWindowViewModel : ViewModelBase
     private readonly BuildPcApplicationSettingsStore _applicationSettingsStore;
     private readonly Dictionary<string, string> _configuredImportSourceUrls;
     private readonly IDebouncer _catalogSearchDebounce;
+
+    /// <summary>
+    /// Datas da última importação de todas as categorias, lidas de uma só vez.
+    /// Consultar cartão por cartão custava doze idas ao servidor a cada abertura
+    /// do programa, todas na thread da interface.
+    /// </summary>
+    private readonly IReadOnlyDictionary<string, DateTimeOffset> _lastImports;
     private readonly ProductImageStore _productImages;
     private BuildPcApiSettings? _apiSettings;
     private bool _isApiKeyUnreadable;
@@ -120,6 +127,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             Timeout = TimeSpan.FromSeconds(45)
         });
         var catalog = _catalogRepository.GetAll();
+        _lastImports = _catalogRepository.GetLastImports();
         var categoryDefinitions = _businessSettings.EffectiveProductCategories();
         CategoryOptions = new ObservableCollection<CategoryOptionViewModel>(
             categoryDefinitions.Select(category =>
@@ -1130,7 +1138,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             url,
             sourceKey,
             catalog.Count(component => IsImported(component, category, sourceKey)),
-            _catalogRepository.GetLastImport(category, sourceKey),
+            _lastImports.GetValueOrDefault(ImportKeys.For(category, sourceKey)),
             RequestImportSourceAsync,
             ImportSourceConfigurationChanged);
     }

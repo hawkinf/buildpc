@@ -18,6 +18,16 @@ public interface IComponentCatalogRepository
         string source,
         IEnumerable<PcComponent> components);
     DateTimeOffset? GetLastImport(ComponentCategory category, string source);
+
+    /// <summary>
+    /// Devolve a data da última importação de todas as categorias de uma vez,
+    /// indexada por <see cref="ImportKeys.For"/>.
+    /// </summary>
+    /// <remarks>
+    /// A tela de Importações mostra doze cartões. Consultar um a um custava doze
+    /// idas ao servidor durante a abertura do programa.
+    /// </remarks>
+    IReadOnlyDictionary<string, DateTimeOffset> GetLastImports();
     bool SetKeepOnImport(string componentId, bool keep);
 }
 

@@ -1751,6 +1751,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void RefreshProductFilter()
     {
+        RefreshProductCategoryFilterCounts();
         var filtered = Products.Where(product =>
             (SelectedCatalogCategoryFilter.Value is null ||
              product.Component.Category == SelectedCatalogCategoryFilter.Value) &&
@@ -1771,6 +1772,29 @@ public sealed class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(AreAllFilteredProductsSelected));
         OnPropertyChanged(nameof(CanExportProductPriceTable));
         OnPropertyChanged(nameof(ProductPriceTableSuggestedFileName));
+    }
+
+    private void RefreshProductCategoryFilterCounts()
+    {
+        var showFilteredCount = !string.IsNullOrWhiteSpace(CatalogSearchText);
+        foreach (var category in ProductCategoryFilters)
+        {
+            var productsInCategory = category.Value is null
+                ? Products.AsEnumerable()
+                : Products.Where(product =>
+                    product.Component.Category == category.Value);
+            var totalCount = productsInCategory.Count();
+            var filteredCount = showFilteredCount
+                ? productsInCategory.Count(product =>
+                    ProductFilter.Matches(
+                        product.Component,
+                        CatalogSearchText))
+                : totalCount;
+            category.UpdateCounts(
+                totalCount,
+                filteredCount,
+                showFilteredCount);
+        }
     }
 
     public ProductPriceTableDocument BuildProductPriceTableDocument()

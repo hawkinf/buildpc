@@ -32,7 +32,7 @@ dotnet build BuildPc.sln --no-restore
 dotnet test BuildPc.sln --no-build
 ```
 
-No estado documentado, a solução compila sem avisos e possui 105 testes
+No estado documentado, a solução compila sem avisos e possui 106 testes
 aprovados.
 
 ## O que o programa faz
@@ -111,6 +111,8 @@ Arquivos principais:
 Comportamento:
 
 - categoria, filtro textual e seleção Custo/Venda;
+- o seletor mostra `Categoria (total)` e, com filtro textual ativo,
+  `Categoria (total) (filtrados)`;
 - ordenação clicando nos títulos Título ou Custo/Venda;
 - o filtro exige que todas as palavras positivas sejam encontradas;
 - cada linha é zebrada;
@@ -134,6 +136,8 @@ Comportamento:
 - dentro do programa, cada item mostra venda e custo;
 - o resumo mostra Total, Custo em vermelho, Lucro e % de lucro;
 - os quatro valores do resumo usam o mesmo tamanho de fonte;
+- o resumo financeiro e o botão de exportação ficam na segunda faixa do
+  cabeçalho, abaixo do título e do botão “Atualizar lista”;
 - a lista reserva espaço à direita para não deixar a barra de rolagem cortar
   preços;
 - produtos possuem o mesmo preview animado das outras listas;
@@ -156,6 +160,8 @@ Partes principais:
 Comportamento:
 
 - filtra por categoria ou por várias palavras;
+- o seletor mostra `Categoria (total)` e, com filtro textual ativo,
+  `Categoria (total) (filtrados)`;
 - ordena por descrição ou pelo preço atualmente exibido;
 - o padrão de entrada é mostrar Venda;
 - alterna entre Custo e Venda;
@@ -307,6 +313,9 @@ Implementação principal:
 - a busca considera nome, marca, descrição, especificações e categoria.
 - a interface destaca correspondências por
   `Controls/HighlightedTextBlock.cs`.
+- os seletores de categoria de Consulta de Preços e Gerenciar Produtos mostram
+  a contagem total por categoria e, quando há filtro textual, uma segunda
+  contagem com os resultados correspondentes.
 
 Todas as listas de produtos devem:
 

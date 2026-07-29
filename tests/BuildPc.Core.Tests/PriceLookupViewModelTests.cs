@@ -60,6 +60,14 @@ public sealed class PriceLookupViewModelTests
 
         var product = Assert.Single(viewModel.Items);
         Assert.Equal("SSD Alfa", product.Name);
+        Assert.Equal("Todos (3) (1)", viewModel.Categories[0].DisplayName);
+        var storage = viewModel.Categories.Single(category =>
+            category.Value == ComponentCategory.Storage);
+        Assert.Equal(2, storage.TotalCount);
+        Assert.Equal(1, storage.FilteredCount);
+        Assert.Equal(
+            $"{storage.Name} (2) (1)",
+            storage.DisplayName);
     }
 
     private static PriceLookupViewModel CreateViewModel() =>

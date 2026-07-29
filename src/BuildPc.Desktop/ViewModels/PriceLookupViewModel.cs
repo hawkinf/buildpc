@@ -226,7 +226,31 @@ public sealed class PriceLookupViewModel : ViewModelBase
             Items.Add(product);
         }
 
+        RefreshCategoryCounts();
         OnPropertyChanged(nameof(CountText));
+    }
+
+    private void RefreshCategoryCounts()
+    {
+        var showFilteredCount = !string.IsNullOrWhiteSpace(SearchText);
+        foreach (var category in Categories)
+        {
+            var productsInCategory = category.Value is null
+                ? _products.AsEnumerable()
+                : _products.Where(product =>
+                    product.Component.Category == category.Value);
+            var totalCount = productsInCategory.Count();
+            var filteredCount = showFilteredCount
+                ? productsInCategory.Count(product =>
+                    ProductFilter.Matches(
+                        product.Component,
+                        SearchText))
+                : totalCount;
+            category.UpdateCounts(
+                totalCount,
+                filteredCount,
+                showFilteredCount);
+        }
     }
 }
 

@@ -43,6 +43,14 @@
             </StackPanel>
           </Button>
 
+          <Button Classes="nav" Classes.active="{Binding IsPriceLookupView}"
+                  Command="{Binding ShowPriceLookupCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <PathIcon Data="{StaticResource Icon.Currency}" Width="18" Height="18" />
+              <TextBlock Text="Consultar preço" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
           <Button Classes="nav" Classes.active="{Binding IsQuotesView}"
                   Command="{Binding ShowQuotesCommand}">
             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -554,7 +562,7 @@
             <Border Grid.Row="1" BorderBrush="{DynamicResource Brush.Border}"
                     BorderThickness="0,0,0,1" Padding="18,12">
               <StackPanel Spacing="8">
-                <Grid ColumnDefinitions="180,*,Auto,Auto" ColumnSpacing="8">
+                <Grid ColumnDefinitions="180,*,Auto,Auto,Auto" ColumnSpacing="8">
                   <ComboBox ItemsSource="{Binding ProductCategoryFilters}"
                             SelectedItem="{Binding SelectedCatalogCategoryFilter, Mode=TwoWay}">
                     <ComboBox.ItemTemplate>
@@ -585,42 +593,25 @@
                       </Button>
                     </StackPanel>
                   </Border>
-                  <TextBlock Grid.Column="3" Text="{Binding BulkSelectedText}"
+                  <Button Grid.Column="3"
+                          Classes="secondary"
+                          Click="ExportProductPriceTablePdf_Click"
+                          IsEnabled="{Binding CanExportProductPriceTable}"
+                          Width="44"
+                          MinWidth="44"
+                          Height="44"
+                          MinHeight="44"
+                          Padding="10"
+                          ToolTip.Tip="Exportar o preço selecionado para PDF">
+                    <PathIcon Data="{StaticResource Icon.Pdf}"
+                              Width="17"
+                              Height="17"
+                              Foreground="{DynamicResource Brush.AccentLight}" />
+                  </Button>
+                  <TextBlock Grid.Column="4" Text="{Binding BulkSelectedText}"
                              HorizontalAlignment="Right" VerticalAlignment="Center"
                              FontSize="9" Foreground="{DynamicResource Brush.TextSecondary}" />
                 </Grid>
-
-                <Border Background="{DynamicResource Brush.PanelBackground}"
-                        CornerRadius="7" Padding="10,8">
-                  <Grid ColumnDefinitions="*,180,Auto" ColumnSpacing="8">
-                    <StackPanel Spacing="2" VerticalAlignment="Center">
-                      <TextBlock Text="Exportar tabela filtrada" FontSize="10"
-                                 FontWeight="SemiBold" />
-                      <TextBlock Text="{Binding ProductPriceTableStatusMessage}"
-                                 FontSize="9" TextWrapping="Wrap"
-                                 Foreground="{DynamicResource Brush.TextSecondary}" />
-                    </StackPanel>
-                    <ComboBox Grid.Column="1"
-                              ItemsSource="{Binding ProductPriceTableOptions}"
-                              SelectedItem="{Binding SelectedProductPriceTableOption, Mode=TwoWay}">
-                      <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                          <TextBlock Text="{Binding Name}" />
-                        </DataTemplate>
-                      </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <Button Grid.Column="2" Classes="primary"
-                            Click="ExportProductPriceTablePdf_Click"
-                            IsEnabled="{Binding CanExportProductPriceTable}">
-                      <StackPanel Orientation="Horizontal" Spacing="7">
-                        <PathIcon Data="{StaticResource Icon.Pdf}" Width="15" Height="15"
-                                  Foreground="White" />
-                        <TextBlock Text="{Binding ProductPriceTableButtonText}"
-                                   Foreground="White" />
-                      </StackPanel>
-                    </Button>
-                  </Grid>
-                </Border>
 
                 <Border Classes="input-group" Padding="10"
                         IsVisible="{Binding IsBulkDeleteConfirmationVisible}">
@@ -766,6 +757,13 @@
       </Grid>
     </Grid>
 
+    <!-- Consulta rápida de preços -->
+    <Grid Grid.Column="1"
+          Grid.ColumnSpan="2"
+          IsVisible="{Binding IsPriceLookupView}">
+      <views:PriceLookupView DataContext="{Binding PriceLookup}" />
+    </Grid>
+
     <!-- Importações -->
     <Grid Grid.Column="1" Grid.ColumnSpan="2" RowDefinitions="Auto,*"
           IsVisible="{Binding IsImportsView}">
@@ -843,10 +841,6 @@
                         <Border Background="{DynamicResource Brush.SuccessBackground}" CornerRadius="6" Padding="8,4">
                           <TextBlock Text="{Binding ImportedCountText}"
                                      Foreground="{DynamicResource Brush.Success}" FontSize="10" />
-                        </Border>
-                        <Border Background="{DynamicResource Brush.WarningBackground}" CornerRadius="6" Padding="8,4">
-                          <TextBlock Text="KaBuM! • preços à vista"
-                                     Foreground="{DynamicResource Brush.Warning}" FontSize="10" />
                         </Border>
                       </StackPanel>
                       <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">

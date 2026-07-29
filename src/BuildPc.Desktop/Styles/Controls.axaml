@@ -200,6 +200,26 @@
     <Setter Property="BoxShadow" Value="0 10 28 0 #B0000000" />
   </Style>
 
+  <Style Selector="Border.edit-product-image">
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="RenderTransform" Value="scale(1)" />
+    <Setter Property="Opacity" Value="0.96" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform"
+                                       Duration="0:0:0.18" />
+        <DoubleTransition Property="Opacity"
+                          Duration="0:0:0.18" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="Border.edit-product-image.has-image:pointerover">
+    <Setter Property="RenderTransform" Value="scale(1.16)" />
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="BoxShadow" Value="0 8 24 0 #78000000" />
+  </Style>
+
   <Style Selector="Border.catalog-row">
     <Setter Property="Background" Value="{DynamicResource Brush.RowPrimary}" />
     <Setter Property="BorderBrush" Value="Transparent" />

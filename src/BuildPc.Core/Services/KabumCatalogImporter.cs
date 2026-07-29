@@ -195,25 +195,37 @@ public sealed partial class KabumCatalogImporter(HttpClient httpClient)
             return false;
         }
 
-        var brand = "KaBuM!";
+        var importedName = RemoveStoreMentions(name);
+        if (string.IsNullOrWhiteSpace(importedName))
+        {
+            return false;
+        }
+
+        var brand = "Não informado";
         if (product.TryGetProperty("manufacturer", out var manufacturer) &&
             manufacturer.TryGetProperty("name", out var manufacturerName) &&
             !string.IsNullOrWhiteSpace(manufacturerName.GetString()))
         {
-            brand = manufacturerName.GetString()!;
+            brand = RemoveStoreMentions(manufacturerName.GetString()!);
+            if (string.IsNullOrWhiteSpace(brand))
+            {
+                brand = "Não informado";
+            }
         }
 
-        var description = ReadString(product, "tagDescription");
+        var description = RemoveStoreMentions(
+            ReadString(product, "tagDescription") ?? string.Empty);
         if (string.IsNullOrWhiteSpace(description))
         {
-            description = $"Importado da KaBuM! • código {code.ToString(CultureInfo.InvariantCulture)}";
+            description =
+                $"Produto importado • código {code.ToString(CultureInfo.InvariantCulture)}";
         }
 
         component = new PcComponent
         {
             Id = $"kabum-{code.ToString(CultureInfo.InvariantCulture)}",
             Category = category,
-            Name = name.Trim(),
+            Name = importedName,
             Brand = brand.Trim(),
             Description = description.Trim(),
             Price = price,
@@ -241,6 +253,14 @@ public sealed partial class KabumCatalogImporter(HttpClient httpClient)
             IsUserDefined = false
         };
         return true;
+    }
+
+    private static string RemoveStoreMentions(string value)
+    {
+        var cleaned = StoreMentionRegex().Replace(value, " ");
+        cleaned = WhitespaceRegex().Replace(cleaned, " ");
+        cleaned = SpaceBeforePunctuationRegex().Replace(cleaned, "$1");
+        return cleaned.Trim(' ', '•', '-', '|', ',', ';', '.', ':', '!');
     }
 
     private static decimal ReadCurrentPrice(JsonElement product)
@@ -504,4 +524,15 @@ public sealed partial class KabumCatalogImporter(HttpClient httpClient)
         @"<script[^>]*id=[""']__NEXT_DATA__[""'][^>]*>(?<json>.*?)</script>",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant)]
     private static partial Regex NextDataRegex();
+
+    [GeneratedRegex(
+        @"\b(?:(?:no|na|do|da)\s+)?kabum!?\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex StoreMentionRegex();
+
+    [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
+    private static partial Regex WhitespaceRegex();
+
+    [GeneratedRegex(@"\s+([,.;:!?])", RegexOptions.CultureInvariant)]
+    private static partial Regex SpaceBeforePunctuationRegex();
 }

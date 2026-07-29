@@ -47,10 +47,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _catalogSearchText = string.Empty;
     private ProductCatalogSortOptionViewModel _selectedCatalogSort = null!;
     private string _productImagePath = string.Empty;
-    private ProductPriceTableOptionViewModel _selectedProductPriceTableOption = null!;
     private bool _isExportingProductPriceTable;
     private string _productPriceTableStatusMessage = string.Empty;
-    private bool _isCatalogShowingSalePrice;
+    private bool _isCatalogShowingSalePrice = true;
 
     public static CultureInfo BrazilianCulture { get; } = CultureInfo.GetCultureInfo("pt-BR");
 
@@ -135,19 +134,18 @@ public sealed class MainWindowViewModel : ViewModelBase
             new("Custo: maior primeiro", ProductCatalogSortMode.PriceDescending)
         ];
         _selectedCatalogSort = CatalogSortOptions[0];
-        ProductPriceTableOptions =
-        [
-            new(ProductPriceTableKind.Cost, "Tabela de custo"),
-            new(ProductPriceTableKind.Sale, "Tabela de venda")
-        ];
-        _selectedProductPriceTableOption = ProductPriceTableOptions[0];
         FilteredProducts = [];
+        RefreshCatalogDisplayPrices();
         RefreshProductFilter();
         FlexibleList = new FlexibleListViewModel(
             catalog,
             CategoryOptions,
             _businessSettings,
             SaveQuote);
+        PriceLookup = new PriceLookupViewModel(
+            catalog,
+            categoryDefinitions,
+            _businessSettings);
         QuoteManager = new QuoteManagerViewModel(_quoteRepository);
         PricingSettings = new PricingSettingsViewModel(
             _businessSettings,
@@ -262,6 +260,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         PerformancePresetCommand = new RelayCommand(ApplyPerformancePreset);
         ShowFlexibleListCommand = new RelayCommand(() => ShowView("flexible-list"));
         ShowProductsCommand = new RelayCommand(() => ShowView("products"));
+        ShowPriceLookupCommand = new RelayCommand(() => ShowView("price-lookup"));
         ShowProductManagementCommand = new RelayCommand(ShowProductManagement);
         ShowCategoryManagementCommand =
             new RelayCommand(() => ShowToolView("category-management"));
@@ -297,10 +296,10 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ObservableCollection<CategoryOptionViewModel> CategoryOptions { get; }
     public ObservableCollection<ProductCategoryFilterViewModel> ProductCategoryFilters { get; }
     public IReadOnlyList<ProductCatalogSortOptionViewModel> CatalogSortOptions { get; }
-    public IReadOnlyList<ProductPriceTableOptionViewModel> ProductPriceTableOptions { get; }
     public ObservableCollection<ImportSourceViewModel> ImportSources { get; }
     public IReadOnlyList<ProductDescriptionOperationViewModel> BulkDescriptionOperations { get; }
     public FlexibleListViewModel FlexibleList { get; }
+    public PriceLookupViewModel PriceLookup { get; }
     public QuoteManagerViewModel QuoteManager { get; }
     public PricingSettingsViewModel PricingSettings { get; }
     public CategoryManagementViewModel CategoryManagement { get; }
@@ -310,6 +309,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand PerformancePresetCommand { get; }
     public ICommand ShowFlexibleListCommand { get; }
     public ICommand ShowProductsCommand { get; }
+    public ICommand ShowPriceLookupCommand { get; }
     public ICommand ShowProductManagementCommand { get; }
     public ICommand ShowCategoryManagementCommand { get; }
     public ICommand ShowImportsCommand { get; }
@@ -337,6 +337,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public bool IsAssemblyView => false;
     public bool IsFlexibleListView => _currentView == "flexible-list";
     public bool IsProductsView => _currentView == "products";
+    public bool IsPriceLookupView => _currentView == "price-lookup";
     public bool IsProductManagementView => _currentView == "product-management";
     public bool IsCategoryManagementView => _currentView == "category-management";
     public bool IsImportsView => _currentView == "imports";
@@ -366,20 +367,6 @@ public sealed class MainWindowViewModel : ViewModelBase
     public string CatalogCountText => $"{CatalogCount} produtos disponíveis";
     public bool HasSelectedCatalogProduct => SelectedCatalogProduct is not null;
 
-    public ProductPriceTableOptionViewModel SelectedProductPriceTableOption
-    {
-        get => _selectedProductPriceTableOption;
-        set
-        {
-            if (value is not null &&
-                SetProperty(ref _selectedProductPriceTableOption, value))
-            {
-                ProductPriceTableStatusMessage = string.Empty;
-                OnPropertyChanged(nameof(ProductPriceTableSuggestedFileName));
-            }
-        }
-    }
-
     public bool IsExportingProductPriceTable
     {
         get => _isExportingProductPriceTable;
@@ -388,16 +375,12 @@ public sealed class MainWindowViewModel : ViewModelBase
             if (SetProperty(ref _isExportingProductPriceTable, value))
             {
                 OnPropertyChanged(nameof(CanExportProductPriceTable));
-                OnPropertyChanged(nameof(ProductPriceTableButtonText));
             }
         }
     }
 
     public bool CanExportProductPriceTable =>
         FilteredProducts.Count > 0 && !IsExportingProductPriceTable;
-
-    public string ProductPriceTableButtonText =>
-        IsExportingProductPriceTable ? "Exportando..." : "Exportar PDF";
 
     public string ProductPriceTableStatusMessage
     {
@@ -409,10 +392,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            var table = SelectedProductPriceTableOption.Kind ==
-                        ProductPriceTableKind.Cost
-                ? "custos"
-                : "vendas";
+            var table = _isCatalogShowingSalePrice ? "vendas" : "custos";
             var scope = SelectedCatalogCategoryFilter.Value?.ToString().ToLowerInvariant() ??
                         "todos";
             return $"tabela-{table}-{scope}.pdf";
@@ -893,6 +873,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsAssemblyView));
         OnPropertyChanged(nameof(IsFlexibleListView));
         OnPropertyChanged(nameof(IsProductsView));
+        OnPropertyChanged(nameof(IsPriceLookupView));
         OnPropertyChanged(nameof(IsProductManagementView));
         OnPropertyChanged(nameof(IsCategoryManagementView));
         OnPropertyChanged(nameof(IsImportsView));
@@ -936,6 +917,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         _businessSettings = settings;
         ApplicationThemeService.Apply(settings.ThemeMode);
         FlexibleList.ApplySettings(settings);
+        PriceLookup.ApplySettings(settings);
         NotifyProductPricingChanged();
         RefreshCatalogDisplayPrices();
         RefreshProductFilter();
@@ -960,6 +942,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             RebuildCategoryOptions(categories);
             FlexibleList.UpdateCategories(CategoryOptions);
             FlexibleList.ApplySettings(_businessSettings);
+            PriceLookup.UpdateCategories(categories);
+            PriceLookup.ApplySettings(_businessSettings);
             PricingSettings.RefreshCategories(categories);
             RefreshCatalogCollections(refreshCategoryManagement: false);
             return null;
@@ -1104,7 +1088,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
 
         source.IsImporting = true;
-        source.StatusMessage = "Conectando à KaBuM! e lendo o catálogo...";
+        source.StatusMessage = "Conectando à loja e lendo o catálogo...";
 
         try
         {
@@ -1125,7 +1109,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         catch (HttpRequestException)
         {
             source.StatusMessage =
-                "Não foi possível acessar a KaBuM!. Verifique sua conexão e tente novamente.";
+                "Não foi possível acessar a loja. Verifique sua conexão e tente novamente.";
         }
         catch (TaskCanceledException)
         {
@@ -1134,12 +1118,12 @@ public sealed class MainWindowViewModel : ViewModelBase
         catch (InvalidDataException)
         {
             source.StatusMessage =
-                "A KaBuM! alterou o formato da página e os produtos não puderam ser lidos.";
+                "A loja alterou o formato da página e os produtos não puderam ser lidos.";
         }
         catch (JsonException)
         {
             source.StatusMessage =
-                "Os dados recebidos da KaBuM! não estavam no formato esperado.";
+                "Os dados recebidos da loja não estavam no formato esperado.";
         }
         catch (IOException)
         {
@@ -1167,6 +1151,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         var selectedCatalogProductId = SelectedCatalogProduct?.Id;
         var catalog = _catalogRepository.GetAll();
         FlexibleList.UpdateCatalog(catalog);
+        PriceLookup.UpdateCatalog(catalog);
         foreach (var slot in Slots)
         {
             var selectedId = slot.Selected?.Id;
@@ -1440,8 +1425,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public ProductPriceTableDocument BuildProductPriceTableDocument()
     {
-        var isCost = SelectedProductPriceTableOption.Kind ==
-                     ProductPriceTableKind.Cost;
+        var isCost = !_isCatalogShowingSalePrice;
         var rows = ProductPriceTableRowFactory.Create(
             FilteredProducts,
             component =>
@@ -1511,6 +1495,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsCatalogCostDisplayActive));
         OnPropertyChanged(nameof(IsCatalogSaleDisplayActive));
         OnPropertyChanged(nameof(CatalogPriceColumnTitle));
+        OnPropertyChanged(nameof(ProductPriceTableSuggestedFileName));
+        ProductPriceTableStatusMessage = string.Empty;
         RefreshCatalogDisplayPrices();
         RefreshProductFilter();
     }

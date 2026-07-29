@@ -124,6 +124,30 @@ public sealed class KabumCatalogImporterTests
     }
 
     [Fact]
+    public void ParseCatalogHtml_RemovesStoreNameFromImportedText()
+    {
+        var html = CatalogHtml(new
+        {
+            code = 99,
+            name = "Mouse Gamer no KaBuM!",
+            tagDescription = "Compre no Kabum! Melhor preço Kabum.",
+            manufacturer = new { name = "Kabum" },
+            priceWithDiscount = 100m
+        });
+
+        var mouse = Assert.Single(KabumCatalogImporter.ParseCatalogHtml(
+            html,
+            ComponentCategory.Mouse));
+
+        Assert.Equal("Mouse Gamer", mouse.Name);
+        Assert.Equal("Não informado", mouse.Brand);
+        Assert.DoesNotContain(
+            "kabum",
+            mouse.Description,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task FetchAsync_ImportsEveryPageAndRemovesDuplicates()
     {
         var requestedPages = new List<int>();

@@ -552,6 +552,60 @@ public sealed class FlexibleListViewModelTests
         Assert.False(viewModel.IsDirty);
     }
 
+    [Fact]
+    public void LoadQuoteAsCopy_KeepsItemsButDropsTheOriginalNumberAndClient()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, "Processador", 1000m);
+        var viewModel = CreateViewModel(processor);
+        var original = new SavedQuote
+        {
+            Id = Guid.NewGuid(),
+            Number = 101,
+            CreatedAt = DateTimeOffset.Now,
+            ClientName = "Cliente Original",
+            ClientPhone = "(11) 94444-0000",
+            Notes = "Observação mantida",
+            DiscountAmount = 50m,
+            ValidityDays = 12,
+            PaymentTerms = "2x",
+            Items =
+            [
+                new SavedQuoteItem
+                {
+                    ComponentId = "cpu",
+                    Category = ComponentCategory.Processor,
+                    CategoryName = "Processador",
+                    Name = "CPU acordada",
+                    Description = "Descrição acordada",
+                    Quantity = 2,
+                    UnitCost = 900m,
+                    MarginPercent = 30m,
+                    UnitPrice = 1200m
+                }
+            ]
+        };
+
+        viewModel.LoadQuoteAsCopy(original);
+
+        // Itens e condições vêm juntos, para não remontar a venda.
+        var item = Assert.Single(viewModel.Items);
+        Assert.Equal("CPU acordada", item.Name);
+        Assert.Equal(2, item.Quantity);
+        Assert.Equal(1200m, item.SellingUnitPriceValue);
+        Assert.Equal(50m, viewModel.DiscountValue);
+        Assert.Equal(12, viewModel.ValidityDays);
+        Assert.Equal("2x", viewModel.PaymentTerms);
+        Assert.Equal("Observação mantida", viewModel.Notes);
+
+        // Sem vínculo com o original: gravar cria número novo.
+        Assert.Null(viewModel.SavedQuote);
+        Assert.Equal(string.Empty, viewModel.ClientName);
+        Assert.Equal(string.Empty, viewModel.ClientPhone);
+        Assert.True(viewModel.IsDirty);
+        Assert.False(viewModel.CanExport);
+        Assert.Contains("#000101", viewModel.StatusMessage);
+    }
+
     private static FlexibleListViewModel CreateViewModel(params PcComponent[] products) =>
         new(
             products,

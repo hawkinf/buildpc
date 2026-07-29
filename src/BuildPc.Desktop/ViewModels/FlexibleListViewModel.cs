@@ -452,6 +452,31 @@ public sealed class FlexibleListViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Carrega os itens e as condições de um orçamento como uma nova montagem,
+    /// sem vínculo com o número original.
+    /// </summary>
+    /// <remarks>
+    /// Gravar depois disto cria um orçamento novo: é o caminho para repetir uma
+    /// venda para outro cliente sem remontar tudo.
+    /// </remarks>
+    public void LoadQuoteAsCopy(SavedQuote quote)
+    {
+        ArgumentNullException.ThrowIfNull(quote);
+        LoadQuote(quote);
+
+        // Sem SavedQuote a gravação gera um número novo, e o cliente é limpo
+        // porque uma cópia costuma ir para outra pessoa.
+        SavedQuote = null;
+        ClientName = string.Empty;
+        ClientPhone = string.Empty;
+        IsDirty = true;
+        IsStatusSuccess = false;
+        StatusMessage =
+            $"Cópia do orçamento #{quote.Number:000000}. " +
+            "Informe o cliente e grave para criar um novo número.";
+    }
+
+    /// <summary>
     /// Usa o produto atual do catálogo quando ele ainda existe, para manter
     /// foto e marca. Se tiver sido excluído, reconstrói o mínimo a partir do
     /// próprio orçamento, para a linha continuar utilizável.

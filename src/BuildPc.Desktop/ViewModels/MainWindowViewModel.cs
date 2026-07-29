@@ -234,7 +234,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             _businessSettings);
         QuoteManager = new QuoteManagerViewModel(
             _quoteRepository,
-            OpenQuoteInAssembly);
+            OpenQuoteInAssembly,
+            DuplicateQuoteInAssembly);
         PricingSettings = new PricingSettingsViewModel(
             _businessSettings,
             CategoryOptions,
@@ -962,6 +963,16 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void OpenQuoteInAssembly(SavedQuote quote)
     {
         FlexibleList.LoadQuote(quote);
+        ShowView("flexible-list");
+    }
+
+    /// <summary>
+    /// Abre uma cópia do orçamento na Montagem. Gravar cria um número novo e o
+    /// original permanece na lista.
+    /// </summary>
+    private void DuplicateQuoteInAssembly(SavedQuote quote)
+    {
+        FlexibleList.LoadQuoteAsCopy(quote);
         ShowView("flexible-list");
     }
 

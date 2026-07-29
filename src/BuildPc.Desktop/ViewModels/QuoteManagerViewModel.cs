@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Input;
 using BuildPc.Core.Models;
 using BuildPc.Core.Services;
+using BuildPc.Desktop.Services;
 using Microsoft.Data.Sqlite;
 
 namespace BuildPc.Desktop.ViewModels;
@@ -10,28 +11,96 @@ public sealed class QuoteManagerViewModel : ViewModelBase
 {
     private readonly IQuoteRepository _repository;
     private readonly Action<SavedQuote>? _openInAssembly;
+    private readonly Action<SavedQuote>? _duplicateInAssembly;
+    private readonly IDebouncer _searchDebounce;
+
+    /// <summary>Todos os orçamentos lidos, antes de filtro e período.</summary>
+    private readonly List<SavedQuoteListItemViewModel> _allQuotes = [];
+
     private SavedQuoteListItemViewModel? _selectedQuote;
     private string _statusMessage = string.Empty;
     private bool _isDeleteConfirmationVisible;
+    private string _searchText = string.Empty;
+    private QuotePeriodOptionViewModel _selectedPeriod = null!;
 
     public QuoteManagerViewModel(
         IQuoteRepository repository,
-        Action<SavedQuote>? openInAssembly = null)
+        Action<SavedQuote>? openInAssembly = null,
+        Action<SavedQuote>? duplicateInAssembly = null,
+        DebouncerFactory? searchDebounceFactory = null)
     {
         _repository = repository;
         _openInAssembly = openInAssembly;
+        _duplicateInAssembly = duplicateInAssembly;
+        _searchDebounce =
+            (searchDebounceFactory ?? (action => new DebounceTimer(action)))(
+                ApplyFilter);
         Quotes = [];
+        Periods =
+        [
+            new(QuotePeriod.All),
+            new(QuotePeriod.Last7Days),
+            new(QuotePeriod.Last30Days),
+            new(QuotePeriod.Last90Days),
+            new(QuotePeriod.ThisYear)
+        ];
+        _selectedPeriod = Periods[0];
         RequestDeleteCommand = new RelayCommand(RequestDelete);
         ConfirmDeleteCommand = new AsyncRelayCommand(ConfirmDeleteAsync);
         CancelDeleteCommand = new RelayCommand(CancelDelete);
         OpenInAssemblyCommand = new RelayCommand(OpenInAssembly);
+        DuplicateCommand = new RelayCommand(DuplicateInAssembly);
+        ClearSearchCommand = new RelayCommand(ClearSearch);
     }
 
     public ObservableCollection<SavedQuoteListItemViewModel> Quotes { get; }
+    public IReadOnlyList<QuotePeriodOptionViewModel> Periods { get; }
     public ICommand RequestDeleteCommand { get; }
     public ICommand ConfirmDeleteCommand { get; }
     public ICommand CancelDeleteCommand { get; }
     public ICommand OpenInAssemblyCommand { get; }
+    public ICommand DuplicateCommand { get; }
+    public ICommand ClearSearchCommand { get; }
+
+    public string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            if (SetProperty(ref _searchText, value ?? string.Empty))
+            {
+                OnPropertyChanged(nameof(HasSearch));
+                _searchDebounce.Trigger();
+            }
+        }
+    }
+
+    public bool HasSearch => !string.IsNullOrWhiteSpace(SearchText);
+
+    public QuotePeriodOptionViewModel SelectedPeriod
+    {
+        get => _selectedPeriod;
+        set
+        {
+            if (value is not null && SetProperty(ref _selectedPeriod, value))
+            {
+                ApplyFilter();
+            }
+        }
+    }
+
+    public string CountText =>
+        _allQuotes.Count == Quotes.Count
+            ? Quotes.Count == 1 ? "1 orçamento" : $"{Quotes.Count} orçamentos"
+            : $"{Quotes.Count} de {_allQuotes.Count} orçamentos";
+
+    public bool IsFiltered => Quotes.Count != _allQuotes.Count;
+
+    /// <summary>Soma vendida no recorte visível, útil para fechamento de período.</summary>
+    public string FilteredTotalText =>
+        Quotes
+            .Sum(item => item.Quote.FinalPrice)
+            .ToString("C", MainWindowViewModel.BrazilianCulture);
 
     public SavedQuoteListItemViewModel? SelectedQuote
     {
@@ -89,16 +158,63 @@ public sealed class QuoteManagerViewModel : ViewModelBase
         }
 
         var selectedId = SelectedQuote?.Quote.Id;
+        _allQuotes.Clear();
+        _allQuotes.AddRange(quotes.Select(quote => new SavedQuoteListItemViewModel(quote)));
+        ApplyFilter(selectedId);
+    }
+
+    /// <summary>
+    /// Recorta a lista pela busca e pelo período em uma única passagem, e
+    /// preserva a seleção quando o orçamento continua visível.
+    /// </summary>
+    private void ApplyFilter() => ApplyFilter(SelectedQuote?.Quote.Id);
+
+    private void ApplyFilter(Guid? selectedId)
+    {
+        var now = DateTimeOffset.Now;
+        var period = SelectedPeriod.Period;
+        var visible = _allQuotes
+            .Where(item =>
+                QuoteFilter.IsInPeriod(item.Quote, period, now) &&
+                QuoteFilter.Matches(item.Quote, SearchText))
+            .ToList();
+
         Quotes.Clear();
-        foreach (var quote in quotes)
+        foreach (var item in visible)
         {
-            Quotes.Add(new SavedQuoteListItemViewModel(quote));
+            Quotes.Add(item);
         }
 
         SelectedQuote = Quotes.FirstOrDefault(item => item.Quote.Id == selectedId) ??
                         Quotes.FirstOrDefault();
         OnPropertyChanged(nameof(HasQuotes));
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(CountText));
+        OnPropertyChanged(nameof(IsFiltered));
+        OnPropertyChanged(nameof(FilteredTotalText));
+    }
+
+    private void ClearSearch() => SearchText = string.Empty;
+
+    /// <summary>
+    /// Abre uma copia do orçamento na Montagem para gravar como novo, mantendo
+    /// o original intacto.
+    /// </summary>
+    private void DuplicateInAssembly()
+    {
+        if (SelectedQuote is not { } selected)
+        {
+            return;
+        }
+
+        if (_duplicateInAssembly is null)
+        {
+            StatusMessage = "A Montagem não está disponível para duplicar orçamentos.";
+            return;
+        }
+
+        IsDeleteConfirmationVisible = false;
+        _duplicateInAssembly(selected.Quote);
     }
 
     private void OpenInAssembly()

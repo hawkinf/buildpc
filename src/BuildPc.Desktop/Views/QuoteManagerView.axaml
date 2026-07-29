@@ -15,16 +15,46 @@
             <TextBlock Text="Consulte os orçamentos gravados e gere novamente seus PDFs."
                        Foreground="{DynamicResource Brush.TextBodyMuted}" FontSize="12" />
           </StackPanel>
-          <Button Grid.Column="1"
-                  Classes="secondary"
-                  Click="Refresh_Click">
-            <TextBlock Text="Atualizar lista" />
-          </Button>
+          <StackPanel Grid.Column="1"
+                      Orientation="Horizontal"
+                      Spacing="8"
+                      VerticalAlignment="Center">
+            <!-- A lista só crescia e não tinha filtro nenhum. -->
+            <Grid Width="260">
+              <TextBox Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       PlaceholderText="Número, cliente, telefone ou produto"
+                       Padding="12,8,34,8" />
+              <Button Classes="list-header"
+                      Command="{Binding ClearSearchCommand}"
+                      IsVisible="{Binding HasSearch}"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Center"
+                      Margin="0,0,6,0"
+                      MinWidth="24"
+                      Padding="4"
+                      ToolTip.Tip="Limpar a busca">
+                <PathIcon Data="{StaticResource Icon.Clear}" Width="11" Height="11"
+                          Foreground="{DynamicResource Brush.TextSecondary}" />
+              </Button>
+            </Grid>
+            <ComboBox ItemsSource="{Binding Periods}"
+                      SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}"
+                      MinWidth="160">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Classes="secondary" Click="Refresh_Click">
+              <TextBlock Text="Atualizar lista" />
+            </Button>
+          </StackPanel>
         </Grid>
 
         <Grid Grid.Row="1"
               DataContext="{Binding SelectedQuote}"
-              ColumnDefinitions="*,*,*,*,Auto,Auto,Auto"
+              ColumnDefinitions="*,*,*,*,Auto,Auto,Auto,Auto"
               ColumnSpacing="18">
           <StackPanel>
             <TextBlock Text="TOTAL"
@@ -89,6 +119,17 @@
           </Button>
           <Button Grid.Column="6"
                   Classes="secondary"
+                  Command="{Binding $parent[UserControl].DataContext.DuplicateCommand}"
+                  IsEnabled="{Binding $parent[UserControl].DataContext.HasSelection}"
+                  MinHeight="36"
+                  MinWidth="36"
+                  Padding="9,8"
+                  ToolTip.Tip="Duplicar: abre uma cópia na Montagem para gravar como novo">
+            <PathIcon Data="{StaticResource Icon.Copy}" Width="15" Height="15"
+                      Foreground="{DynamicResource Brush.AccentLight}" />
+          </Button>
+          <Button Grid.Column="7"
+                  Classes="secondary"
                   Command="{Binding $parent[UserControl].DataContext.RequestDeleteCommand}"
                   IsEnabled="{Binding $parent[UserControl].DataContext.HasSelection}"
                   MinHeight="36"
@@ -135,8 +176,22 @@
     <Grid Grid.Row="1" ColumnDefinitions="390,*" ColumnSpacing="18" Margin="30,22,46,28">
       <Border Classes="card">
         <Grid RowDefinitions="Auto,*">
-          <TextBlock Text="ORÇAMENTOS GRAVADOS" FontSize="10" FontWeight="Bold"
-                     Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,0,12" />
+          <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+            <TextBlock Text="ORÇAMENTOS GRAVADOS" FontSize="10" FontWeight="Bold"
+                       Foreground="{DynamicResource Brush.TextMuted}"
+                       VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Spacing="1">
+              <TextBlock Text="{Binding CountText}" FontSize="9"
+                         TextAlignment="Right"
+                         Foreground="{DynamicResource Brush.TextSecondary}" />
+              <!-- Total do recorte visível: fechamento rápido por período. -->
+              <TextBlock Text="{Binding FilteredTotalText}" FontSize="10"
+                         FontWeight="SemiBold"
+                         TextAlignment="Right"
+                         IsVisible="{Binding HasQuotes}"
+                         Foreground="{DynamicResource Brush.AccentLight}" />
+            </StackPanel>
+          </Grid>
           <ListBox Grid.Row="1" ItemsSource="{Binding Quotes}"
                    SelectedItem="{Binding SelectedQuote, Mode=TwoWay}"
                    Padding="0,0,22,180">

@@ -6,11 +6,11 @@ namespace BuildPc.Desktop.ViewModels;
 
 public sealed class QuoteManagerViewModel : ViewModelBase
 {
-    private readonly QuoteRepository _repository;
+    private readonly IQuoteRepository _repository;
     private SavedQuoteListItemViewModel? _selectedQuote;
     private string _statusMessage = string.Empty;
 
-    public QuoteManagerViewModel(QuoteRepository repository)
+    public QuoteManagerViewModel(IQuoteRepository repository)
     {
         _repository = repository;
         Quotes = [];

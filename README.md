@@ -50,3 +50,15 @@ preços e produtos dos seus fornecedores. Produtos cadastrados pela interface
 são mantidos no banco SQLite local do usuário. Cores, geometrias vetoriais de
 ícones e estilos ficam em `src/BuildPc.Desktop/Resources` e
 `src/BuildPc.Desktop/Styles`.
+
+## Servidor privado
+
+O aplicativo continua usando SQLite quando não existe o arquivo
+`%LocalAppData%\BuildPC\servidor.json`. Quando esse arquivo contém uma URL HTTPS
+e uma chave válidas, produtos, configurações e orçamentos passam a ser lidos e
+gravados pela API `BuildPc.Api`.
+
+Na VPS, a API acessa o PostgreSQL por `127.0.0.1:5432` e o Nginx publica somente
+o caminho HTTPS `/buildpc-api/`. A porta do banco não deve ser liberada no
+firewall. Modelos de configuração ficam na pasta `deploy`. O timer de backup
+gera diariamente um `pg_dump` em `/var/backups/buildpc` e mantém 14 dias.

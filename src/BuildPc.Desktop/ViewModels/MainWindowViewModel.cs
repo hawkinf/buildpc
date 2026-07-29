@@ -14,9 +14,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     private const int TotalSlots = 12;
     private readonly PcBuild _build = new();
     private readonly CompatibilityService _compatibilityService = new();
-    private readonly ComponentCatalogRepository _catalogRepository;
+    private readonly IComponentCatalogRepository _catalogRepository;
     private readonly KabumCatalogImporter _kabumCatalogImporter;
-    private readonly QuoteRepository _quoteRepository;
+    private readonly IQuoteRepository _quoteRepository;
     private readonly string _productImagesDirectory;
     private BusinessSettings _businessSettings;
     private string _currentView = "flexible-list";
@@ -59,8 +59,19 @@ public sealed class MainWindowViewModel : ViewModelBase
         var databasePath = Path.Combine(dataDirectory, "catalogo.db");
         var legacyJsonPath = Path.Combine(dataDirectory, "produtos.json");
         _productImagesDirectory = Path.Combine(dataDirectory, "imagens-produtos");
-        _catalogRepository = new ComponentCatalogRepository(databasePath, legacyJsonPath);
-        _quoteRepository = new QuoteRepository(databasePath);
+        var apiSettingsPath = Path.Combine(dataDirectory, "servidor.json");
+        var apiSettings = BuildPcApiSettings.Load(apiSettingsPath);
+        if (apiSettings is not null)
+        {
+            var apiClient = new BuildPcApiClient(apiSettings);
+            _catalogRepository = apiClient;
+            _quoteRepository = apiClient;
+        }
+        else
+        {
+            _catalogRepository = new ComponentCatalogRepository(databasePath, legacyJsonPath);
+            _quoteRepository = new QuoteRepository(databasePath);
+        }
         _businessSettings = _quoteRepository.GetSettings();
         _kabumCatalogImporter = new KabumCatalogImporter(new HttpClient
         {

@@ -5,7 +5,7 @@ using Microsoft.Data.Sqlite;
 
 namespace BuildPc.Core.Services;
 
-public sealed class ComponentCatalogRepository
+public sealed class ComponentCatalogRepository : IComponentCatalogRepository
 {
     private readonly string _connectionString;
 

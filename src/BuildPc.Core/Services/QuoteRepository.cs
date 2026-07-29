@@ -5,7 +5,7 @@ using Microsoft.Data.Sqlite;
 
 namespace BuildPc.Core.Services;
 
-public sealed class QuoteRepository
+public sealed class QuoteRepository : IQuoteRepository
 {
     private const string SettingsKey = "business";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);

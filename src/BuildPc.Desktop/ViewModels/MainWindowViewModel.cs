@@ -375,7 +375,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         ToggleToolsMenuCommand = new RelayCommand(ToggleToolsMenu);
         SaveProductCommand = new AsyncRelayCommand(SaveProductAsync);
         NewProductCommand = new RelayCommand(BeginNewProduct);
-        EditProductCommand = new RelayCommand(BeginEditProduct);
+        EditProductCommand = new AsyncRelayCommand(BeginEditProductAsync);
         RequestDeleteProductCommand = new RelayCommand(RequestDeleteProduct);
         ConfirmDeleteProductCommand = new AsyncRelayCommand(ConfirmDeleteProductAsync);
         CancelDeleteProductCommand = new RelayCommand(CancelDeleteProduct);
@@ -408,6 +408,16 @@ public sealed class MainWindowViewModel : ViewModelBase
     }
 
     public ObservableCollection<ProductListItemViewModel> Products { get; }
+
+    /// <summary>Mudanças de custo do produto em edição.</summary>
+    public ObservableCollection<PriceHistoryItemViewModel> PriceHistory { get; } = [];
+
+    public bool HasPriceHistory => PriceHistory.Count > 0;
+
+    public string PriceHistoryCountText =>
+        PriceHistory.Count == 1
+            ? "1 mudança de custo registrada"
+            : $"{PriceHistory.Count} mudanças de custo registradas";
     public ObservableCollection<ProductListItemViewModel> FilteredProducts { get; }
     public ObservableCollection<CategoryOptionViewModel> CategoryOptions { get; }
     public ObservableCollection<ProductCategoryFilterViewModel> ProductCategoryFilters { get; }
@@ -1717,7 +1727,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void ToggleToolsMenu() =>
         IsToolsMenuExpanded = !IsToolsMenuExpanded;
 
-    private void BeginEditProduct()
+    private async Task BeginEditProductAsync()
     {
         var selected = SelectedCatalogProduct?.Component;
         if (selected is null)
@@ -1737,6 +1747,43 @@ public sealed class MainWindowViewModel : ViewModelBase
         ProductImagePath = selected.ImageUrl ?? string.Empty;
         ProductFormMessage = string.Empty;
         IsProductFormSuccess = false;
+        await LoadPriceHistoryAsync(selected);
+    }
+
+    /// <summary>
+    /// Carrega as mudanças de custo do produto em edição, da mais recente para a
+    /// mais antiga, com a variação até o preço que veio depois de cada uma.
+    /// </summary>
+    private async Task LoadPriceHistoryAsync(PcComponent component)
+    {
+        PriceHistory.Clear();
+        OnPropertyChanged(nameof(HasPriceHistory));
+
+        IReadOnlyList<PriceHistoryEntry> entries;
+        try
+        {
+            entries = await _catalogRepository.GetPriceHistoryAsync(component.Id);
+        }
+        catch (SqliteException)
+        {
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            return;
+        }
+
+        // O primeiro registro é comparado com o preço atual; os seguintes, com o
+        // registro imediatamente mais recente.
+        var priceAfter = component.Price;
+        foreach (var entry in entries)
+        {
+            PriceHistory.Add(new PriceHistoryItemViewModel(entry, priceAfter));
+            priceAfter = entry.Price;
+        }
+
+        OnPropertyChanged(nameof(HasPriceHistory));
+        OnPropertyChanged(nameof(PriceHistoryCountText));
     }
 
     private void RemoveProductImage() => ProductImagePath = string.Empty;
@@ -2285,6 +2332,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void ClearProductForm()
     {
+        PriceHistory.Clear();
+        OnPropertyChanged(nameof(HasPriceHistory));
         ProductName = string.Empty;
         ProductBrand = string.Empty;
         ProductDescription = string.Empty;

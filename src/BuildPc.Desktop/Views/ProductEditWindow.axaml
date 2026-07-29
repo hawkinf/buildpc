@@ -265,6 +265,73 @@
                    IsVisible="{Binding IsProductFormError}"
                    Foreground="{DynamicResource Brush.Error}"
                    FontSize="10" />
+        <!--
+          Histórico de custo: mostra se o fornecedor subiu ou baixou o preço
+          desde a carga anterior, para decidir a margem com contexto.
+        -->
+        <Border Classes="card"
+                IsVisible="{Binding HasPriceHistory}"
+                Margin="0,14,0,0">
+          <StackPanel Spacing="10">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Histórico de custo" FontSize="14" FontWeight="Bold" />
+              <TextBlock Text="{Binding PriceHistoryCountText}"
+                         FontSize="10"
+                         Foreground="{DynamicResource Brush.TextSecondary}" />
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding PriceHistory}"
+                          AutomationProperties.Name="Histórico de custo do produto">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="Auto,*,Auto,Auto"
+                        ColumnSpacing="10"
+                        Margin="0,0,0,5">
+                    <TextBlock Text="{Binding RecordedAt}"
+                               FontSize="10"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.TextSecondary}" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Source}"
+                               FontSize="9"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.TextMuted}" />
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding Price}"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               TextAlignment="Right" />
+                    <StackPanel Grid.Column="3"
+                                Orientation="Horizontal"
+                                Spacing="5"
+                                MinWidth="120"
+                                VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Difference}"
+                                 FontSize="10"
+                                 FontWeight="SemiBold"
+                                 IsVisible="{Binding IsIncrease}"
+                                 Foreground="{DynamicResource Brush.Error}" />
+                      <TextBlock Text="{Binding PercentChange}"
+                                 FontSize="9"
+                                 IsVisible="{Binding IsIncrease}"
+                                 Foreground="{DynamicResource Brush.Error}" />
+                      <TextBlock Text="{Binding Difference}"
+                                 FontSize="10"
+                                 FontWeight="SemiBold"
+                                 IsVisible="{Binding IsDecrease}"
+                                 Foreground="{DynamicResource Brush.Success}" />
+                      <TextBlock Text="{Binding PercentChange}"
+                                 FontSize="9"
+                                 IsVisible="{Binding IsDecrease}"
+                                 Foreground="{DynamicResource Brush.Success}" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
         <Border Classes="scroll-safe-area" />
       </StackPanel>
     </ScrollViewer>

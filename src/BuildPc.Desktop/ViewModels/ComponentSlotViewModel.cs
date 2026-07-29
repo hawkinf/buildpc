@@ -204,22 +204,28 @@ public sealed class ComponentSlotViewModel : ViewModelBase
             .Where(component => ProductFilter.Matches(component, FilterText))
             .ToList();
 
+        // Favoritos vêm antes de tudo, dentro de qualquer ordenação escolhida:
+        // é isso que faz a marcação valer a pena em uma lista de milhares.
         filtered = SelectedSortOption.Mode switch
         {
             ComponentSortMode.NameDescending => filtered
-                .OrderByDescending(component => component.Name, StringComparer.CurrentCultureIgnoreCase)
+                .OrderByDescending(component => component.IsFavorite)
+                .ThenByDescending(component => component.Name, StringComparer.CurrentCultureIgnoreCase)
                 .ThenBy(component => component.Id, StringComparer.OrdinalIgnoreCase)
                 .ToList(),
             ComponentSortMode.PriceAscending => filtered
-                .OrderBy(_priceSelector)
+                .OrderByDescending(component => component.IsFavorite)
+                .ThenBy(_priceSelector)
                 .ThenBy(component => component.Name, StringComparer.CurrentCultureIgnoreCase)
                 .ToList(),
             ComponentSortMode.PriceDescending => filtered
-                .OrderByDescending(_priceSelector)
+                .OrderByDescending(component => component.IsFavorite)
+                .ThenByDescending(_priceSelector)
                 .ThenBy(component => component.Name, StringComparer.CurrentCultureIgnoreCase)
                 .ToList(),
             _ => filtered
-                .OrderBy(component => component.Name, StringComparer.CurrentCultureIgnoreCase)
+                .OrderByDescending(component => component.IsFavorite)
+                .ThenBy(component => component.Name, StringComparer.CurrentCultureIgnoreCase)
                 .ThenBy(component => component.Id, StringComparer.OrdinalIgnoreCase)
                 .ToList()
         };

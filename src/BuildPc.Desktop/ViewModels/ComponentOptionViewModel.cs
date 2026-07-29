@@ -22,6 +22,9 @@ public sealed class ComponentOptionViewModel(
         new[] { Component.Socket, Component.MemoryType, Component.FormFactor }
             .Where(value => !string.IsNullOrWhiteSpace(value)));
     public bool HasSpecifications => Specifications.Length > 0;
+
+    /// <summary>Favoritos aparecem antes dos demais na lista de seleção.</summary>
+    public bool IsFavorite => Component.IsFavorite;
     public decimal Price => displayPrice ?? Component.Price;
     public string DisplayPrice =>
         Price.ToString("C", MainWindowViewModel.BrazilianCulture);

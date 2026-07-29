@@ -7,6 +7,8 @@ namespace BuildPc.Desktop.ViewModels;
 public sealed class ProductListItemViewModel : ViewModelBase
 {
     private readonly Func<ProductListItemViewModel, Task<bool>> _toggleKeep;
+    private Func<ProductListItemViewModel, Task<bool>>? _toggleFavorite;
+    private bool _isFavorite;
     private readonly Action<ProductListItemViewModel> _select;
     private readonly Action _bulkSelectionChanged;
     private bool _isKept;
@@ -48,10 +50,12 @@ public sealed class ProductListItemViewModel : ViewModelBase
                 ? "Manual"
                 : "Incluído";
         _isKept = component.KeepOnImport;
+        _isFavorite = component.IsFavorite;
         _toggleKeep = toggleKeep;
         _select = select;
         _bulkSelectionChanged = bulkSelectionChanged;
         ToggleKeepCommand = new AsyncRelayCommand(ToggleKeepAsync);
+        ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync);
         SelectCommand = new RelayCommand(() => _select(this));
     }
 
@@ -126,6 +130,46 @@ public sealed class ProductListItemViewModel : ViewModelBase
 
     public string KeepButtonText => IsKept ? "Mantido" : "Manter";
     public string KeepIcon => IsKept ? "Check" : "Pin";
+
+    public ICommand ToggleFavoriteCommand { get; }
+
+    /// <summary>
+    /// Produto marcado como favorito, exibido antes dos demais nas listas de
+    /// seleção da Montagem.
+    /// </summary>
+    public bool IsFavorite
+    {
+        get => _isFavorite;
+        private set
+        {
+            if (SetProperty(ref _isFavorite, value))
+            {
+                OnPropertyChanged(nameof(FavoriteIcon));
+                OnPropertyChanged(nameof(FavoriteButtonText));
+            }
+        }
+    }
+
+    public string FavoriteIcon => IsFavorite ? "StarFilled" : "Star";
+
+    public string FavoriteButtonText =>
+        IsFavorite ? "Remover dos favoritos" : "Marcar como favorito";
+
+    /// <summary>
+    /// Liga a ação de favoritar. Fica separado do construtor porque as
+    /// sobrecargas de <see cref="From"/> usadas em teste não precisam dela.
+    /// </summary>
+    public void SetFavoriteHandler(
+        Func<ProductListItemViewModel, Task<bool>> toggleFavorite) =>
+        _toggleFavorite = toggleFavorite;
+
+    private async Task ToggleFavoriteAsync()
+    {
+        if (_toggleFavorite is not null && await _toggleFavorite(this))
+        {
+            IsFavorite = !IsFavorite;
+        }
+    }
 
     public void SetAlternate(bool isAlternate) => IsAlternate = isAlternate;
 

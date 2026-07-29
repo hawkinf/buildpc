@@ -413,8 +413,22 @@
                               Classes="catalog-row"
                               Classes.alternate="{Binding IsAlternate}"
                               Classes.selected="{Binding IsSelected}">
-                        <Grid ColumnDefinitions="Auto,*,115" ColumnSpacing="12">
-                        <Border Width="48" Height="48" CornerRadius="7"
+                        <Grid ColumnDefinitions="Auto,Auto,*,115" ColumnSpacing="12">
+                        <!-- Favorito: produtos marcados vem primeiro nas listas
+                             de selecao da Montagem. -->
+                        <Button Grid.Column="0"
+                                Classes="list-header"
+                                Command="{Binding ToggleFavoriteCommand}"
+                                VerticalAlignment="Center"
+                                Padding="4" MinWidth="26" MinHeight="26"
+                                AutomationProperties.Name="{Binding FavoriteButtonText}"
+                                ToolTip.Tip="{Binding FavoriteButtonText}">
+                          <PathIcon Data="{Binding FavoriteIcon,
+                                            Converter={StaticResource IconResourceConverter}}"
+                                    Width="14" Height="14"
+                                    Foreground="{DynamicResource Brush.Warning}" />
+                        </Button>
+                        <Border Grid.Column="1" Width="48" Height="48" CornerRadius="7"
                                 Background="White"
                                 IsVisible="{Binding HasImage}"
                                 VerticalAlignment="Center">
@@ -422,7 +436,7 @@
                                                 Stretch="Uniform"
                                                 Margin="3" />
                         </Border>
-                        <StackPanel Grid.Column="1" Spacing="3">
+                        <StackPanel Grid.Column="2" Spacing="3">
                           <TextBlock Text="{Binding Name}"
                                      FontSize="12" FontWeight="SemiBold"
                                      Foreground="{DynamicResource Brush.AccentPale}"
@@ -451,14 +465,14 @@
                                      TextTrimming="CharacterEllipsis"
                                      MaxLines="1" />
                         </StackPanel>
-                         <TextBlock Grid.Column="2"
+                         <TextBlock Grid.Column="3"
                                     Text="{Binding DisplayPrice}"
                                    Foreground="{DynamicResource Brush.Warning}"
                                    FontSize="11" FontWeight="SemiBold"
                                     TextAlignment="Right"
                                     VerticalAlignment="Center" />
                          <controls:ProductHoverPreview
-                             Grid.ColumnSpan="3"
+                             Grid.ColumnSpan="4"
                              PlacementTarget="{Binding #catalogProductRow}"
                              Title="{Binding Name}"
                              Description="{Binding Description}"

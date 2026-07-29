@@ -351,12 +351,47 @@ public sealed class FlexibleListViewModel : ViewModelBase
             Quantity,
             _settings.MarginFor(component.Category),
             Remove,
-            ItemChanged));
+            ItemChanged,
+            Move));
         RefreshAlternatingRows();
+        RefreshMovability();
         ProductPicker.Selected = null;
         Quantity = 1;
         MarkDirty();
         RefreshSummary();
+    }
+
+    /// <summary>
+    /// Move uma linha para cima ou para baixo. A ordem da montagem é a ordem
+    /// dos itens no PDF do cliente, então precisa ser ajustável.
+    /// </summary>
+    private void Move(FlexibleListItemViewModel item, int offset)
+    {
+        var index = Items.IndexOf(item);
+        var target = index + offset;
+        if (index < 0 || target < 0 || target >= Items.Count)
+        {
+            return;
+        }
+
+        Items.Move(index, target);
+        RefreshAlternatingRows();
+        RefreshMovability();
+        MarkDirty();
+    }
+
+    /// <summary>
+    /// Atualiza em cada linha se ela ainda pode subir ou descer, para os botões
+    /// das pontas ficarem desabilitados.
+    /// </summary>
+    private void RefreshMovability()
+    {
+        for (var index = 0; index < Items.Count; index++)
+        {
+            Items[index].SetMovability(
+                canMoveUp: index > 0,
+                canMoveDown: index < Items.Count - 1);
+        }
     }
 
     private void Remove(FlexibleListItemViewModel item)
@@ -367,6 +402,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
         }
 
         RefreshAlternatingRows();
+        RefreshMovability();
         MarkDirty();
         RefreshSummary();
     }
@@ -423,10 +459,12 @@ public sealed class FlexibleListViewModel : ViewModelBase
                 savedItem,
                 CategoryNameFor(savedItem),
                 Remove,
-                ItemChanged));
+                ItemChanged,
+                Move));
         }
 
         RefreshAlternatingRows();
+        RefreshMovability();
         ClientName = quote.ClientName;
         ClientPhone = quote.ClientPhone;
         Notes = quote.Notes;

@@ -383,7 +383,7 @@
               <Border x:Name="flexibleSelectedProductRow"
                       Classes="component-row" Classes.alternate="{Binding IsAlternate}"
                       Margin="0,0,0,8">
-                <Grid ColumnDefinitions="84,100,1.15*,*,76,154,44"
+                <Grid ColumnDefinitions="84,100,1.15*,*,76,154,28,44"
                       ColumnSpacing="10"
                       MinWidth="0">
                   <Border Classes="product-image"
@@ -460,7 +460,29 @@
                                TextAlignment="Right" />
                   </StackPanel>
 
-                  <Button Grid.Column="6" Classes="secondary"
+                  <!-- A ordem das linhas e a ordem dos itens no PDF do cliente. -->
+                  <StackPanel Grid.Column="6" Spacing="2" VerticalAlignment="Center">
+                    <Button Classes="list-header"
+                            Command="{Binding MoveUpCommand}"
+                            IsEnabled="{Binding CanMoveUp}"
+                            Padding="3" MinWidth="22" MinHeight="20"
+                            AutomationProperties.Name="Mover este item uma posição para cima"
+                            ToolTip.Tip="Mover para cima">
+                      <PathIcon Data="{StaticResource Icon.MoveUp}" Width="11" Height="11"
+                                Foreground="{DynamicResource Brush.TextSecondary}" />
+                    </Button>
+                    <Button Classes="list-header"
+                            Command="{Binding MoveDownCommand}"
+                            IsEnabled="{Binding CanMoveDown}"
+                            Padding="3" MinWidth="22" MinHeight="20"
+                            AutomationProperties.Name="Mover este item uma posição para baixo"
+                            ToolTip.Tip="Mover para baixo">
+                      <PathIcon Data="{StaticResource Icon.MoveDown}" Width="11" Height="11"
+                                Foreground="{DynamicResource Brush.TextSecondary}" />
+                    </Button>
+                  </StackPanel>
+
+                  <Button Grid.Column="7" Classes="secondary"
                           Command="{Binding RemoveCommand}"
                           Padding="8" MinWidth="36"
                           VerticalAlignment="Center"
@@ -470,7 +492,7 @@
                               Foreground="{DynamicResource Brush.Error}" />
                   </Button>
                   <controls:ProductHoverPreview
-                      Grid.ColumnSpan="7"
+                      Grid.ColumnSpan="8"
                       PlacementTarget="{Binding #flexibleSelectedProductRow}"
                       Title="{Binding Name}"
                       Description="{Binding Description}"

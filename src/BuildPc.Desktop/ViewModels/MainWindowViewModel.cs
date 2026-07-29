@@ -214,13 +214,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 new CategoryOptionViewModel(category.Value, category.Name)));
         Products = new ObservableCollection<ProductListItemViewModel>(
             catalog.Select((component, index) =>
-                ProductListItemViewModel.From(
-                    component,
-                    CategoryNameFor(component.Category),
-                    ToggleKeepAsync,
-                    SelectCatalogProduct,
-                    BulkSelectionChanged,
-                    index % 2 == 1)));
+                CreateProductItem(component, index % 2 == 1)));
         ProductCategoryFilters =
             new ObservableCollection<ProductCategoryFilterViewModel>(
             [
@@ -1155,6 +1149,25 @@ public sealed class MainWindowViewModel : ViewModelBase
             ProductCategoryFilters[0];
     }
 
+    /// <summary>
+    /// Cria o item de lista com todos os handlers ligados, para o construtor e o
+    /// refresh não divergirem.
+    /// </summary>
+    private ProductListItemViewModel CreateProductItem(
+        PcComponent component,
+        bool isAlternate)
+    {
+        var item = ProductListItemViewModel.From(
+            component,
+            CategoryNameFor(component.Category),
+            ToggleKeepAsync,
+            SelectCatalogProduct,
+            BulkSelectionChanged,
+            isAlternate);
+        item.SetFavoriteHandler(ToggleFavoriteAsync);
+        return item;
+    }
+
     private int CategoryProductCount(ComponentCategory category) =>
         Products.Count(product => product.Component.Category == category);
 
@@ -1599,13 +1612,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         SelectCatalogProduct(null);
         Products.Clear();
         foreach (var product in catalog.Select((component, index) =>
-                     ProductListItemViewModel.From(
-                         component,
-                         CategoryNameFor(component.Category),
-                         ToggleKeepAsync,
-                         SelectCatalogProduct,
-                         BulkSelectionChanged,
-                         index % 2 == 1)))
+                     CreateProductItem(component, index % 2 == 1)))
         {
             Products.Add(product);
         }
@@ -1659,6 +1666,36 @@ public sealed class MainWindowViewModel : ViewModelBase
         "?page_number=1&page_size=60" +
         "&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=" +
         "&sort=most_searched";
+
+    /// <summary>
+    /// Marca ou desmarca o produto como favorito e reordena as listas de
+    /// seleção, onde favoritos aparecem primeiro.
+    /// </summary>
+    private async Task<bool> ToggleFavoriteAsync(ProductListItemViewModel product)
+    {
+        try
+        {
+            if (!await _catalogRepository.SetFavoriteAsync(
+                    product.Id,
+                    !product.IsFavorite))
+            {
+                return false;
+            }
+        }
+        catch (SqliteException)
+        {
+            BulkStatusMessage = "Não foi possível marcar o favorito no banco local.";
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            BulkStatusMessage = "Não foi possível marcar o favorito no servidor.";
+            return false;
+        }
+
+        await RefreshCatalogCollectionsAsync();
+        return true;
+    }
 
     private async Task<bool> ToggleKeepAsync(ProductListItemViewModel product)
     {

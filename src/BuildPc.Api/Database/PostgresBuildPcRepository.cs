@@ -240,6 +240,21 @@ public sealed class PostgresBuildPcRepository :
 
         using var connection = OpenConnection();
         using var transaction = connection.BeginTransaction();
+
+        // Estado anterior, lido antes da substituição: alimenta o histórico de
+        // preços, o aviso de itens que saíram e a preservação dos favoritos.
+        var previousByCategory = ReadStoredComponents(connection, transaction)
+            .Where(component =>
+                component.Category == category &&
+                string.Equals(
+                    component.ImportSource,
+                    source,
+                    StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(
+                component => component.Id,
+                component => component,
+                StringComparer.OrdinalIgnoreCase);
+
         var keptCount = CountImported(
             connection,
             transaction,
@@ -252,20 +267,44 @@ public sealed class PostgresBuildPcRepository :
             category,
             source);
 
+        var importedAt = DateTimeOffset.UtcNow;
+        var priceChanges = new List<PriceChange>();
         foreach (var component in incoming)
         {
+            previousByCategory.TryGetValue(component.Id, out var previous);
+            if (previous is not null &&
+                RecordPriceChange(
+                    connection,
+                    transaction,
+                    previous,
+                    component,
+                    source,
+                    importedAt) is { } change)
+            {
+                priceChanges.Add(change);
+            }
+
+            // DeleteReplaceableImported já removeu a linha anterior, então o
+            // ON CONFLICT não tem com o que preservar: o favorito precisa ser
+            // reaplicado a partir do estado lido antes da substituição.
             InsertOrUpdate(
                 connection,
                 transaction,
                 component with
                 {
                     ImportSource = source,
-                    IsUserDefined = false
+                    IsUserDefined = false,
+                    IsFavorite = previous?.IsFavorite ?? component.IsFavorite
                 },
                 preserveKeepFlag: true);
         }
 
-        var importedAt = DateTimeOffset.UtcNow;
+        var incomingIds = incoming
+            .Select(component => component.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var disappeared = previousByCategory.Keys
+            .Count(id => !incomingIds.Contains(id));
+
         SetMetadata(
             connection,
             transaction,
@@ -276,7 +315,9 @@ public sealed class PostgresBuildPcRepository :
             incoming.Count,
             removedCount,
             keptCount,
-            importedAt);
+            importedAt,
+            priceChanges,
+            disappeared);
     }
 
     public DateTimeOffset? GetLastImport(ComponentCategory category, string source)
@@ -952,13 +993,25 @@ public sealed class PostgresBuildPcRepository :
     private List<PcComponent> ReadStoredComponents()
     {
         using var connection = OpenConnection();
+        return ReadStoredComponents(connection, transaction: null);
+    }
+
+    /// <summary>
+    /// Lê os produtos usando uma conexão já aberta, para participar da mesma
+    /// transação de uma substituição em curso.
+    /// </summary>
+    private static List<PcComponent> ReadStoredComponents(
+        NpgsqlConnection connection,
+        NpgsqlTransaction? transaction)
+    {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText =
             """
             SELECT id, category, name, brand, description, price_cents, power_watts,
                    socket, memory_type, form_factor, supported_sockets,
                    supported_form_factors, import_source, keep_on_import,
-                   is_user_defined, image_url
+                   is_user_defined, image_url, is_favorite
             FROM products
             ORDER BY category, lower(name);
             """;
@@ -983,7 +1036,8 @@ public sealed class PostgresBuildPcRepository :
                 ImportSource = reader.IsDBNull(12) ? null : reader.GetString(12),
                 KeepOnImport = reader.GetBoolean(13),
                 IsUserDefined = reader.GetBoolean(14),
-                ImageUrl = reader.IsDBNull(15) ? null : reader.GetString(15)
+                ImageUrl = reader.IsDBNull(15) ? null : reader.GetString(15),
+                IsFavorite = reader.GetBoolean(16)
             });
         }
 
@@ -1079,12 +1133,12 @@ public sealed class PostgresBuildPcRepository :
                 id, category, name, brand, description, price_cents, power_watts,
                 socket, memory_type, form_factor, supported_sockets,
                 supported_form_factors, import_source, keep_on_import,
-                is_user_defined, image_url)
+                is_user_defined, image_url, is_favorite)
             VALUES (
                 @id, @category, @name, @brand, @description, @price_cents,
                 @power_watts, @socket, @memory_type, @form_factor,
                 @supported_sockets, @supported_form_factors, @import_source,
-                @keep_on_import, @is_user_defined, @image_url)
+                @keep_on_import, @is_user_defined, @image_url, @is_favorite)
             ON CONFLICT (id) DO UPDATE SET
                 category = excluded.category,
                 name = excluded.name,
@@ -1103,7 +1157,8 @@ public sealed class PostgresBuildPcRepository :
                     ELSE excluded.keep_on_import
                 END,
                 is_user_defined = excluded.is_user_defined,
-                image_url = excluded.image_url;
+                image_url = excluded.image_url,
+                is_favorite = excluded.is_favorite;
             """;
         command.Parameters.AddWithValue("id", component.Id);
         command.Parameters.AddWithValue("category", (int)component.Category);
@@ -1133,6 +1188,7 @@ public sealed class PostgresBuildPcRepository :
         command.Parameters.AddWithValue(
             "image_url",
             (object?)component.ImageUrl ?? DBNull.Value);
+        command.Parameters.AddWithValue("is_favorite", component.IsFavorite);
         command.Parameters.AddWithValue("preserve_keep", preserveKeepFlag);
         command.ExecuteNonQuery();
     }

@@ -8,6 +8,9 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
 {
     private readonly Action<FlexibleListItemViewModel> _remove;
     private readonly Action _changed;
+    private readonly Action<FlexibleListItemViewModel, int>? _move;
+    private bool _canMoveUp;
+    private bool _canMoveDown;
     private int _quantity;
     private bool _isAlternate;
     private string _name;
@@ -26,7 +29,8 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
         int quantity,
         decimal marginPercent,
         Action<FlexibleListItemViewModel> remove,
-        Action changed)
+        Action changed,
+        Action<FlexibleListItemViewModel, int>? move = null)
     {
         Component = component;
         _categoryName = categoryName;
@@ -42,7 +46,10 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
             MainWindowViewModel.BrazilianCulture);
         _remove = remove;
         _changed = changed;
+        _move = move;
         RemoveCommand = new RelayCommand(() => _remove(this));
+        MoveUpCommand = new RelayCommand(() => _move?.Invoke(this, -1));
+        MoveDownCommand = new RelayCommand(() => _move?.Invoke(this, 1));
     }
 
     /// <summary>
@@ -55,14 +62,16 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
         SavedQuoteItem savedItem,
         string categoryName,
         Action<FlexibleListItemViewModel> remove,
-        Action changed)
+        Action changed,
+        Action<FlexibleListItemViewModel, int>? move = null)
         : this(
             component,
             categoryName,
             savedItem.Quantity,
             savedItem.MarginPercent,
             remove,
-            changed)
+            changed,
+            move)
     {
         _name = savedItem.Name;
         _description = savedItem.Description;
@@ -103,6 +112,30 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
     };
 
     public ICommand RemoveCommand { get; }
+    public ICommand MoveUpCommand { get; }
+    public ICommand MoveDownCommand { get; }
+
+    /// <summary>
+    /// A ordem das linhas é a ordem dos itens no PDF do cliente; os botões das
+    /// pontas ficam desabilitados.
+    /// </summary>
+    public bool CanMoveUp
+    {
+        get => _canMoveUp;
+        private set => SetProperty(ref _canMoveUp, value);
+    }
+
+    public bool CanMoveDown
+    {
+        get => _canMoveDown;
+        private set => SetProperty(ref _canMoveDown, value);
+    }
+
+    public void SetMovability(bool canMoveUp, bool canMoveDown)
+    {
+        CanMoveUp = canMoveUp;
+        CanMoveDown = canMoveDown;
+    }
 
     public string Name
     {

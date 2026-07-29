@@ -289,7 +289,8 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
         var priceChanges = new List<PriceChange>();
         foreach (var component in incoming)
         {
-            if (previousByCategory.TryGetValue(component.Id, out var previous) &&
+            previousByCategory.TryGetValue(component.Id, out var previous);
+            if (previous is not null &&
                 RecordPriceChange(
                     connection,
                     transaction,
@@ -301,13 +302,17 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
                 priceChanges.Add(change);
             }
 
+            // DeleteReplaceableImported já removeu a linha anterior, então o
+            // ON CONFLICT não tem com o que preservar: o favorito precisa ser
+            // reaplicado a partir do estado lido antes da substituição.
             InsertOrUpdate(
                 connection,
                 transaction,
                 component with
                 {
                     ImportSource = source,
-                    IsUserDefined = false
+                    IsUserDefined = false,
+                    IsFavorite = previous?.IsFavorite ?? component.IsFavorite
                 },
                 preserveKeepFlag: true);
         }

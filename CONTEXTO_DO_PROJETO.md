@@ -691,6 +691,14 @@ Auditoria somente de leitura via `ssh contaslite`:
    577 marcas obsoletas: `app_metadata` caiu de 590 para 37 linhas, mantendo as
    24 marcas legítimas do catálogo inicial. Produtos (1420) e orçamentos (2)
    intactos. A memória do serviço caiu de 102 MB para 37 MB.
+4. Segundo deploy para `releases/fase4-20260729-195631`, com as rotas de
+   favoritos, histórico de preços e modelos, a rotação de chave e a auditoria.
+   Antes da troca do symlink foi feito `pg_dump` e o binário novo foi validado
+   na porta 8129. As migrações de schema criaram `price_history` e
+   `assembly_templates` e acrescentaram `is_favorite` a `products` e desconto,
+   validade e condições a `quotes`, preservando 1420 produtos e 2 orçamentos.
+   Verificado por HTTPS: todas as rotas respondem, chave inválida devolve 401 e
+   é auditada, e o log continua sem ruído por requisição.
 3. O backup foi executado (`systemctl start buildpc-backup.service`) e o
    restauro foi validado num banco descartável: 1420 produtos, 2 orçamentos,
    37 metadata e 1 settings, idêntico à produção. Retenção de 14 dias

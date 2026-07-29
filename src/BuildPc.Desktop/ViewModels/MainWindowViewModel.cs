@@ -264,6 +264,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         PerformancePresetCommand = new RelayCommand(ApplyPerformancePreset);
         ShowFlexibleListCommand = new RelayCommand(() => ShowView("flexible-list"));
         ShowProductsCommand = new RelayCommand(() => ShowView("products"));
+        ShowProductManagementCommand = new RelayCommand(ShowProductManagement);
         ShowImportsCommand = new RelayCommand(() => ShowView("imports"));
         ShowQuotesCommand = new RelayCommand(() => ShowView("quotes"));
         ShowSettingsCommand = new RelayCommand(() => ShowView("settings"));
@@ -305,6 +306,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ICommand PerformancePresetCommand { get; }
     public ICommand ShowFlexibleListCommand { get; }
     public ICommand ShowProductsCommand { get; }
+    public ICommand ShowProductManagementCommand { get; }
     public ICommand ShowImportsCommand { get; }
     public ICommand ShowQuotesCommand { get; }
     public ICommand ShowSettingsCommand { get; }
@@ -327,6 +329,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public bool IsAssemblyView => false;
     public bool IsFlexibleListView => _currentView == "flexible-list";
     public bool IsProductsView => _currentView == "products";
+    public bool IsProductManagementView => _currentView == "product-management";
     public bool IsImportsView => _currentView == "imports";
     public bool IsQuotesView => _currentView == "quotes";
     public bool IsSettingsView => _currentView == "settings";
@@ -754,6 +757,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsAssemblyView));
         OnPropertyChanged(nameof(IsFlexibleListView));
         OnPropertyChanged(nameof(IsProductsView));
+        OnPropertyChanged(nameof(IsProductManagementView));
         OnPropertyChanged(nameof(IsImportsView));
         OnPropertyChanged(nameof(IsQuotesView));
         OnPropertyChanged(nameof(IsSettingsView));
@@ -1050,6 +1054,12 @@ public sealed class MainWindowViewModel : ViewModelBase
         SelectCatalogProduct(null);
     }
 
+    private void ShowProductManagement()
+    {
+        BeginNewProduct();
+        ShowView("product-management");
+    }
+
     private void BeginEditProduct()
     {
         var selected = SelectedCatalogProduct?.Component;
@@ -1086,6 +1096,13 @@ public sealed class MainWindowViewModel : ViewModelBase
         ClearProductForm();
         ProductFormMessage = string.Empty;
         IsProductFormSuccess = false;
+        if (IsProductManagementView)
+        {
+            SelectCatalogProduct(null);
+            ShowView("products");
+            return;
+        }
+
         SelectCatalogProduct(
             Products.FirstOrDefault(product =>
                 string.Equals(product.Id, previousId, StringComparison.OrdinalIgnoreCase)) ??
@@ -1400,8 +1417,10 @@ public sealed class MainWindowViewModel : ViewModelBase
         SetEditingProductId(null);
         RefreshCatalogCollections();
         ClearProductForm();
-        SelectCatalogProduct(Products.FirstOrDefault(product =>
-            string.Equals(product.Id, savedId, StringComparison.OrdinalIgnoreCase)));
+        SelectCatalogProduct(IsProductManagementView
+            ? null
+            : Products.FirstOrDefault(product =>
+                string.Equals(product.Id, savedId, StringComparison.OrdinalIgnoreCase)));
         IsProductFormSuccess = true;
         ProductFormMessage = existing is null
             ? "Produto cadastrado e adicionado à montagem."

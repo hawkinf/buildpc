@@ -80,7 +80,9 @@ public partial class FlexibleListView : UserControl
         });
         if (file is not null)
         {
-            new QuotePdfService().Export(quote, file.Path.LocalPath);
+            var outputPath = file.Path.LocalPath;
+            new QuotePdfService().Export(quote, outputPath);
+            SystemFileLauncher.Open(outputPath);
         }
     }
 }

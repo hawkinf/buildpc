@@ -178,6 +178,7 @@ public sealed class FlexibleListViewModelTests
         viewModel.SaveQuoteCommand.Execute(null);
 
         Assert.NotNull(persisted);
+        Assert.Equal("(11) 99999-9999", persisted.ClientPhone);
         Assert.True(viewModel.CanExport);
         viewModel.Items[0].Description = "Alterada";
         Assert.False(viewModel.CanExport);

@@ -37,7 +37,9 @@ public partial class QuoteManagerView : UserControl
         });
         if (file is not null)
         {
-            new QuotePdfService().Export(selected.Quote, file.Path.LocalPath);
+            var outputPath = file.Path.LocalPath;
+            new QuotePdfService().Export(selected.Quote, outputPath);
+            SystemFileLauncher.Open(outputPath);
         }
     }
 }

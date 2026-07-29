@@ -223,6 +223,7 @@
               <TextBlock Text="Telefone *" FontSize="10"
                          Foreground="{DynamicResource Brush.TextLabel}" />
               <TextBox Text="{Binding ClientPhone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       MaxLength="15"
                        PlaceholderText="(00) 00000-0000" />
             </StackPanel>
             <StackPanel Grid.Column="2" Spacing="5">
@@ -370,6 +371,8 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
+        <Border Height="84" IsHitTestVisible="False"
+                IsVisible="{Binding HasItems}" />
       </StackPanel>
     </ScrollViewer>
 

@@ -100,7 +100,7 @@ public sealed class QuotePdfService
         details.Format.Font.Size = 8.5;
         AddLine(details, company.CompanyName, true);
         AddLine(details, company.CompanyDocument);
-        AddLine(details, company.CompanyPhone);
+        AddLine(details, PhoneNumberFormatter.FormatBrazilian(company.CompanyPhone));
         AddLine(details, company.CompanyEmail);
         AddLine(details, company.CompanyWebsite);
         AddLine(details, company.CompanyAddress);
@@ -132,7 +132,10 @@ public sealed class QuotePdfService
         row.TopPadding = Unit.FromMillimeter(3);
         row.BottomPadding = Unit.FromMillimeter(3);
         AddLabelValue(row.Cells[0], "CLIENTE", quote.ClientName);
-        AddLabelValue(row.Cells[1], "TELEFONE", quote.ClientPhone);
+        AddLabelValue(
+            row.Cells[1],
+            "TELEFONE",
+            PhoneNumberFormatter.FormatBrazilian(quote.ClientPhone));
         section.AddParagraph().Format.SpaceAfter = Unit.FromCentimeter(0.12);
     }
 

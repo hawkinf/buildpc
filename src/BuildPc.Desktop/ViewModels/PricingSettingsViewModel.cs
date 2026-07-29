@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Input;
 using BuildPc.Core.Models;
+using BuildPc.Desktop.Services;
 
 namespace BuildPc.Desktop.ViewModels;
 
@@ -49,7 +50,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
             settings.GlobalMarginPercent));
         _companyName = settings.CompanyName;
         _companyDocument = settings.CompanyDocument;
-        _companyPhone = settings.CompanyPhone;
+        _companyPhone = PhoneNumberFormatter.FormatBrazilian(settings.CompanyPhone);
         _companyEmail = settings.CompanyEmail;
         _companyWebsite = settings.CompanyWebsite;
         _companyAddress = settings.CompanyAddress;
@@ -112,7 +113,13 @@ public sealed class PricingSettingsViewModel : ViewModelBase
 
     public string CompanyName { get => _companyName; set => SetProperty(ref _companyName, value ?? string.Empty); }
     public string CompanyDocument { get => _companyDocument; set => SetProperty(ref _companyDocument, value ?? string.Empty); }
-    public string CompanyPhone { get => _companyPhone; set => SetProperty(ref _companyPhone, value ?? string.Empty); }
+    public string CompanyPhone
+    {
+        get => _companyPhone;
+        set => SetProperty(
+            ref _companyPhone,
+            PhoneNumberFormatter.FormatBrazilian(value));
+    }
     public string CompanyEmail { get => _companyEmail; set => SetProperty(ref _companyEmail, value ?? string.Empty); }
     public string CompanyWebsite { get => _companyWebsite; set => SetProperty(ref _companyWebsite, value ?? string.Empty); }
     public string CompanyAddress { get => _companyAddress; set => SetProperty(ref _companyAddress, value ?? string.Empty); }

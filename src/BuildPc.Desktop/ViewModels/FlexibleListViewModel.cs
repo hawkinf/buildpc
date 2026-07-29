@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using BuildPc.Core.Models;
+using BuildPc.Desktop.Services;
 
 namespace BuildPc.Desktop.ViewModels;
 
@@ -135,7 +136,9 @@ public sealed class FlexibleListViewModel : ViewModelBase
         get => _clientPhone;
         set
         {
-            if (SetProperty(ref _clientPhone, value ?? string.Empty))
+            if (SetProperty(
+                    ref _clientPhone,
+                    PhoneNumberFormatter.FormatBrazilian(value)))
             {
                 MarkDirty();
             }

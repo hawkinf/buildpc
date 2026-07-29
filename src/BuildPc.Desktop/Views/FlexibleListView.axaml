@@ -2,7 +2,10 @@
     x:Class="BuildPc.Desktop.Views.FlexibleListView"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="clr-namespace:BuildPc.Desktop.Controls">
+    xmlns:controls="clr-namespace:BuildPc.Desktop.Controls"
+    xmlns:vm="clr-namespace:BuildPc.Desktop.ViewModels"
+    x:CompileBindings="True"
+    x:DataType="vm:FlexibleListViewModel">
 
   <Grid RowDefinitions="Auto,*,Auto">
     <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1" Padding="30,20">
@@ -107,7 +110,7 @@
                           AutomationProperties.Name="Categoria do produto a adicionar"
                           SelectedItem="{Binding SelectedCategory, Mode=TwoWay}">
                   <ComboBox.ItemTemplate>
-                    <DataTemplate>
+                    <DataTemplate x:DataType="vm:CategoryOptionViewModel">
                       <TextBlock Text="{Binding Name}" />
                     </DataTemplate>
                   </ComboBox.ItemTemplate>
@@ -197,7 +200,7 @@
                                  SelectedItem="{Binding SelectedOption, Mode=TwoWay}"
                                  MaxHeight="360">
                           <ListBox.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="vm:ComponentOptionViewModel">
                               <Border x:Name="flexiblePickerProductRow"
                                       Classes="option-row"
                                       Classes.alternate="{Binding IsAlternate}"
@@ -370,7 +373,7 @@
           só produto e quantidade, então os preços vêm do catálogo atual.
         -->
         <Expander Header="Modelos de montagem"
-                  DataContext="{Binding $parent[UserControl].DataContext.Templates}"
+                  DataContext="{Binding Templates}"
                   AutomationProperties.Name="Modelos de montagem reutilizáveis">
           <Grid ColumnDefinitions="1.2*,*" ColumnSpacing="16" Margin="0,10,0,0">
             <StackPanel Spacing="8">
@@ -388,7 +391,7 @@
                        Background="Transparent"
                        BorderThickness="0">
                 <ListBox.ItemTemplate>
-                  <DataTemplate>
+                  <DataTemplate x:DataType="vm:AssemblyTemplateItemViewModel">
                     <StackPanel Spacing="1" Margin="0,2">
                       <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
                                  FontSize="11" />
@@ -487,7 +490,7 @@
 
         <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}">
           <ItemsControl.ItemTemplate>
-            <DataTemplate>
+            <DataTemplate x:DataType="vm:FlexibleListItemViewModel">
               <Border x:Name="flexibleSelectedProductRow"
                       Classes="component-row" Classes.alternate="{Binding IsAlternate}"
                       Margin="0,0,0,8">

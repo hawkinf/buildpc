@@ -252,6 +252,10 @@ public sealed class MainWindowViewModel : ViewModelBase
             context.TemplateRepository,
             ApplyTemplateToAssemblyAsync,
             () => FlexibleList.BuildTemplateItems());
+
+        // A Montagem é o DataContext da própria view, então é por ela que o
+        // painel de modelos precisa ser alcançado.
+        FlexibleList.AttachTemplates(Templates);
         PricingSettings = new PricingSettingsViewModel(
             _businessSettings,
             CategoryOptions,

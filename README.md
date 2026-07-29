@@ -26,12 +26,18 @@ implantação e o checklist obrigatório para manter o projeto consistente.
 - importação de todas as categorias em sequência e data/hora da última carga;
 - substituição dos importados anteriores a cada nova carga, com opção de manter itens escolhidos;
 - novos produtos disponíveis imediatamente nas opções da montagem;
-- quantidade configurável por componente e dois espaços independentes para armazenamento;
+- quantidade configurável por componente, sem limite artificial;
+- desconto, validade e condições comerciais no orçamento e no PDF;
+- busca, filtro por período e duplicação de orçamentos gravados;
+- modelos de montagem reutilizáveis e produtos favoritos;
+- exportação e importação do catálogo em CSV;
+- histórico de custo por produto e aviso de variação após cada importação;
+- backup diário automático do banco local;
 - lista livre por categoria, com adição ilimitada, título, descrição e valor editáveis;
 - catálogo em SQLite e produtos em ordem alfabética dentro de cada categoria;
 - PDF da tabela de custo separado por categorias, preservando filtros e a
   ordenação escolhida por descrição ou custo;
-- rodapé global com estado ONLINE/OFFLINE da API e barras de rolagem verticais
+- rodapé global com estado LOCAL/ONLINE/OFFLINE e barras de rolagem verticais
   reforçadas em todas as telas, com área segura para o último conteúdo não
   ficar cortado;
 - arquivo `buildpc.config.json` gerado ao lado do executável com tema, margens,

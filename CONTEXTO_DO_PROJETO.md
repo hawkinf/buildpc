@@ -32,7 +32,7 @@ dotnet build BuildPc.sln --no-restore
 dotnet test BuildPc.sln --no-build
 ```
 
-No estado documentado, a solução compila sem avisos e possui 148 testes
+No estado documentado, a solução compila sem avisos e possui 229 testes
 aprovados. O GitHub Actions repete build em Release e testes a cada push e
 pull request (`.github/workflows/build.yml`).
 
@@ -45,7 +45,10 @@ um custo, aplica margens de lucro e vende uma composição completa.
 
 O programa permite:
 
-- importar produtos e imagens da KaBuM! por categoria;
+- importar produtos e imagens da KaBuM! por categoria, com histórico de preços
+  e aviso do que subiu, baixou ou saiu do catálogo da loja;
+- exportar e importar o catálogo em CSV, para edição em planilha;
+- marcar produtos como favoritos, que passam à frente nas listas de seleção;
 - cadastrar, editar e excluir produtos manualmente;
 - manter categorias e seus nomes;
 - consultar tabelas de custo e venda;
@@ -80,7 +83,17 @@ Comportamento:
 - seleciona uma categoria e depois um produto;
 - permite filtrar e ordenar as opções;
 - permite adicionar quantas linhas de produto forem necessárias;
-- aceita quantidades de 1 a 100;
+- aceita quantidades de 1 a 9999, digitadas em `NumericUpDown`. O teto alto
+  existe só para conter erro de digitação (`Models/QuantityRange.cs`);
+- as linhas podem ser reordenadas: a ordem da montagem é a ordem dos itens no
+  PDF do cliente;
+- desconto em reais, validade em dias, condições de pagamento e prazo de
+  entrega são informados aqui e vão para o orçamento e para o PDF;
+- o cabeçalho mostra o valor que o cliente paga; com desconto, o total dos
+  itens aparece riscado acima;
+- "Modelos de montagem" salva a combinação atual e permite aplicá-la de volta.
+  Um modelo guarda só produto e quantidade: ao aplicar, custo e margem vêm do
+  catálogo atual, diferente de reabrir um orçamento;
 - mostra foto, categoria, marca, título, descrição e valor de venda;
 - título e descrição são editáveis;
 - preço de venda é editável e formatado em reais;
@@ -449,13 +462,19 @@ estrutural (`ScrollableLayoutTests`) falha se o valor voltar a ser fixo.
 
 ### Compiled bindings
 
-`AvaloniaUseCompiledBindingsByDefault` está `false` de propósito. Ligar a
-opção hoje produz **622 erros de compilação**, porque cada `DataTemplate`
-precisaria de `x:DataType` e cada binding teria de resolver estaticamente.
-A migração é possível, mas deve ser feita **uma view por vez**, com
-`x:CompileBindings="True"` no elemento raiz da view migrada, validando a tela
-no aplicativo antes de seguir para a próxima. Não ligue a opção globalmente
-de uma só vez.
+`AvaloniaUseCompiledBindingsByDefault` está **`true`**. A migração foi feita
+view por view (eram 622 erros ao ligar de uma vez) e todas as oito telas
+declaram `x:CompileBindings="True"` e `x:DataType` na raiz e em cada
+`DataTemplate`.
+
+Consequência prática: **um nome de propriedade errado agora é erro de build**,
+não uma ligação que falha em silêncio. Ao criar uma tela nova, declare o
+`x:DataType` da raiz e de cada `DataTemplate`; sem isso o build falha.
+
+A migração já apanhou um erro real: o painel de modelos da Montagem estava
+ligado a `$parent[UserControl].DataContext.Templates`, mas o `DataContext`
+daquele controle é `FlexibleListViewModel`, não `MainWindowViewModel` — em
+tempo de execução o painel ficaria vazio sem qualquer aviso.
 
 ## Modelos principais
 
@@ -588,7 +607,12 @@ Regras de segurança:
 - `/health` é público; as demais rotas exigem chave;
 - a comparação da chave usa SHA-256 e tempo constante;
 - há limite de 1200 requisições por minuto e por endereço, para encurtar
-  tentativas de força bruta contra a chave, que é única e não expira;
+  tentativas de força bruta contra a chave;
+- a rotação da chave é em duas etapas: `BuildPc__ApiKey` é a chave em uso e
+  `BuildPc__PreviousApiKey` continua aceita enquanto os clientes são
+  atualizados. Remova a anterior depois de todos migrarem;
+- operações que alteram ou removem dados, e tentativas recusadas, são
+  registradas em log de auditoria com método, rota, endereço e código;
 - o nível de log de `Microsoft.AspNetCore` é `Warning`: o padrão gravava duas
   linhas por requisição e enchia o journal do servidor;
 - `--import-sqlite` apaga produtos, orçamentos e configurações antes de gravar
@@ -617,6 +641,10 @@ Rotas principais:
 - `GET`/`POST /quotes`
 - `DELETE /quotes/{id}`
 - `GET /imports/last-all`
+- `PUT /products/{id}/favorite`
+- `GET /products/{id}/price-history`
+- `GET`/`POST /templates`
+- `DELETE /templates/{id}`
 
 Arquivos de implantação:
 

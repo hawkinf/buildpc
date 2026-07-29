@@ -22,6 +22,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
     private bool _isDirty;
     private bool _isClearConfirmationVisible;
     private SavedQuote? _savedQuote;
+    private AssemblyTemplateListViewModel? _templates;
     private string _discountText = string.Empty;
     private decimal _discountValue;
     private int _validityDays;
@@ -57,6 +58,24 @@ public sealed class FlexibleListViewModel : ViewModelBase
     }
 
     public ObservableCollection<CategoryOptionViewModel> Categories { get; }
+
+    /// <summary>
+    /// Modelos de montagem exibidos nesta tela.
+    /// </summary>
+    /// <remarks>
+    /// Preenchido pelo MainWindowViewModel depois da construção, porque o
+    /// ViewModel dos modelos precisa chamar de volta <see cref="ApplyTemplate"/>.
+    /// A view liga a esta propriedade e não ao ViewModel principal: o
+    /// DataContext do controle é este objeto.
+    /// </remarks>
+    public AssemblyTemplateListViewModel? Templates
+    {
+        get => _templates;
+        private set => SetProperty(ref _templates, value);
+    }
+
+    public void AttachTemplates(AssemblyTemplateListViewModel templates) =>
+        Templates = templates;
     public ObservableCollection<FlexibleListItemViewModel> Items { get; }
     public ComponentSlotViewModel ProductPicker { get; }
     public ICommand AddCommand { get; }

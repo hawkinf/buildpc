@@ -1244,11 +1244,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         SaveApplicationConfiguration();
     }
 
-    private static async Task TestApiConnectionAsync(BuildPcApiSettings settings)
-    {
-        using var client = new BuildPcApiClient(settings);
-        await client.TestConnectionAsync();
-    }
+    private static Task TestApiConnectionAsync(BuildPcApiSettings settings) =>
+        BuildPcApiConnectionTester.TestAsync(settings);
 
     private ImportSourceViewModel ImportSource(
         ComponentCategory category,

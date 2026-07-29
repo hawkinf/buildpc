@@ -1,4 +1,5 @@
 using BuildPc.Core.Models;
+using BuildPc.Desktop.Services;
 using BuildPc.Desktop.ViewModels;
 
 namespace BuildPc.Core.Tests;
@@ -70,6 +71,48 @@ public sealed class PriceLookupViewModelTests
             storage.DisplayName);
     }
 
+    [Fact]
+    public void CategoryCountsIgnoreTheSelectedCategoryAndCoverEveryCategory()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.SelectedCategory = viewModel.Categories.Single(category =>
+            category.Value == ComponentCategory.Processor);
+
+        viewModel.SearchText = "ssd";
+
+        // A categoria selecionada limita a lista, nunca as contagens.
+        Assert.Empty(viewModel.Items);
+        Assert.Equal("Todos (3) (2)", viewModel.Categories[0].DisplayName);
+        var storage = viewModel.Categories.Single(category =>
+            category.Value == ComponentCategory.Storage);
+        Assert.Equal(2, storage.TotalCount);
+        Assert.Equal(2, storage.FilteredCount);
+        var processor = viewModel.Categories.Single(category =>
+            category.Value == ComponentCategory.Processor);
+        Assert.Equal(1, processor.TotalCount);
+        Assert.Equal(0, processor.FilteredCount);
+        var emptyCategory = viewModel.Categories.Single(category =>
+            category.Value == ComponentCategory.Monitor);
+        Assert.Equal(0, emptyCategory.TotalCount);
+        Assert.Equal(0, emptyCategory.FilteredCount);
+    }
+
+    [Fact]
+    public void ClearingTheSearchRestoresTotalsInEveryCategory()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.SearchText = "ssd alfa";
+
+        viewModel.SearchText = string.Empty;
+
+        Assert.Equal(3, viewModel.Items.Count);
+        var storage = viewModel.Categories.Single(category =>
+            category.Value == ComponentCategory.Storage);
+        Assert.Equal(2, storage.TotalCount);
+        Assert.Equal(2, storage.FilteredCount);
+        Assert.Equal($"{storage.Name} (2)", storage.DisplayName);
+    }
+
     private static PriceLookupViewModel CreateViewModel() =>
         new(
             [
@@ -78,7 +121,9 @@ public sealed class PriceLookupViewModelTests
                 Product("CPU Beta", ComponentCategory.Processor, 300m)
             ],
             ProductCategoryDefinition.Defaults(),
-            new BusinessSettings { GlobalMarginPercent = 20m });
+            new BusinessSettings { GlobalMarginPercent = 20m },
+            // Sem laço de mensagens do Avalonia o temporizador nunca dispara.
+            action => new ImmediateDebouncer(action));
 
     private static PcComponent Product(
         string name,

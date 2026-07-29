@@ -2,12 +2,14 @@ using System.Collections.ObjectModel;
 using System.Windows.Input;
 using BuildPc.Core.Models;
 using BuildPc.Core.Services;
+using BuildPc.Desktop.Services;
 
 namespace BuildPc.Desktop.ViewModels;
 
 public sealed class PriceLookupViewModel : ViewModelBase
 {
     private readonly List<PriceLookupItemViewModel> _products = [];
+    private readonly IDebouncer _searchDebounce;
     private BusinessSettings _settings;
     private ProductCategoryFilterViewModel _selectedCategory = null!;
     private ProductCatalogSortMode _sortMode =
@@ -18,9 +20,13 @@ public sealed class PriceLookupViewModel : ViewModelBase
     public PriceLookupViewModel(
         IEnumerable<PcComponent> catalog,
         IReadOnlyList<ProductCategoryDefinition> categories,
-        BusinessSettings settings)
+        BusinessSettings settings,
+        DebouncerFactory? searchDebounceFactory = null)
     {
         _settings = settings;
+        _searchDebounce =
+            (searchDebounceFactory ?? (action => new DebounceTimer(action)))(
+                RefreshItems);
         Categories = [];
         Items = [];
         ShowCostCommand = new RelayCommand(() => SetPriceMode(false));
@@ -59,7 +65,9 @@ public sealed class PriceLookupViewModel : ViewModelBase
         {
             if (SetProperty(ref _searchText, value ?? string.Empty))
             {
-                RefreshItems();
+                // Filtrar a cada tecla percorre todo o catálogo; esperar o fim
+                // da digitação mantém a tela responsiva com milhares de itens.
+                _searchDebounce.Trigger();
             }
         }
     }
@@ -191,29 +199,54 @@ public sealed class PriceLookupViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Uma única varredura de <see cref="_products"/> alimenta a lista
+    /// filtrada e as contagens por categoria, em vez de duas (uma para cada
+    /// finalidade). Cada produto usa o texto pesquisável já calculado na
+    /// criação do item, então o filtro nunca reconstrói strings aqui.
+    /// </summary>
     private void RefreshItems()
     {
-        var filtered = _products.Where(product =>
-            (SelectedCategory.Value is null ||
-             product.Component.Category == SelectedCategory.Value) &&
-            ProductFilter.Matches(product.Component, SearchText));
-        var sorted = _sortMode switch
+        var showFilteredCount = !string.IsNullOrWhiteSpace(SearchText);
+        var totalCounts = new Dictionary<ComponentCategory, int>();
+        var filteredCounts = new Dictionary<ComponentCategory, int>();
+        var matched = new List<PriceLookupItemViewModel>();
+
+        foreach (var product in _products)
         {
-            ProductCatalogSortMode.DescriptionDescending => filtered
+            var category = product.Component.Category;
+            totalCounts[category] = totalCounts.GetValueOrDefault(category) + 1;
+
+            var matchesFilter = ProductFilter.Matches(product.SearchableText, SearchText);
+            if (matchesFilter)
+            {
+                filteredCounts[category] = filteredCounts.GetValueOrDefault(category) + 1;
+            }
+
+            if (matchesFilter &&
+                (SelectedCategory.Value is null || SelectedCategory.Value == category))
+            {
+                matched.Add(product);
+            }
+        }
+
+        IEnumerable<PriceLookupItemViewModel> sorted = _sortMode switch
+        {
+            ProductCatalogSortMode.DescriptionDescending => matched
                 .OrderByDescending(
                     product => product.Name,
                     StringComparer.CurrentCultureIgnoreCase),
-            ProductCatalogSortMode.PriceAscending => filtered
+            ProductCatalogSortMode.PriceAscending => matched
                 .OrderBy(product => product.DisplayPriceValue)
                 .ThenBy(
                     product => product.Name,
                     StringComparer.CurrentCultureIgnoreCase),
-            ProductCatalogSortMode.PriceDescending => filtered
+            ProductCatalogSortMode.PriceDescending => matched
                 .OrderByDescending(product => product.DisplayPriceValue)
                 .ThenBy(
                     product => product.Name,
                     StringComparer.CurrentCultureIgnoreCase),
-            _ => filtered.OrderBy(
+            _ => matched.OrderBy(
                 product => product.Name,
                 StringComparer.CurrentCultureIgnoreCase)
         };
@@ -226,31 +259,20 @@ public sealed class PriceLookupViewModel : ViewModelBase
             Items.Add(product);
         }
 
-        RefreshCategoryCounts();
-        OnPropertyChanged(nameof(CountText));
-    }
-
-    private void RefreshCategoryCounts()
-    {
-        var showFilteredCount = !string.IsNullOrWhiteSpace(SearchText);
         foreach (var category in Categories)
         {
-            var productsInCategory = category.Value is null
-                ? _products.AsEnumerable()
-                : _products.Where(product =>
-                    product.Component.Category == category.Value);
-            var totalCount = productsInCategory.Count();
-            var filteredCount = showFilteredCount
-                ? productsInCategory.Count(product =>
-                    ProductFilter.Matches(
-                        product.Component,
-                        SearchText))
-                : totalCount;
-            category.UpdateCounts(
-                totalCount,
-                filteredCount,
-                showFilteredCount);
+            var totalCount = category.Value is null
+                ? _products.Count
+                : totalCounts.GetValueOrDefault(category.Value.Value);
+            var filteredCount = !showFilteredCount
+                ? totalCount
+                : category.Value is null
+                    ? filteredCounts.Values.Sum()
+                    : filteredCounts.GetValueOrDefault(category.Value.Value);
+            category.UpdateCounts(totalCount, filteredCount, showFilteredCount);
         }
+
+        OnPropertyChanged(nameof(CountText));
     }
 }
 
@@ -265,6 +287,7 @@ public sealed class PriceLookupItemViewModel : ViewModelBase
         string categoryName)
     {
         Component = component;
+        SearchableText = ProductFilter.BuildSearchableText(component);
         Name = component.Name;
         Brand = component.Brand;
         Category = categoryName;
@@ -273,6 +296,7 @@ public sealed class PriceLookupItemViewModel : ViewModelBase
     }
 
     public PcComponent Component { get; }
+    internal string SearchableText { get; }
     public string Name { get; }
     public string Brand { get; }
     public string Category { get; }

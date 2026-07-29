@@ -1,5 +1,6 @@
 using System.Windows.Input;
 using BuildPc.Core.Models;
+using BuildPc.Core.Services;
 
 namespace BuildPc.Desktop.ViewModels;
 
@@ -23,6 +24,7 @@ public sealed class ProductListItemViewModel : ViewModelBase
         string? categoryName = null)
     {
         Component = component;
+        SearchableText = ProductFilter.BuildSearchableText(component);
         Id = component.Id;
         Name = component.Name;
         Brand = component.Brand;
@@ -54,6 +56,13 @@ public sealed class ProductListItemViewModel : ViewModelBase
     }
 
     public PcComponent Component { get; }
+
+    /// <summary>
+    /// Texto pesquisável pré-calculado (ver
+    /// <see cref="ProductFilter.BuildSearchableText"/>), para o filtro não
+    /// reconstruir a string do produto a cada tecla digitada.
+    /// </summary>
+    internal string SearchableText { get; }
     public string Id { get; }
     public string Name { get; }
     public string Brand { get; }

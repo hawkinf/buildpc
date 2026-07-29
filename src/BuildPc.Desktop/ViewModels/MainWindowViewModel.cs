@@ -19,6 +19,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private readonly IQuoteRepository _quoteRepository;
     private readonly BuildPcApplicationSettingsStore _applicationSettingsStore;
     private readonly Dictionary<string, string> _configuredImportSourceUrls;
+    private readonly IDebouncer _catalogSearchDebounce;
     private readonly string _productImagesDirectory;
     private BuildPcApiSettings? _apiSettings;
     private bool _isApiKeyUnreadable;
@@ -178,6 +179,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             new("Custo: maior primeiro", ProductCatalogSortMode.PriceDescending)
         ];
         _selectedCatalogSort = CatalogSortOptions[0];
+        _catalogSearchDebounce = new DebounceTimer(RefreshProductFilter);
         FilteredProducts = [];
         RefreshCatalogDisplayPrices();
         RefreshProductFilter();
@@ -549,7 +551,9 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             if (SetProperty(ref _catalogSearchText, value ?? string.Empty))
             {
-                RefreshProductFilter();
+                // Filtrar a cada tecla percorre todo o catálogo; esperar o fim
+                // da digitação mantém a tela responsiva com milhares de itens.
+                _catalogSearchDebounce.Trigger();
             }
         }
     }
@@ -1860,15 +1864,39 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Uma única varredura de <see cref="Products"/> alimenta a lista filtrada e
+    /// as contagens por categoria. Antes eram duas varreduras por categoria, ou
+    /// seja treze passagens completas sobre o catálogo a cada tecla digitada.
+    /// Cada produto usa o texto pesquisável já calculado na criação do item.
+    /// </summary>
     private void RefreshProductFilter()
     {
-        RefreshProductCategoryFilterCounts();
-        var filtered = Products.Where(product =>
-            (SelectedCatalogCategoryFilter.Value is null ||
-             product.Component.Category == SelectedCatalogCategoryFilter.Value) &&
-            ProductFilter.Matches(product.Component, CatalogSearchText));
+        var showFilteredCount = !string.IsNullOrWhiteSpace(CatalogSearchText);
+        var totalCounts = new Dictionary<ComponentCategory, int>();
+        var filteredCounts = new Dictionary<ComponentCategory, int>();
+        var matched = new List<ProductListItemViewModel>();
+
+        foreach (var product in Products)
+        {
+            var category = product.Component.Category;
+            totalCounts[category] = totalCounts.GetValueOrDefault(category) + 1;
+
+            if (!ProductFilter.Matches(product.SearchableText, CatalogSearchText))
+            {
+                continue;
+            }
+
+            filteredCounts[category] = filteredCounts.GetValueOrDefault(category) + 1;
+            if (SelectedCatalogCategoryFilter.Value is null ||
+                SelectedCatalogCategoryFilter.Value == category)
+            {
+                matched.Add(product);
+            }
+        }
+
         var visibleProducts = ProductCatalogSorter.Sort(
-            filtered,
+            matched,
             SelectedCatalogSort.Mode,
             product => CatalogDisplayPrice(product.Component));
         FilteredProducts.Clear();
@@ -1879,33 +1907,23 @@ public sealed class MainWindowViewModel : ViewModelBase
             FilteredProducts.Add(product);
         }
 
+        foreach (var category in ProductCategoryFilters)
+        {
+            var totalCount = category.Value is null
+                ? Products.Count
+                : totalCounts.GetValueOrDefault(category.Value.Value);
+            var filteredCount = !showFilteredCount
+                ? totalCount
+                : category.Value is null
+                    ? filteredCounts.Values.Sum()
+                    : filteredCounts.GetValueOrDefault(category.Value.Value);
+            category.UpdateCounts(totalCount, filteredCount, showFilteredCount);
+        }
+
         OnPropertyChanged(nameof(FilteredCatalogCountText));
         OnPropertyChanged(nameof(AreAllFilteredProductsSelected));
         OnPropertyChanged(nameof(CanExportProductPriceTable));
         OnPropertyChanged(nameof(ProductPriceTableSuggestedFileName));
-    }
-
-    private void RefreshProductCategoryFilterCounts()
-    {
-        var showFilteredCount = !string.IsNullOrWhiteSpace(CatalogSearchText);
-        foreach (var category in ProductCategoryFilters)
-        {
-            var productsInCategory = category.Value is null
-                ? Products.AsEnumerable()
-                : Products.Where(product =>
-                    product.Component.Category == category.Value);
-            var totalCount = productsInCategory.Count();
-            var filteredCount = showFilteredCount
-                ? productsInCategory.Count(product =>
-                    ProductFilter.Matches(
-                        product.Component,
-                        CatalogSearchText))
-                : totalCount;
-            category.UpdateCounts(
-                totalCount,
-                filteredCount,
-                showFilteredCount);
-        }
     }
 
     public ProductPriceTableDocument BuildProductPriceTableDocument()

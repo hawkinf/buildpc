@@ -5,14 +5,16 @@ namespace BuildPc.Core.Services;
 
 public static class ProductFilter
 {
-    public static bool Matches(PcComponent component, string? filter)
-    {
-        if (string.IsNullOrWhiteSpace(filter))
-        {
-            return true;
-        }
+    public static bool Matches(PcComponent component, string? filter) =>
+        Matches(BuildSearchableText(component), filter);
 
-        var searchableText = string.Join(
+    /// <summary>
+    /// Concatena os campos pesquisáveis de um produto uma única vez. Chame na
+    /// criação do item de lista e reutilize o resultado em <see cref="Matches"/>
+    /// a cada tecla digitada, em vez de reconstruir a string a cada avaliação.
+    /// </summary>
+    public static string BuildSearchableText(PcComponent component) =>
+        string.Join(
             " ",
             component.Name,
             component.Brand,
@@ -23,6 +25,18 @@ public static class ProductFilter
             component.Category,
             string.Join(" ", component.SupportedSockets),
             string.Join(" ", component.SupportedFormFactors));
+
+    /// <summary>
+    /// Aplica o filtro a um texto pesquisável já concatenado (ver
+    /// <see cref="BuildSearchableText"/>).
+    /// </summary>
+    public static bool Matches(string searchableText, string? filter)
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            return true;
+        }
+
         var (positiveTerms, excludedTerms) = ParseTerms(filter);
 
         if (positiveTerms.Any(term => !MatchesText(searchableText, term)))

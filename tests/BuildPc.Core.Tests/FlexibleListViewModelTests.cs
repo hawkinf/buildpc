@@ -272,6 +272,117 @@ public sealed class FlexibleListViewModelTests
         Assert.Equal(15m, settings.MarginFor(ComponentCategory.Memory));
     }
 
+    [Fact]
+    public void LoadQuote_RestoresTheAgreedValuesAndIsReadyToExport()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, "Processador", 1000m);
+        var viewModel = CreateViewModel(processor);
+        var quote = new SavedQuote
+        {
+            Id = Guid.NewGuid(),
+            Number = 42,
+            CreatedAt = DateTimeOffset.Now,
+            ClientName = "Joana",
+            ClientPhone = "(11) 98888-0000",
+            Notes = "Entrega combinada",
+            Items =
+            [
+                new SavedQuoteItem
+                {
+                    ComponentId = "cpu",
+                    Category = ComponentCategory.Processor,
+                    CategoryName = "Processador",
+                    Name = "Título negociado",
+                    Description = "Descrição negociada",
+                    Quantity = 3,
+                    UnitCost = 900m,
+                    MarginPercent = 40m,
+                    UnitPrice = 1499.90m
+                }
+            ]
+        };
+
+        viewModel.LoadQuote(quote);
+
+        var item = Assert.Single(viewModel.Items);
+        Assert.Equal("Título negociado", item.Name);
+        Assert.Equal("Descrição negociada", item.Description);
+        Assert.Equal(3, item.Quantity);
+        // Os valores acordados prevalecem sobre o catálogo e a margem atuais.
+        Assert.Equal(900m, item.UnitPriceValue);
+        Assert.Equal(1499.90m, item.SellingUnitPriceValue);
+        Assert.Equal(4499.70m, viewModel.TotalPriceValue);
+        Assert.Equal(2700m, viewModel.TotalCostValue);
+        Assert.Equal("Joana", viewModel.ClientName);
+        Assert.Equal("Entrega combinada", viewModel.Notes);
+        // Reabrir não é alteração pendente: já pode exportar.
+        Assert.False(viewModel.IsDirty);
+        Assert.True(viewModel.CanExport);
+        Assert.Equal(quote, viewModel.SavedQuote);
+    }
+
+    [Fact]
+    public void LoadQuote_KeepsItemsWhoseProductWasDeletedFromTheCatalog()
+    {
+        var viewModel = CreateViewModel(
+            Product("cpu", ComponentCategory.Processor, "Processador", 1000m));
+        var quote = new SavedQuote
+        {
+            Id = Guid.NewGuid(),
+            Number = 7,
+            CreatedAt = DateTimeOffset.Now,
+            ClientName = "Pedro",
+            ClientPhone = "(11) 97777-0000",
+            Items =
+            [
+                new SavedQuoteItem
+                {
+                    ComponentId = "produto-apagado",
+                    Category = ComponentCategory.Memory,
+                    CategoryName = "Memória",
+                    Name = "Memória removida",
+                    Description = "Não está mais no catálogo",
+                    Quantity = 2,
+                    UnitCost = 200m,
+                    MarginPercent = 30m,
+                    UnitPrice = 279.90m
+                }
+            ]
+        };
+
+        viewModel.LoadQuote(quote);
+
+        var item = Assert.Single(viewModel.Items);
+        Assert.Equal("Memória removida", item.Name);
+        Assert.Equal("Memória", item.CategoryName);
+        Assert.Equal(279.90m, item.SellingUnitPriceValue);
+        Assert.Equal(559.80m, viewModel.TotalPriceValue);
+    }
+
+    [Fact]
+    public void LoadQuote_ReplacesWhateverWasAlreadyInTheAssembly()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, "Processador", 1000m);
+        var viewModel = CreateViewModel(processor);
+        viewModel.ProductPicker.Selected = processor;
+        viewModel.AddCommand.Execute(null);
+        Assert.Single(viewModel.Items);
+
+        viewModel.LoadQuote(new SavedQuote
+        {
+            Id = Guid.NewGuid(),
+            Number = 9,
+            CreatedAt = DateTimeOffset.Now,
+            ClientName = "Rita",
+            ClientPhone = "(11) 96666-0000",
+            Items = []
+        });
+
+        Assert.Empty(viewModel.Items);
+        Assert.Equal("Rita", viewModel.ClientName);
+        Assert.False(viewModel.IsDirty);
+    }
+
     private static FlexibleListViewModel CreateViewModel(params PcComponent[] products) =>
         new(
             products,

@@ -162,6 +162,12 @@ Comportamento:
   quantidade, preço unitário de venda e total de venda;
 - custo, lucro e percentual de lucro nunca devem aparecer no PDF do cliente;
 - ao exportar, a prévia PDF é aberta antes de salvar ou imprimir;
+- “Abrir na Montagem” recarrega o orçamento selecionado na Montagem para
+  consulta ou ajuste. Título, descrição, quantidade, custo, margem e preço de
+  venda voltam como foram acordados, e não recalculados pelo catálogo atual;
+- gravar depois de reabrir atualiza o mesmo número, sem criar outro orçamento;
+- itens cujo produto foi excluído do catálogo continuam abrindo, reconstruídos
+  a partir do próprio orçamento;
 - o orçamento selecionado pode ser excluído pela lixeira ao lado de
   “Exportar PDF”, sempre com confirmação destrutiva;
 - excluir não reaproveita o número: a numeração continua de `MAX(number) + 1`.

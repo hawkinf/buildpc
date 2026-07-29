@@ -161,7 +161,9 @@ public sealed class MainWindowViewModel : ViewModelBase
             catalog,
             categoryDefinitions,
             _businessSettings);
-        QuoteManager = new QuoteManagerViewModel(_quoteRepository);
+        QuoteManager = new QuoteManagerViewModel(
+            _quoteRepository,
+            OpenQuoteInAssembly);
         PricingSettings = new PricingSettingsViewModel(
             _businessSettings,
             CategoryOptions,
@@ -881,6 +883,12 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             QuoteManager.Refresh();
         }
+    }
+
+    private void OpenQuoteInAssembly(SavedQuote quote)
+    {
+        FlexibleList.LoadQuote(quote);
+        ShowView("flexible-list");
     }
 
     private SavedQuote? SaveQuote(FlexibleListViewModel list)

@@ -287,6 +287,72 @@ public sealed class FlexibleListViewModel : ViewModelBase
         RefreshSummary();
     }
 
+    /// <summary>
+    /// Recarrega um orçamento gravado na Montagem para consulta, ajuste ou
+    /// nova gravação sobre o mesmo número.
+    /// </summary>
+    public void LoadQuote(SavedQuote quote)
+    {
+        ArgumentNullException.ThrowIfNull(quote);
+
+        Items.Clear();
+        foreach (var savedItem in quote.Items)
+        {
+            Items.Add(new FlexibleListItemViewModel(
+                ResolveComponent(savedItem),
+                savedItem,
+                CategoryNameFor(savedItem),
+                Remove,
+                ItemChanged));
+        }
+
+        RefreshAlternatingRows();
+        ClientName = quote.ClientName;
+        ClientPhone = quote.ClientPhone;
+        Notes = quote.Notes;
+        ProductPicker.Selected = null;
+        Quantity = 1;
+        SavedQuote = quote;
+
+        // As atribuições acima marcam a montagem como alterada; recarregar um
+        // orçamento gravado não é uma alteração pendente.
+        IsDirty = false;
+        IsStatusSuccess = true;
+        StatusMessage =
+            $"Orçamento #{quote.Number:000000} aberto para consulta e ajuste.";
+        RefreshSummary();
+    }
+
+    /// <summary>
+    /// Usa o produto atual do catálogo quando ele ainda existe, para manter
+    /// foto e marca. Se tiver sido excluído, reconstrói o mínimo a partir do
+    /// próprio orçamento, para a linha continuar utilizável.
+    /// </summary>
+    private PcComponent ResolveComponent(SavedQuoteItem savedItem) =>
+        _catalog.FirstOrDefault(component =>
+            string.Equals(
+                component.Id,
+                savedItem.ComponentId,
+                StringComparison.OrdinalIgnoreCase)) ??
+        new PcComponent
+        {
+            Id = savedItem.ComponentId,
+            Category = savedItem.Category,
+            Name = savedItem.Name,
+            Brand = string.Empty,
+            Description = savedItem.Description,
+            Price = savedItem.UnitCost,
+            ImageUrl = savedItem.ImageUrl
+        };
+
+    private string CategoryNameFor(SavedQuoteItem savedItem) =>
+        Categories
+            .FirstOrDefault(category => category.Value == savedItem.Category)?
+            .Name ??
+        (string.IsNullOrWhiteSpace(savedItem.CategoryName)
+            ? savedItem.Category.ToString()
+            : savedItem.CategoryName);
+
     private void DraftSelectionChanged()
     {
         OnPropertyChanged(nameof(CanAdd));

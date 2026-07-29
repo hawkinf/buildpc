@@ -45,6 +45,37 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
         RemoveCommand = new RelayCommand(() => _remove(this));
     }
 
+    /// <summary>
+    /// Recria uma linha a partir de um orçamento gravado. Preserva título,
+    /// descrição, custo, margem e preço de venda como foram acordados, em vez
+    /// de recalcular pelo catálogo atual, que pode ter mudado desde então.
+    /// </summary>
+    public FlexibleListItemViewModel(
+        PcComponent component,
+        SavedQuoteItem savedItem,
+        string categoryName,
+        Action<FlexibleListItemViewModel> remove,
+        Action changed)
+        : this(
+            component,
+            categoryName,
+            savedItem.Quantity,
+            savedItem.MarginPercent,
+            remove,
+            changed)
+    {
+        _name = savedItem.Name;
+        _description = savedItem.Description;
+        _unitPriceValue = savedItem.UnitCost;
+        _priceText = savedItem.UnitCost.ToString(
+            "N2",
+            MainWindowViewModel.BrazilianCulture);
+        _sellingUnitPriceValue = savedItem.UnitPrice;
+        _sellingPriceText = savedItem.UnitPrice.ToString(
+            "N2",
+            MainWindowViewModel.BrazilianCulture);
+    }
+
     public PcComponent Component { get; }
     public string CategoryName
     {

@@ -24,7 +24,7 @@
 
         <Grid Grid.Row="1"
               DataContext="{Binding SelectedQuote}"
-              ColumnDefinitions="*,*,*,*,Auto,Auto"
+              ColumnDefinitions="*,*,*,*,Auto,Auto,Auto"
               ColumnSpacing="18">
           <StackPanel>
             <TextBlock Text="TOTAL"
@@ -63,6 +63,19 @@
                        Foreground="{DynamicResource Brush.Success}" />
           </StackPanel>
           <Button Grid.Column="4"
+                  Classes="secondary"
+                  Command="{Binding $parent[UserControl].DataContext.OpenInAssemblyCommand}"
+                  IsEnabled="{Binding $parent[UserControl].DataContext.HasSelection}"
+                  MinHeight="36"
+                  Padding="12,8"
+                  ToolTip.Tip="Abrir este orçamento na Montagem para consultar ou ajustar">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <PathIcon Data="{StaticResource Icon.Assembly}" Width="16" Height="16"
+                        Foreground="{DynamicResource Brush.AccentLight}" />
+              <TextBlock Text="Abrir na Montagem" />
+            </StackPanel>
+          </Button>
+          <Button Grid.Column="5"
                   Classes="primary"
                   Click="ExportPdf_Click"
                   MinHeight="36"
@@ -74,7 +87,7 @@
               <TextBlock Text="Exportar PDF" Foreground="White" />
             </StackPanel>
           </Button>
-          <Button Grid.Column="5"
+          <Button Grid.Column="6"
                   Classes="secondary"
                   Command="{Binding $parent[UserControl].DataContext.RequestDeleteCommand}"
                   IsEnabled="{Binding $parent[UserControl].DataContext.HasSelection}"

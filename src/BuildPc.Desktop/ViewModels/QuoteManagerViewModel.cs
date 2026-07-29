@@ -9,17 +9,22 @@ namespace BuildPc.Desktop.ViewModels;
 public sealed class QuoteManagerViewModel : ViewModelBase
 {
     private readonly IQuoteRepository _repository;
+    private readonly Action<SavedQuote>? _openInAssembly;
     private SavedQuoteListItemViewModel? _selectedQuote;
     private string _statusMessage = string.Empty;
     private bool _isDeleteConfirmationVisible;
 
-    public QuoteManagerViewModel(IQuoteRepository repository)
+    public QuoteManagerViewModel(
+        IQuoteRepository repository,
+        Action<SavedQuote>? openInAssembly = null)
     {
         _repository = repository;
+        _openInAssembly = openInAssembly;
         Quotes = [];
         RequestDeleteCommand = new RelayCommand(RequestDelete);
         ConfirmDeleteCommand = new RelayCommand(ConfirmDelete);
         CancelDeleteCommand = new RelayCommand(CancelDelete);
+        OpenInAssemblyCommand = new RelayCommand(OpenInAssembly);
         Refresh();
     }
 
@@ -27,6 +32,7 @@ public sealed class QuoteManagerViewModel : ViewModelBase
     public ICommand RequestDeleteCommand { get; }
     public ICommand ConfirmDeleteCommand { get; }
     public ICommand CancelDeleteCommand { get; }
+    public ICommand OpenInAssemblyCommand { get; }
 
     public SavedQuoteListItemViewModel? SelectedQuote
     {
@@ -94,6 +100,23 @@ public sealed class QuoteManagerViewModel : ViewModelBase
                         Quotes.FirstOrDefault();
         OnPropertyChanged(nameof(HasQuotes));
         OnPropertyChanged(nameof(IsEmpty));
+    }
+
+    private void OpenInAssembly()
+    {
+        if (SelectedQuote is not { } selected)
+        {
+            return;
+        }
+
+        if (_openInAssembly is null)
+        {
+            StatusMessage = "A Montagem não está disponível para abrir orçamentos.";
+            return;
+        }
+
+        IsDeleteConfirmationVisible = false;
+        _openInAssembly(selected.Quote);
     }
 
     private void RequestDelete()

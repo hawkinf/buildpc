@@ -46,7 +46,8 @@ public static class PriceTableRowBuilder
                 component.Category,
                 categoryNames.GetValueOrDefault(
                     component.Category,
-                    component.Category.ToString())));
+                    component.Category.ToString()),
+                component.Description));
 
         IEnumerable<ProductPriceTableRow> ordered = sortMode switch
         {

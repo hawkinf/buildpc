@@ -11,7 +11,9 @@ public sealed record ProductPriceTableRow(
     string? ImageUrl,
     decimal Price,
     ComponentCategory Category = ComponentCategory.Processor,
-    string CategoryName = "");
+    string CategoryName = "",
+    // Só usado pelo popup de hover do BuildPc.Web (não entra no PDF).
+    string Description = "");
 
 public sealed record ProductPriceTableSection(
     string? CategoryName,

@@ -1,0 +1,80 @@
+.product-hover-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+.product-hover-popup {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%) scale(0.96);
+    margin-left: 0.6rem;
+    z-index: 50;
+    display: flex;
+    gap: 0.9rem;
+    width: 22rem;
+    max-width: 80vw;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.16s ease, transform 0.16s ease, visibility 0s linear 0.16s;
+}
+
+.product-hover-wrap:hover .product-hover-popup {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) scale(1);
+    transition: opacity 0.16s ease 0.22s, transform 0.16s ease 0.22s, visibility 0s linear 0.22s;
+}
+
+.product-hover-image {
+    flex: 0 0 auto;
+    width: 6rem;
+    height: 6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.product-hover-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.product-hover-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.product-hover-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #1d4ed8;
+}
+
+.product-hover-description {
+    font-size: 0.75rem;
+    color: #475569;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.product-hover-price {
+    margin-top: auto;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #925300;
+}

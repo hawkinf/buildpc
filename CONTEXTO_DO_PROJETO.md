@@ -967,6 +967,34 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — popup de hover com foto e características, pedido
+  do usuário pra replicar o `ProductHoverPreview` do Desktop (`Controls/
+  ProductHoverPreview.axaml`). Componente novo,
+  `Components/Shared/ProductHoverPreview.razor`: mesmos 4 campos do
+  Desktop (imagem, título, descrição, preço — nada de socket/wattage/
+  categoria, o popup do Desktop também não mostra isso), aplicado nas três
+  telas (nome do produto na Consulta de Preços, item na tabela da
+  Montagem, item na lista de Orçamentos). Implementado só com CSS (sem
+  JS/IJSRuntime): `transition-delay` no `:hover` aproxima o atraso de
+  abertura de 220ms do Desktop sem precisar de interop; não replica a
+  lógica de "só um popup aberto por vez" nem o posicionamento seguindo o
+  cursor (ancorado à direita do item via `position:absolute`, não
+  `Placement="Pointer"``) — simplificação aceitável pra CSS puro. Preço é
+  recebido como string já formatada, mesma convenção do Desktop.
+  `ProductPriceTableRow` (Core) ganhou `Description` como parâmetro
+  posicional opcional no fim (não quebra os call sites existentes,
+  inclusive nos testes) — só usado pelo popup, não entra no PDF.
+  `Montagem`/`Orçamentos` já tinham `Description` disponível em
+  `PcComponent`/`SavedQuoteItem`, sem mudança de modelo.
+
+  URLs de importação por categoria (fase anterior) agora vêm
+  **pré-preenchidas** com os mesmos valores já configurados no
+  `buildpc.config.json` do Desktop (conferido: 11 das 12 categorias têm
+  URL configurada — falta `HardDrive`, que também não está configurada no
+  Desktop, então não inventei uma). Continuam não persistidas entre
+  sessões (mesmo motivo já documentado: risco de o Desktop apagar sem
+  querer se isso fosse pra `BusinessSettings`) — editar e recarregar volta
+  pro padrão do Desktop, não fica em branco. 277/277 testes.
 - Cliente web (30/07) — Importações adicionada ao `BuildPc.Web`
   (`/importacoes`), fora do plano original de 9 fases: a exclusão inicial
   ("Importações fica só no Desktop, depende de scraping bloqueado por

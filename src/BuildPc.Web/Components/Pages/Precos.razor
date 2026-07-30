@@ -85,7 +85,15 @@ else
                             <img class="price-thumb" src="@row.ImageUrl" alt="" loading="lazy" />
                         }
                     </td>
-                    <td>@row.Title</td>
+                    <td>
+                        <ProductHoverPreview
+                            Title="@row.Title"
+                            Description="@row.Description"
+                            ImageUrl="@row.ImageUrl"
+                            Price="@row.Price.ToString("C", CultureHelpers.BrazilianCulture)">
+                            @row.Title
+                        </ProductHoverPreview>
+                    </td>
                     <td>@row.CategoryName</td>
                     <td>
                         @if (_showSalePrice)

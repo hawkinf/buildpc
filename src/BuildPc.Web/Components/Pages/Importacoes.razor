@@ -13,8 +13,9 @@
 <p class="import-warning">
     Cada importação <strong>substitui</strong> o catálogo da categoria pelos
     produtos encontrados na URL informada. Produtos que não aparecerem mais na
-    loja são removidos do catálogo. As URLs abaixo não são salvas entre
-    sessões — cole de novo se recarregar a página.
+    loja são removidos do catálogo. As URLs já vêm preenchidas com as mesmas
+    do Desktop, mas se você editar alguma, a edição não fica salva entre
+    sessões — a página volta ao padrão se recarregar.
 </p>
 
 @if (_loadError is not null)
@@ -97,7 +98,38 @@ else
 
 @code {
     private IReadOnlyList<ProductCategoryDefinition> _categories = [];
-    private readonly Dictionary<ComponentCategory, string> _urls = [];
+    // Mesmas URLs já configuradas no Desktop (buildpc.config.json) — servem
+    // de ponto de partida a cada sessão, já que essa configuração não é
+    // persistida no servidor (ver histórico da fase de Importações no
+    // CONTEXTO_DO_PROJETO.md). HardDrive não está aqui porque também não
+    // está configurada no Desktop.
+    private static readonly Dictionary<ComponentCategory, string> DefaultUrls = new()
+    {
+        [ComponentCategory.Processor] =
+            "https://www.kabum.com.br/hardware/processadores?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
+        [ComponentCategory.Cooler] =
+            "https://www.kabum.com.br/hardware/coolers?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
+        [ComponentCategory.Motherboard] =
+            "https://www.kabum.com.br/hardware/placas-mae?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
+        [ComponentCategory.Memory] =
+            "https://www.kabum.com.br/hardware/memoria-ram?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
+        [ComponentCategory.GraphicsCard] =
+            "https://www.kabum.com.br/hardware/placa-de-video-vga?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
+        [ComponentCategory.Storage] =
+            "https://www.kabum.com.br/hardware/ssd-2-5?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
+        [ComponentCategory.PowerSupply] =
+            "https://www.kabum.com.br/hardware/fontes?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
+        [ComponentCategory.Case] =
+            "https://www.kabum.com.br/perifericos/gabinetes?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
+        [ComponentCategory.Monitor] =
+            "https://www.kabum.com.br/computadores/monitores?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
+        [ComponentCategory.Mouse] =
+            "https://www.kabum.com.br/perifericos/teclado-mouse?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
+        [ComponentCategory.Keyboard] =
+            "https://www.kabum.com.br/perifericos/teclado-mouse?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched"
+    };
+
+    private readonly Dictionary<ComponentCategory, string> _urls = new(DefaultUrls);
     private readonly Dictionary<ComponentCategory, ImportReplaceResult> _results = [];
     private readonly Dictionary<ComponentCategory, string> _errors = [];
     private bool _isLoading = true;

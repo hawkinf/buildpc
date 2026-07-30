@@ -84,8 +84,15 @@ else
                             {
                                 <img class="quote-item-thumb" src="@item.ImageUrl" alt="" loading="lazy" />
                             }
-                            @item.Quantity x @item.Name —
-                            @item.TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)
+                            @item.Quantity x
+                            <ProductHoverPreview
+                                Title="@item.Name"
+                                Description="@item.Description"
+                                ImageUrl="@item.ImageUrl"
+                                Price="@item.UnitPrice.ToString("C", CultureHelpers.BrazilianCulture)">
+                                @item.Name
+                            </ProductHoverPreview>
+                            — @item.TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)
                         </li>
                     }
                 </ul>

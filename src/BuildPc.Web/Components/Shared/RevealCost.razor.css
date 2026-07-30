@@ -1,0 +1,19 @@
+.reveal-cost {
+    background: none;
+    border: 1px dashed #94a3b8;
+    border-radius: 4px;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+}
+
+.reveal-cost-masked {
+    letter-spacing: 0.15em;
+}
+
+.reveal-cost-hint {
+    display: block;
+    font-size: 0.7rem;
+    color: #64748b;
+}

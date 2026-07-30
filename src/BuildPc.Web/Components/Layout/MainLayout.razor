@@ -1,9 +1,29 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
-@Body
+<div class="app">
+    <header class="app-header">
+        <span class="app-brand">BuildPC</span>
+        <AuthorizeView>
+            <Authorized>
+                <nav class="app-nav">
+                    <NavLink href="/montagem">Montagem</NavLink>
+                    <NavLink href="/precos">Consulta de Preços</NavLink>
+                    <NavLink href="/orcamentos">Orçamentos</NavLink>
+                </nav>
+                <form method="post" action="/account/logout" class="app-logout">
+                    <button type="submit">Sair</button>
+                </form>
+            </Authorized>
+        </AuthorizeView>
+    </header>
+
+    <main class="app-content">
+        @Body
+    </main>
+</div>
 
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
+    Ocorreu um erro inesperado.
+    <a href="." class="reload">Recarregar</a>
     <span class="dismiss">🗙</span>
 </div>

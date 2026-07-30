@@ -930,6 +930,29 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07), fase 4/9 — layout compartilhado e componente de
+  revelar custo. `MainLayout.razor` ganhou cabeçalho com nav
+  (Montagem/Consulta de Preços/Orçamentos, ainda sem página — fases 5-7) e
+  "Sair" (form POST pra `/account/logout`), condicionados por
+  `<AuthorizeView>` — a página de login não mostra nav nem logout (renderiza
+  a mesma `MainLayout` porque não define `@layout` próprio, mas o
+  `<AuthorizeView>` esconde o conteúdo de `<Authorized>` para usuário
+  anônimo). Links da nav usam `NavLink`; estilo `.active` exigiu
+  `::deep` no CSS isolado do componente (`NavLink` é um componente-filho,
+  CSS isolation por padrão não alcança a marcação dele sem esse
+  combinador). Modal de reconexão do Blazor Server (`ReconnectModal.razor`,
+  gerado pelo template) traduzido pra pt-BR — plano previa isso de
+  propósito ("volta e meia vai cair Wi-Fi em tablet"). `RevealCost` (novo,
+  `Components/Shared`) é o componente reutilizável de "toque pra revelar
+  custo": ao clicar mostra o valor formatado (`CultureHelpers.
+  BrazilianCulture`) por 5 segundos (parâmetro `RevealSeconds`) e volta a
+  mascarar sozinho — decisão já tomada no plano de usar "toque = revela por
+  N segundos" em vez de tentar replicar o "segurar" do Desktop (mais
+  confiável em touch, onde toque longo costuma abrir menu de contexto).
+  Ainda sem consumidor real (fases 5-7). 268/268 testes (sem novos —
+  cobertura de componente Blazor ainda em aberto pra v1, conferido
+  manualmente via `dotnet run` + `curl` com cookie: nav/logout ausentes em
+  `/login`, presentes na home autenticada).
 - Cliente web (30/07), fase 3/9 — autenticação por cookie no `BuildPc.Web`.
   `StaffPasswordValidator` (novo, `BuildPc.Core.Services` — não é específico
   do Blazor, então testável sem referenciar `BuildPc.Web` no projeto de

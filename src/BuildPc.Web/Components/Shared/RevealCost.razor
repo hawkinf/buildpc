@@ -1,0 +1,63 @@
+@implements IDisposable
+
+<button type="button" class="reveal-cost" @onclick="Reveal">
+    @if (_revealed)
+    {
+        <span>@FormattedValue</span>
+    }
+    else
+    {
+        <span class="reveal-cost-masked" aria-hidden="true">•••••</span>
+        <span class="reveal-cost-hint">toque para ver</span>
+    }
+</button>
+
+@code {
+    [Parameter, EditorRequired]
+    public decimal Value { get; set; }
+
+    // Toque revela por alguns segundos em vez de "segurar" (padrão do
+    // Desktop): mais confiável em touch, onde toque longo costuma abrir o
+    // menu de contexto do navegador/SO.
+    [Parameter]
+    public int RevealSeconds { get; set; } = 5;
+
+    private bool _revealed;
+    private CancellationTokenSource? _cts;
+
+    private string FormattedValue => Value.ToString("C", CultureHelpers.BrazilianCulture);
+
+    private void Reveal()
+    {
+        if (_revealed)
+        {
+            return;
+        }
+
+        _revealed = true;
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        _ = HideAfterDelayAsync(_cts.Token);
+    }
+
+    private async Task HideAfterDelayAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(RevealSeconds), token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        _revealed = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}

@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace BuildPc.Desktop.Services;
 
 public static class PdfPreviewService
@@ -6,6 +8,16 @@ public static class PdfPreviewService
         Path.GetTempPath(),
         "BuildPC",
         "visualizacoes-pdf");
+
+    // Path.GetInvalidFileNameChars() varia por sistema operacional (no Linux
+    // só bloqueia '/' e NUL) — a lista fixa abaixo garante a mesma
+    // sanitização em qualquer plataforma, independente de onde o preview é
+    // gerado.
+    private static readonly char[] InvalidFileNameChars = Path
+        .GetInvalidFileNameChars()
+        .Concat(['\\', '/', ':', '*', '?', '"', '<', '>', '|'])
+        .Distinct()
+        .ToArray();
 
     public static string CreatePath(string suggestedFileName)
     {
@@ -16,9 +28,10 @@ public static class PdfPreviewService
             Path.GetFileName(suggestedFileName));
         var safeName = string.Concat(
             requestedName.Select(character =>
-                Path.GetInvalidFileNameChars().Contains(character)
+                InvalidFileNameChars.Contains(character)
                     ? '_'
                     : character));
+        safeName = Regex.Replace(safeName, @"\.{2,}", "_");
         if (string.IsNullOrWhiteSpace(safeName))
         {
             safeName = "documento";

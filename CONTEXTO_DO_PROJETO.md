@@ -967,6 +967,36 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — reorganização do formulário da Montagem (pedido
+  detalhado do usuário) e zebrado nas tabelas de produtos em todo o
+  cliente web. Cliente/Telefone viraram a primeira coisa da página
+  (`build-client-box`, retângulo com fundo levemente destacado), antes do
+  resumo de preço — sempre visíveis, não dependem mais de `HasItems`.
+  Desconto ganhou máscara "R$ x.xxx,xx" de verdade (preenche da direita
+  pra esquerda, como caixa registradora): `type="text"` porque
+  `type="number"` do navegador rejeitaria os separadores, dígitos
+  extraídos a cada `@oninput` e reformatados em centavos
+  (`OnDiscountInput`) — sem JS interop, só C#/Blazor (o cursor pula pro
+  fim a cada tecla, efeito colateral conhecido desse tipo de máscara sem
+  JS; funcional, não perfeito). Validade: rótulo do zero mudou de "sem
+  prazo" pra "pronta entrega". Condições de pagamento virou `<select>`
+  (À vista / Dinheiro/Pix / Parcelado no cartão) no lugar de texto livre.
+  Condições de entrega virou dias (number) + Úteis/Corridos (`<select>`),
+  combinados em `_deliveryTerms` (`"N dias úteis"`) só na hora de gravar —
+  `ParseDeliveryTerms` tenta decompor de volta ao carregar um orçamento
+  salvo antes dessa mudança; se o texto livre antigo não bater com o
+  formato novo, os campos voltam ao padrão mas o texto original
+  continua preservado no orçamento/PDF. Observações ficou mais estreita e
+  mais alta (`height: 5.5rem`, largura menor) — já estava na posição certa
+  (logo após Entrega), só precisava do reestilo.
+
+  Zebrado (`nth-child(even)`, sem JS) nas linhas de produto: tabela de
+  itens e seletor de produto da Montagem, tabela da Consulta de Preços, e
+  tanto a lista de orçamentos quanto os itens dentro de um orçamento
+  selecionado — pedido do usuário cobria "todo o orçamento", então
+  estendido de forma consistente pras telas irmãs, não só onde foi citado
+  literalmente. 282/282 testes (sem novos — reorganização de formulário e
+  estilo puro).
 - Cliente web (30/07) — resumo da Montagem redesenhado (feedback direto do
   usuário: "extremamente amador"). Antes era texto simples com labels
   inline; agora é um cartão de estatísticas centralizado

@@ -68,6 +68,10 @@
     border-bottom: 1px solid #e2e8f0;
 }
 
+.price-table tbody tr:nth-child(even) {
+    background: #f8fafc;
+}
+
 .price-error {
     color: #e50000;
 }

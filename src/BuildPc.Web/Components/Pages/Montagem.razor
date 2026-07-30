@@ -24,6 +24,22 @@ else
         <p class="build-status">@_statusMessage</p>
     }
 
+    <section class="build-client build-client-box">
+        <label class="@(_isClientNameInvalid ? "invalid" : null)">
+            Cliente
+            <input
+                value="@_clientName"
+                @onchange="e => { _clientName = e.Value?.ToString() ?? string.Empty; _isClientNameInvalid = false; }" />
+        </label>
+        <label class="@(_isClientPhoneInvalid ? "invalid" : null)">
+            Telefone
+            <input
+                maxlength="15"
+                value="@_clientPhone"
+                @onchange="e => { _clientPhone = PhoneNumberFormatter.FormatBrazilian(e.Value?.ToString()); _isClientPhoneInvalid = false; }" />
+        </label>
+    </section>
+
     <section class="build-summary-header">
         <div class="build-summary-stat build-summary-cost">
             <span class="build-summary-label">Custo total</span>
@@ -49,16 +65,18 @@ else
     {
         <section class="build-terms">
             <label>
-                Desconto (R$)
-                <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value="@_discountAmount"
-                    @onchange="e => _discountAmount = ParseDecimalOrZero(e.Value?.ToString())" />
+                Desconto
+                <span class="build-currency-input">
+                    <span class="build-currency-prefix">R$</span>
+                    <input
+                        type="text"
+                        inputmode="numeric"
+                        value="@_discountDisplay"
+                        @oninput="OnDiscountInput" />
+                </span>
             </label>
             <label>
-                Validade (dias, 0 = sem prazo)
+                Validade (dias, 0 = pronta entrega)
                 <input
                     type="number"
                     min="0"
@@ -68,31 +86,31 @@ else
             </label>
             <label>
                 Condições de pagamento
-                <input value="@_paymentTerms" @onchange="e => _paymentTerms = e.Value?.ToString() ?? string.Empty" />
+                <select value="@_paymentTerms" @onchange="e => _paymentTerms = e.Value?.ToString() ?? string.Empty">
+                    <option value="">Selecione</option>
+                    <option value="À vista">À vista</option>
+                    <option value="Dinheiro/Pix">Dinheiro/Pix</option>
+                    <option value="Parcelado no cartão (Visa/Master)">Parcelado no cartão (Visa/Master)</option>
+                </select>
             </label>
             <label>
-                Condições de entrega
-                <input value="@_deliveryTerms" @onchange="e => _deliveryTerms = e.Value?.ToString() ?? string.Empty" />
+                Prazo de entrega
+                <span class="build-delivery-input">
+                    <input
+                        type="number"
+                        min="0"
+                        max="365"
+                        value="@_deliveryDays"
+                        @onchange="e => OnDeliveryDaysChanged(e)" />
+                    <select value="@_deliveryDayType" @onchange="e => OnDeliveryDayTypeChanged(e)">
+                        <option value="úteis">dias úteis</option>
+                        <option value="corridos">dias corridos</option>
+                    </select>
+                </span>
             </label>
             <label class="build-notes">
                 Observações
                 <textarea @onchange="e => _notes = e.Value?.ToString() ?? string.Empty">@_notes</textarea>
-            </label>
-        </section>
-
-        <section class="build-client">
-            <label class="@(_isClientNameInvalid ? "invalid" : null)">
-                Cliente
-                <input
-                    value="@_clientName"
-                    @onchange="e => { _clientName = e.Value?.ToString() ?? string.Empty; _isClientNameInvalid = false; }" />
-            </label>
-            <label class="@(_isClientPhoneInvalid ? "invalid" : null)">
-                Telefone
-                <input
-                    maxlength="15"
-                    value="@_clientPhone"
-                    @onchange="e => { _clientPhone = PhoneNumberFormatter.FormatBrazilian(e.Value?.ToString()); _isClientPhoneInvalid = false; }" />
             </label>
         </section>
 
@@ -342,9 +360,12 @@ else
     private bool _isClientPhoneInvalid;
 
     private decimal _discountAmount;
+    private string _discountDisplay = "0,00";
     private int _validityDays;
     private string _paymentTerms = string.Empty;
     private string _deliveryTerms = string.Empty;
+    private int _deliveryDays;
+    private string _deliveryDayType = "úteis";
     private string _notes = string.Empty;
 
     private SavedQuote? _savedQuote;
@@ -582,6 +603,42 @@ else
             ? value
             : 0m;
 
+    // Máscara "R$ x.xxx,xx": os dígitos digitados preenchem da direita pra
+    // esquerda, como numa maquininha de cartão — não dá pra usar
+    // type="number" (o navegador rejeitaria os separadores), então o valor
+    // é reformatado em texto a cada tecla.
+    private void OnDiscountInput(ChangeEventArgs e)
+    {
+        var digitsOnly = new string(
+            (e.Value?.ToString() ?? string.Empty).Where(char.IsDigit).ToArray());
+        var cents = digitsOnly.Length == 0 ? 0L : long.Parse(digitsOnly);
+        _discountAmount = cents / 100m;
+        _discountDisplay = _discountAmount.ToString("N2", CultureHelpers.BrazilianCulture);
+    }
+
+    private void SetDiscountDisplay() =>
+        _discountDisplay = _discountAmount.ToString("N2", CultureHelpers.BrazilianCulture);
+
+    private void OnDeliveryDaysChanged(ChangeEventArgs e)
+    {
+        _deliveryDays = Math.Clamp(
+            int.TryParse(e.Value?.ToString(), out var days) ? days : 0,
+            0,
+            365);
+        UpdateDeliveryTerms();
+    }
+
+    private void OnDeliveryDayTypeChanged(ChangeEventArgs e)
+    {
+        _deliveryDayType = e.Value?.ToString() ?? "úteis";
+        UpdateDeliveryTerms();
+    }
+
+    private void UpdateDeliveryTerms() =>
+        _deliveryTerms = _deliveryDays > 0
+            ? $"{_deliveryDays} dias {_deliveryDayType}"
+            : string.Empty;
+
     private void MarkDirty()
     {
         _isDirty = true;
@@ -637,12 +694,28 @@ else
         _clientPhone = quote.ClientPhone;
         _notes = quote.Notes;
         _discountAmount = quote.DiscountAmount;
+        SetDiscountDisplay();
         _validityDays = quote.ValidityDays;
         _paymentTerms = quote.PaymentTerms;
         _deliveryTerms = quote.DeliveryTerms;
+        (_deliveryDays, _deliveryDayType) = ParseDeliveryTerms(quote.DeliveryTerms);
         _savedQuote = quote;
         _isDirty = false;
         RefreshCompatibility();
+    }
+
+    // Orçamentos gravados antes deste campo virar dias+tipo têm texto livre
+    // em DeliveryTerms — se não bater com o formato que a tela agora gera,
+    // os controles voltam ao padrão, mas o texto original ainda é mostrado
+    // no PDF/orçamento (só a edição pelos dois campos fica indisponível).
+    private static (int Days, string Type) ParseDeliveryTerms(string deliveryTerms)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(
+            deliveryTerms,
+            @"^(\d+)\s+dias\s+(úteis|corridos)$");
+        return match.Success
+            ? (int.Parse(match.Groups[1].Value), match.Groups[2].Value)
+            : (0, "úteis");
     }
 
     private async Task SaveAsync()
@@ -716,9 +789,12 @@ else
         _clientPhone = string.Empty;
         _notes = string.Empty;
         _discountAmount = 0m;
+        SetDiscountDisplay();
         _validityDays = 0;
         _paymentTerms = string.Empty;
         _deliveryTerms = string.Empty;
+        _deliveryDays = 0;
+        _deliveryDayType = "úteis";
         _savedQuote = null;
         _isDirty = false;
         _isClearConfirmationVisible = false;
@@ -801,6 +877,7 @@ else
         if (template.KitDiscountPercent > 0)
         {
             _discountAmount = Math.Round(TotalPrice * template.KitDiscountPercent / 100m, 2);
+            SetDiscountDisplay();
         }
 
         _statusMessage = missing > 0

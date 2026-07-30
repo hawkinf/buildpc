@@ -50,6 +50,10 @@
     cursor: pointer;
 }
 
+.quote-table tbody tr:nth-child(even) {
+    background: #f8fafc;
+}
+
 .quote-table tr.selected {
     background: #e2e8f0;
 }
@@ -64,6 +68,16 @@
 
 .quote-items {
     padding-left: 1.25rem;
+    list-style: none;
+}
+
+.quote-items li {
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+}
+
+.quote-items li:nth-child(even) {
+    background: #f8fafc;
 }
 
 .quote-item-thumb {

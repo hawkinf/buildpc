@@ -42,6 +42,81 @@ else
                 Lucro: <RevealCost Value="TotalProfit" />
             </p>
         </section>
+
+        <section class="build-terms">
+            <label>
+                Desconto (R$)
+                <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value="@_discountAmount"
+                    @onchange="e => _discountAmount = ParseDecimalOrZero(e.Value?.ToString())" />
+            </label>
+            <label>
+                Validade (dias, 0 = sem prazo)
+                <input
+                    type="number"
+                    min="0"
+                    max="365"
+                    value="@_validityDays"
+                    @onchange="e => _validityDays = Math.Clamp(int.TryParse(e.Value?.ToString(), out var d) ? d : 0, 0, 365)" />
+            </label>
+            <label>
+                Condições de pagamento
+                <input value="@_paymentTerms" @onchange="e => _paymentTerms = e.Value?.ToString() ?? string.Empty" />
+            </label>
+            <label>
+                Condições de entrega
+                <input value="@_deliveryTerms" @onchange="e => _deliveryTerms = e.Value?.ToString() ?? string.Empty" />
+            </label>
+            <label class="build-notes">
+                Observações
+                <textarea @onchange="e => _notes = e.Value?.ToString() ?? string.Empty">@_notes</textarea>
+            </label>
+        </section>
+
+        <section class="build-client">
+            <label class="@(_isClientNameInvalid ? "invalid" : null)">
+                Cliente
+                <input
+                    value="@_clientName"
+                    @onchange="e => { _clientName = e.Value?.ToString() ?? string.Empty; _isClientNameInvalid = false; }" />
+            </label>
+            <label class="@(_isClientPhoneInvalid ? "invalid" : null)">
+                Telefone
+                <input
+                    maxlength="15"
+                    value="@_clientPhone"
+                    @onchange="e => { _clientPhone = PhoneNumberFormatter.FormatBrazilian(e.Value?.ToString()); _isClientPhoneInvalid = false; }" />
+            </label>
+        </section>
+
+        <section class="build-actions">
+            <button type="button" @onclick="SaveAsync">Gravar orçamento</button>
+            <button type="button" @onclick="RequestClear">Limpar</button>
+            @if (_savedQuote is not null && !_isDirty)
+            {
+                <a href="@($"/pdf/orcamento/{_savedQuote.Id}")" target="_blank">Exportar PDF</a>
+            }
+            else
+            {
+                <span class="build-export-hint">Grave o orçamento para exportar o PDF.</span>
+            }
+        </section>
+
+        @if (_isClearConfirmationVisible)
+        {
+            <p class="build-confirm">
+                Descartar a montagem atual?
+                @if (_savedQuote is not null)
+                {
+                    <span>O orçamento #@_savedQuote.Number.ToString("000000") gravado continua em Orçamentos.</span>
+                }
+                <button type="button" @onclick="Clear">Confirmar</button>
+                <button type="button" @onclick="() => _isClearConfirmationVisible = false">Cancelar</button>
+            </p>
+        }
     }
 
     <section class="build-picker">
@@ -192,81 +267,6 @@ else
             </tbody>
         </table>
         </div>
-
-        <section class="build-terms">
-            <label>
-                Desconto (R$)
-                <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value="@_discountAmount"
-                    @onchange="e => _discountAmount = ParseDecimalOrZero(e.Value?.ToString())" />
-            </label>
-            <label>
-                Validade (dias, 0 = sem prazo)
-                <input
-                    type="number"
-                    min="0"
-                    max="365"
-                    value="@_validityDays"
-                    @onchange="e => _validityDays = Math.Clamp(int.TryParse(e.Value?.ToString(), out var d) ? d : 0, 0, 365)" />
-            </label>
-            <label>
-                Condições de pagamento
-                <input value="@_paymentTerms" @onchange="e => _paymentTerms = e.Value?.ToString() ?? string.Empty" />
-            </label>
-            <label>
-                Condições de entrega
-                <input value="@_deliveryTerms" @onchange="e => _deliveryTerms = e.Value?.ToString() ?? string.Empty" />
-            </label>
-            <label class="build-notes">
-                Observações
-                <textarea @onchange="e => _notes = e.Value?.ToString() ?? string.Empty">@_notes</textarea>
-            </label>
-        </section>
-
-        <section class="build-client">
-            <label class="@(_isClientNameInvalid ? "invalid" : null)">
-                Cliente
-                <input
-                    value="@_clientName"
-                    @onchange="e => { _clientName = e.Value?.ToString() ?? string.Empty; _isClientNameInvalid = false; }" />
-            </label>
-            <label class="@(_isClientPhoneInvalid ? "invalid" : null)">
-                Telefone
-                <input
-                    maxlength="15"
-                    value="@_clientPhone"
-                    @onchange="e => { _clientPhone = PhoneNumberFormatter.FormatBrazilian(e.Value?.ToString()); _isClientPhoneInvalid = false; }" />
-            </label>
-        </section>
-
-        <section class="build-actions">
-            <button type="button" @onclick="SaveAsync">Gravar orçamento</button>
-            <button type="button" @onclick="RequestClear">Limpar</button>
-            @if (_savedQuote is not null && !_isDirty)
-            {
-                <a href="@($"/pdf/orcamento/{_savedQuote.Id}")" target="_blank">Exportar PDF</a>
-            }
-            else
-            {
-                <span class="build-export-hint">Grave o orçamento para exportar o PDF.</span>
-            }
-        </section>
-
-        @if (_isClearConfirmationVisible)
-        {
-            <p class="build-confirm">
-                Descartar a montagem atual?
-                @if (_savedQuote is not null)
-                {
-                    <span>O orçamento #@_savedQuote.Number.ToString("000000") gravado continua em Orçamentos.</span>
-                }
-                <button type="button" @onclick="Clear">Confirmar</button>
-                <button type="button" @onclick="() => _isClearConfirmationVisible = false">Cancelar</button>
-            </p>
-        }
     }
 
     <section class="build-templates">

@@ -967,6 +967,18 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — correção sobre o item anterior: só tinha movido as
+  3 linhas de total (custo/venda/lucro) pro topo da Montagem, mas a
+  captura de tela do usuário mostrava o bloco inteiro (desconto, validade,
+  condições de pagamento/entrega, observações, cliente, telefone, gravar/
+  limpar) — interpretação incompleta do pedido original, apontada
+  diretamente pelo usuário. `build-terms`/`build-client`/`build-actions`/
+  `build-confirm` movidos também, logo depois do resumo de 3 linhas e
+  antes do seletor de produto — mesma condição `HasItems`, só que agora
+  tudo faz parte do mesmo bloco no topo da página. Só o resumo de 3 linhas
+  continua `sticky` (compacto o bastante pra ficar fixo sem tomar muito
+  espaço da tela); o bloco maior de campos rola com a página normalmente.
+  282/282 testes (sem novos — reorganização pura de markup).
 - Cliente web (30/07) — dois ajustes pedidos pelo usuário via captura de
   tela da Montagem: (1) resumo (custo total/total de venda/lucro) movido
   pro topo da página, logo abaixo do título — antes só aparecia depois da

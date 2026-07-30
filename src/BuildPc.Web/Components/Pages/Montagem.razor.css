@@ -284,6 +284,46 @@
     font-size: 0.85rem;
 }
 
+.build-terms {
+    align-items: flex-end;
+}
+
+.build-field-narrow {
+    flex: 0 0 auto;
+}
+
+.build-field-narrow input[type="number"] {
+    width: 3rem;
+}
+
+.build-field-narrow select {
+    max-width: 9rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.build-terms input,
+.build-terms select,
+.build-terms .reveal-cost,
+.build-terms .build-currency-input {
+    height: 2.1rem;
+    box-sizing: border-box;
+}
+
+.build-terms input,
+.build-terms select {
+    padding: 0.3rem 0.5rem;
+    border: 1px solid #94a3b8;
+    border-radius: 4px;
+    font: inherit;
+}
+
+.build-terms .reveal-cost {
+    display: flex;
+    align-items: center;
+}
+
 .build-notes {
     flex: 2 1 20rem;
 }
@@ -445,6 +485,15 @@
     .build-client input {
         width: 100%;
         box-sizing: border-box;
+    }
+
+    .build-field-narrow,
+    .build-field-narrow input[type="number"],
+    .build-field-narrow select,
+    .build-field-narrow .build-currency-input,
+    .build-field-narrow .reveal-cost {
+        width: 100%;
+        max-width: none;
     }
 
     .build-actions {

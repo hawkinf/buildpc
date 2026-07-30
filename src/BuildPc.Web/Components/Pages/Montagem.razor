@@ -223,19 +223,8 @@ else
     @if (HasItems)
     {
         <section class="build-terms">
-            <label>
-                <span class="build-field-label">Desconto</span>
-                <span class="build-currency-input">
-                    <span class="build-currency-prefix">R$</span>
-                    <input
-                        type="text"
-                        inputmode="numeric"
-                        value="@_discountDisplay"
-                        @oninput="OnDiscountInput" />
-                </span>
-            </label>
-            <label>
-                <span class="build-field-label">Validade (dias, 0 = pronta entrega)</span>
+            <label class="build-field-narrow">
+                <span class="build-field-label">Validade</span>
                 <input
                     type="number"
                     min="0"
@@ -243,8 +232,29 @@ else
                     value="@_validityDays"
                     @onchange="e => _validityDays = Math.Clamp(int.TryParse(e.Value?.ToString(), out var d) ? d : 0, 0, 365)" />
             </label>
-            <label>
-                <span class="build-field-label">Condições de pagamento</span>
+            <label class="build-field-narrow">
+                <span class="build-field-label">Desconto</span>
+                @if (_discountRevealed)
+                {
+                    <span class="build-currency-input">
+                        <span class="build-currency-prefix">R$</span>
+                        <input
+                            type="text"
+                            inputmode="numeric"
+                            value="@_discountDisplay"
+                            @oninput="OnDiscountInput"
+                            @onblur="() => _discountRevealed = false" />
+                    </span>
+                }
+                else
+                {
+                    <button type="button" class="reveal-cost" title="Toque para ver e alterar" @onclick="() => _discountRevealed = true">
+                        <span class="reveal-cost-masked" aria-hidden="true">••••</span>
+                    </button>
+                }
+            </label>
+            <label class="build-field-narrow">
+                <span class="build-field-label">Pagamento</span>
                 <select value="@_paymentTerms" @onchange="e => _paymentTerms = e.Value?.ToString() ?? string.Empty">
                     <option value="">Selecione</option>
                     <option value="À vista">À vista</option>
@@ -252,7 +262,7 @@ else
                     <option value="Parcelado no cartão (Visa/Master)">Parcelado no cartão (Visa/Master)</option>
                 </select>
             </label>
-            <label>
+            <label class="build-field-narrow">
                 <span class="build-field-label">Prazo de entrega</span>
                 <span class="build-delivery-input">
                     <input
@@ -366,6 +376,7 @@ else
 
     private decimal _discountAmount;
     private string _discountDisplay = "0,00";
+    private bool _discountRevealed;
     private int _validityDays;
     private string _paymentTerms = string.Empty;
     private string _deliveryTerms = string.Empty;
@@ -795,6 +806,7 @@ else
         _notes = string.Empty;
         _discountAmount = 0m;
         SetDiscountDisplay();
+        _discountRevealed = false;
         _validityDays = 0;
         _paymentTerms = string.Empty;
         _deliveryTerms = string.Empty;

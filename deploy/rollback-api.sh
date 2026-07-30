@@ -17,7 +17,10 @@ if [ ! -f "$rollback_file" ]; then
     exit 1
 fi
 
-previous_target="$(cat "$rollback_file")"
+# Deploys manuais anteriores gravaram "ANTERIOR=<caminho>"; deploy-api.sh
+# grava só o caminho. Aceita os dois formatos para não quebrar num rollback
+# de uma release publicada manualmente antes deste script existir.
+previous_target="$(sed -E 's/^[A-Z_]+=//' "$rollback_file" | head -n1)"
 if [ ! -d "$previous_target" ]; then
     echo "rollback-api: $previous_target (registado em $rollback_file) não existe mais." >&2
     exit 1

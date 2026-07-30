@@ -94,13 +94,15 @@ else
                         @if (_discountRevealed)
                         {
                             <span class="build-currency-input">
-                                <span class="build-currency-prefix">R$</span>
                                 <input
-                                    type="text"
-                                    inputmode="numeric"
-                                    value="@_discountDisplay"
-                                    @oninput="OnDiscountInput"
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="100"
+                                    value="@_discountPercent"
+                                    @oninput="OnDiscountPercentInput"
                                     @onblur="() => _discountRevealed = false" />
+                                <span class="build-currency-prefix">%</span>
                             </span>
                         }
                         else
@@ -397,8 +399,7 @@ else
     private bool _isClientNameInvalid;
     private bool _isClientPhoneInvalid;
 
-    private decimal _discountAmount;
-    private string _discountDisplay = "0,00";
+    private decimal _discountPercent;
     private bool _discountRevealed;
     private int _validityDays;
     private string _paymentTerms = string.Empty;
@@ -485,8 +486,9 @@ else
     private decimal TotalProfit => FinalPrice - TotalCost;
     private decimal TotalProfitPercent =>
         TotalCost > 0m ? Math.Round(TotalProfit / TotalCost * 100m, 1) : 0m;
-    private bool HasDiscount => _discountAmount > 0m;
-    private decimal FinalPrice => Math.Max(0m, TotalPrice - _discountAmount);
+    private bool HasDiscount => _discountPercent > 0m;
+    private decimal DiscountAmount => Math.Round(TotalPrice * _discountPercent / 100m, 2);
+    private decimal FinalPrice => Math.Max(0m, TotalPrice - DiscountAmount);
 
     protected override async Task OnInitializedAsync()
     {
@@ -653,21 +655,17 @@ else
             ? value
             : 0m;
 
-    // Máscara "R$ x.xxx,xx": os dígitos digitados preenchem da direita pra
-    // esquerda, como numa maquininha de cartão — não dá pra usar
-    // type="number" (o navegador rejeitaria os separadores), então o valor
-    // é reformatado em texto a cada tecla.
-    private void OnDiscountInput(ChangeEventArgs e)
+    private void OnDiscountPercentInput(ChangeEventArgs e)
     {
-        var digitsOnly = new string(
-            (e.Value?.ToString() ?? string.Empty).Where(char.IsDigit).ToArray());
-        var cents = digitsOnly.Length == 0 ? 0L : long.Parse(digitsOnly);
-        _discountAmount = cents / 100m;
-        _discountDisplay = _discountAmount.ToString("N2", CultureHelpers.BrazilianCulture);
+        var parsed = decimal.TryParse(
+            e.Value?.ToString(),
+            System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out var value)
+            ? value
+            : 0m;
+        _discountPercent = Math.Clamp(parsed, 0m, 100m);
     }
-
-    private void SetDiscountDisplay() =>
-        _discountDisplay = _discountAmount.ToString("N2", CultureHelpers.BrazilianCulture);
 
     private void OnDeliveryDaysChanged(ChangeEventArgs e)
     {
@@ -743,8 +741,11 @@ else
         _clientName = quote.ClientName;
         _clientPhone = quote.ClientPhone;
         _notes = quote.Notes;
-        _discountAmount = quote.DiscountAmount;
-        SetDiscountDisplay();
+        // O orçamento salvo só guarda o valor em R$ (pro PDF); o campo de
+        // edição trabalha em %, então reconstruímos a partir do total atual.
+        _discountPercent = TotalPrice > 0m
+            ? Math.Round(quote.DiscountAmount / TotalPrice * 100m, 2)
+            : 0m;
         _validityDays = quote.ValidityDays;
         _paymentTerms = quote.PaymentTerms;
         _deliveryTerms = quote.DeliveryTerms;
@@ -802,7 +803,7 @@ else
                 UnitPrice = item.UnitPrice
             }).ToList(),
             CompanySnapshot = CompanySnapshot.From(_settings),
-            DiscountAmount = _discountAmount,
+            DiscountAmount = DiscountAmount,
             ValidityDays = _validityDays,
             PaymentTerms = _paymentTerms,
             DeliveryTerms = _deliveryTerms
@@ -838,8 +839,7 @@ else
         _clientName = string.Empty;
         _clientPhone = string.Empty;
         _notes = string.Empty;
-        _discountAmount = 0m;
-        SetDiscountDisplay();
+        _discountPercent = 0m;
         _discountRevealed = false;
         _validityDays = 0;
         _paymentTerms = string.Empty;
@@ -927,8 +927,7 @@ else
         _isDirty = true;
         if (template.KitDiscountPercent > 0)
         {
-            _discountAmount = Math.Round(TotalPrice * template.KitDiscountPercent / 100m, 2);
-            SetDiscountDisplay();
+            _discountPercent = template.KitDiscountPercent;
         }
 
         _statusMessage = missing > 0

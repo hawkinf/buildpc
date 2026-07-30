@@ -377,8 +377,24 @@
               </StackPanel>
             </Border>
 
+            <StackPanel Grid.Row="2"
+                        IsVisible="{Binding IsCatalogEmpty}"
+                        Spacing="6"
+                        Margin="0,40,0,0"
+                        HorizontalAlignment="Center">
+              <TextBlock Text="Nenhum produto encontrado"
+                         FontWeight="SemiBold"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource Brush.TextSecondary}" />
+              <TextBlock Text="Tente outra categoria ou ajuste o filtro de busca."
+                         FontSize="10"
+                         TextAlignment="Center"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource Brush.TextMuted}" />
+            </StackPanel>
             <ListBox Grid.Row="2"
                      ItemsSource="{Binding FilteredProducts}"
+                     IsVisible="{Binding !IsCatalogEmpty}"
                      Background="Transparent"
                      BorderThickness="0"
                      Padding="18,12,18,180"

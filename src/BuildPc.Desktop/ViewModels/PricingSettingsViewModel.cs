@@ -136,7 +136,24 @@ public sealed class PricingSettingsViewModel : ViewModelBase
     public string CompanyEmail { get => _companyEmail; set => SetProperty(ref _companyEmail, value ?? string.Empty); }
     public string CompanyWebsite { get => _companyWebsite; set => SetProperty(ref _companyWebsite, value ?? string.Empty); }
     public string CompanyAddress { get => _companyAddress; set => SetProperty(ref _companyAddress, value ?? string.Empty); }
-    public string LogoPath { get => _logoPath; set => SetProperty(ref _logoPath, value ?? string.Empty); }
+    public string LogoPath
+    {
+        get => _logoPath;
+        set
+        {
+            if (SetProperty(ref _logoPath, value ?? string.Empty))
+            {
+                OnPropertyChanged(nameof(HasLogo));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Antes só existia o caminho do arquivo em texto: sem isto, não havia
+    /// como confirmar visualmente qual logo está carregada sem gerar um PDF
+    /// de teste — e é ela que vai para todo orçamento.
+    /// </summary>
+    public bool HasLogo => !string.IsNullOrWhiteSpace(LogoPath);
     public string AdditionalQuoteInfo { get => _additionalQuoteInfo; set => SetProperty(ref _additionalQuoteInfo, value ?? string.Empty); }
 
     public string StatusMessage

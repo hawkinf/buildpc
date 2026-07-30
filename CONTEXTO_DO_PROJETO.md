@@ -898,6 +898,18 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Auditoria completa (30/07), lote 3a — UI/UX: estado vazio em Orçamentos
+  (usa `QuoteManagerViewModel.IsEmpty`, já existia mas não estava ligado no
+  XAML), Consultar Preço e Gerenciar Produtos (`PriceLookupViewModel.
+  IsEmpty`/`MainWindowViewModel.IsCatalogEmpty`, novos). Estrela de favorito
+  agora aparece no seletor de produto da Montagem e em Consultar Preço, não
+  só em Gerenciar Produtos. Novo estilo `TextBox.invalid`/`NumericUpDown.
+  invalid` (`Controls.axaml`) dá borda vermelha ao campo com erro, aplicado
+  em nome/telefone do cliente (Montagem) e nome de categoria (Gerenciar
+  Categorias) — antes só uma mensagem de texto separada avisava. O "olho" de
+  custo/lucro (Montagem e edição de produto) agora funciona segurando
+  Espaço/Enter, não só o clique do mouse. Configurações > Logomarca ganhou
+  miniatura de pré-visualização ao lado do caminho do arquivo.
 - Auditoria completa (30/07), lote 2 — lógica de negócio: CSV agora rejeita
   custo zero (só negativo era barrado) e categoria fora do enum (antes virava
   produto "fantasma": gravado, mas invisível em toda lista filtrada, sem erro

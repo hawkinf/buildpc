@@ -435,6 +435,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             ? "1 mudança de custo registrada"
             : $"{PriceHistory.Count} mudanças de custo registradas";
     public ObservableCollection<ProductListItemViewModel> FilteredProducts { get; }
+    public bool IsCatalogEmpty => FilteredProducts.Count == 0;
     public ObservableCollection<CategoryOptionViewModel> CategoryOptions { get; }
     public ObservableCollection<ProductCategoryFilterViewModel> ProductCategoryFilters { get; }
     public IReadOnlyList<ProductCatalogSortOptionViewModel> CatalogSortOptions { get; }
@@ -1993,6 +1994,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             product.SetAlternate(index % 2 == 1);
             FilteredProducts.Add(product);
         }
+
+        OnPropertyChanged(nameof(IsCatalogEmpty));
 
         foreach (var category in ProductCategoryFilters)
         {

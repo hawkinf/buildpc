@@ -201,7 +201,30 @@
                          Foreground="{DynamicResource Brush.AccentLight}" />
             </StackPanel>
           </Grid>
+          <StackPanel Grid.Row="1"
+                      IsVisible="{Binding IsEmpty}"
+                      Spacing="6"
+                      Margin="0,40,0,0"
+                      HorizontalAlignment="Center">
+            <PathIcon Data="{StaticResource Icon.Assembly}"
+                      Width="28" Height="28"
+                      HorizontalAlignment="Center"
+                      Foreground="{DynamicResource Brush.TextMuted}" />
+            <TextBlock Text="Nenhum orçamento gravado ainda"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       Foreground="{DynamicResource Brush.TextSecondary}" />
+            <TextBlock Text="Monte um orçamento na Montagem e grave para vê-lo aqui."
+                       FontSize="10"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap"
+                       MaxWidth="220"
+                       HorizontalAlignment="Center"
+                       Foreground="{DynamicResource Brush.TextMuted}" />
+          </StackPanel>
           <ListBox Grid.Row="1" ItemsSource="{Binding Quotes}"
+                   IsVisible="{Binding !IsEmpty}"
                    AutomationProperties.Name="Orçamentos gravados"
                    SelectedItem="{Binding SelectedQuote, Mode=TwoWay}"
                    Padding="0,0,22,180">
@@ -233,6 +256,21 @@
       </Border>
 
       <Border Grid.Column="1" Classes="card">
+        <Grid>
+        <StackPanel IsVisible="{Binding !HasSelection}"
+                    Spacing="6"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+          <PathIcon Data="{StaticResource Icon.Assembly}"
+                    Width="28" Height="28"
+                    HorizontalAlignment="Center"
+                    Foreground="{DynamicResource Brush.TextMuted}" />
+          <TextBlock Text="Selecione um orçamento à esquerda"
+                     FontWeight="SemiBold"
+                     TextAlignment="Center"
+                     Foreground="{DynamicResource Brush.TextSecondary}" />
+        </StackPanel>
+        <Grid IsVisible="{Binding HasSelection}">
         <Grid DataContext="{Binding SelectedQuote}" RowDefinitions="Auto,Auto,*,Auto">
           <StackPanel>
             <TextBlock Text="{Binding NumberText}" FontSize="20" FontWeight="Bold" />
@@ -299,6 +337,8 @@
                      FontSize="9"
                      TextWrapping="Wrap"
                      Foreground="{DynamicResource Brush.TextSecondary}" />
+        </Grid>
+        </Grid>
         </Grid>
       </Border>
     </Grid>

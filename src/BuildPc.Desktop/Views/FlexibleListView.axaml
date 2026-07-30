@@ -217,14 +217,22 @@
                                                           Margin="3" />
                                   </Border>
                                   <StackPanel Grid.Column="1" Spacing="1">
-                                    <controls:HighlightedTextBlock
-                                        SourceText="{Binding Name}"
-                                        Query="{Binding FilterText}"
-                                        HighlightForeground="{DynamicResource Brush.MatchForeground}"
-                                        HighlightBackground="{DynamicResource Brush.MatchBackground}"
-                                        FontSize="12" FontWeight="SemiBold"
-                                        Foreground="{DynamicResource Brush.AccentPale}"
-                                        TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                      <PathIcon Data="{StaticResource Icon.StarFilled}"
+                                                IsVisible="{Binding IsFavorite}"
+                                                Width="10" Height="10"
+                                                VerticalAlignment="Center"
+                                                Foreground="{DynamicResource Brush.Warning}"
+                                                ToolTip.Tip="Produto favorito" />
+                                      <controls:HighlightedTextBlock
+                                          SourceText="{Binding Name}"
+                                          Query="{Binding FilterText}"
+                                          HighlightForeground="{DynamicResource Brush.MatchForeground}"
+                                          HighlightBackground="{DynamicResource Brush.MatchBackground}"
+                                          FontSize="12" FontWeight="SemiBold"
+                                          Foreground="{DynamicResource Brush.AccentPale}"
+                                          TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
                                     <TextBlock Text="{Binding Brand}" FontSize="9"
                                                Foreground="{DynamicResource Brush.TextBody}" />
                                     <controls:HighlightedTextBlock
@@ -293,6 +301,7 @@
               <TextBlock Text="Nome do cliente *" FontSize="10"
                          Foreground="{DynamicResource Brush.TextLabel}" />
               <TextBox Text="{Binding ClientName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       Classes.invalid="{Binding IsClientNameInvalid}"
                        AutomationProperties.Name="Nome do cliente, obrigatório"
                        PlaceholderText="Nome para o orçamento" />
             </StackPanel>
@@ -300,6 +309,7 @@
               <TextBlock Text="Telefone *" FontSize="10"
                          Foreground="{DynamicResource Brush.TextLabel}" />
               <TextBox Text="{Binding ClientPhone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       Classes.invalid="{Binding IsClientPhoneInvalid}"
                        MaxLength="15"
                        AutomationProperties.Name="Telefone do cliente, obrigatório"
                        PlaceholderText="(00) 00000-0000" />

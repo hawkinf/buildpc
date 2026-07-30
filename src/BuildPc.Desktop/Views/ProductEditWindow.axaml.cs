@@ -30,7 +30,38 @@ public sealed partial class ProductEditWindow : Window
                 RoutingStrategies.Tunnel,
                 handledEventsToo: true);
             eyeButton.PointerCaptureLost += (_, _) => HideProductCost();
+
+            // Mesmo motivo do "olho" da Montagem: só reagia ao clique do
+            // mouse. Segura Espaço/Enter para revelar, solta para esconder.
+            eyeButton.AddHandler(KeyDownEvent, ProductCostEye_KeyDown);
+            eyeButton.AddHandler(KeyUpEvent, ProductCostEye_KeyUp);
         }
+    }
+
+    private void ProductCostEye_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Space or Key.Enter))
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.SetProductEditCostVisible(true);
+        }
+
+        e.Handled = true;
+    }
+
+    private void ProductCostEye_KeyUp(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Space or Key.Enter))
+        {
+            return;
+        }
+
+        HideProductCost();
+        e.Handled = true;
     }
 
     private void ProductCostEye_PointerPressed(

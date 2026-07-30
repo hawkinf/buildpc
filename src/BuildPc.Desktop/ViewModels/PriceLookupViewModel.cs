@@ -39,6 +39,7 @@ public sealed class PriceLookupViewModel : ViewModelBase
 
     public ObservableCollection<ProductCategoryFilterViewModel> Categories { get; }
     public ObservableCollection<PriceLookupItemViewModel> Items { get; }
+    public bool IsEmpty => Items.Count == 0;
     public ICommand ShowCostCommand { get; }
     public ICommand ShowSaleCommand { get; }
     public ICommand SortByTitleCommand { get; }
@@ -259,6 +260,8 @@ public sealed class PriceLookupViewModel : ViewModelBase
             Items.Add(product);
         }
 
+        OnPropertyChanged(nameof(IsEmpty));
+
         foreach (var category in Categories)
         {
             var totalCount = category.Value is null
@@ -303,6 +306,7 @@ public sealed class PriceLookupItemViewModel : ViewModelBase
     public string Description { get; }
     public string? ImageUrl { get; }
     public bool HasImage => !string.IsNullOrWhiteSpace(ImageUrl);
+    public bool IsFavorite => Component.IsFavorite;
     public decimal DisplayPriceValue
     {
         get => _displayPriceValue;

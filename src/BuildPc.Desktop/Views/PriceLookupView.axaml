@@ -138,8 +138,24 @@
           </Grid>
         </Border>
 
+        <StackPanel Grid.Row="2"
+                    IsVisible="{Binding IsEmpty}"
+                    Spacing="6"
+                    Margin="0,40,0,0"
+                    HorizontalAlignment="Center">
+          <TextBlock Text="Nenhum produto encontrado"
+                     FontWeight="SemiBold"
+                     HorizontalAlignment="Center"
+                     Foreground="{DynamicResource Brush.TextSecondary}" />
+          <TextBlock Text="Tente outra categoria ou ajuste o filtro de busca."
+                     FontSize="10"
+                     TextAlignment="Center"
+                     HorizontalAlignment="Center"
+                     Foreground="{DynamicResource Brush.TextMuted}" />
+        </StackPanel>
         <ListBox Grid.Row="2"
                  ItemsSource="{Binding Items}"
+                 IsVisible="{Binding !IsEmpty}"
                  AutomationProperties.Name="Produtos e preços"
                  Background="Transparent"
                  BorderThickness="0"
@@ -183,12 +199,20 @@
                     <StackPanel Grid.Column="1"
                                 Spacing="4"
                                 VerticalAlignment="Center">
-                      <TextBlock Text="{Binding Name}"
-                                 FontSize="12"
-                                 FontWeight="SemiBold"
-                                 Foreground="{DynamicResource Brush.AccentPale}"
-                                 TextTrimming="CharacterEllipsis"
-                                 MaxLines="1" />
+                      <StackPanel Orientation="Horizontal" Spacing="5">
+                        <PathIcon Data="{StaticResource Icon.StarFilled}"
+                                  IsVisible="{Binding IsFavorite}"
+                                  Width="10" Height="10"
+                                  VerticalAlignment="Center"
+                                  Foreground="{DynamicResource Brush.Warning}"
+                                  ToolTip.Tip="Produto favorito" />
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.AccentPale}"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxLines="1" />
+                      </StackPanel>
                       <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="{Binding Brand}"
                                    FontSize="10"

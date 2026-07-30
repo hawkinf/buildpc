@@ -25,6 +25,14 @@ public partial class FlexibleListView : UserControl
                 RoutingStrategies.Tunnel,
                 handledEventsToo: true);
             eyeButton.PointerCaptureLost += (_, _) => HideSensitiveTotals();
+
+            // Só pointer pressed/released reagia ao clique do mouse: quem
+            // navega só com teclado (Tab até o botão) nunca conseguia ver
+            // custo/lucro, porque Space/Enter nunca chegavam a este handler.
+            // Segura Espaço/Enter para revelar, solta para esconder — mesmo
+            // gesto de "segurar" que o mouse já usa.
+            eyeButton.AddHandler(KeyDownEvent, SensitiveTotals_KeyDown);
+            eyeButton.AddHandler(KeyUpEvent, SensitiveTotals_KeyUp);
         }
 
         // Tunelamento: os atalhos precisam funcionar mesmo com o foco dentro de
@@ -53,6 +61,32 @@ public partial class FlexibleListView : UserControl
     {
         e.Pointer.Capture(null);
         HideSensitiveTotals();
+    }
+
+    private void SensitiveTotals_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Space or Key.Enter))
+        {
+            return;
+        }
+
+        if (DataContext is FlexibleListViewModel viewModel)
+        {
+            viewModel.SetSensitiveTotalsVisible(true);
+        }
+
+        e.Handled = true;
+    }
+
+    private void SensitiveTotals_KeyUp(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Space or Key.Enter))
+        {
+            return;
+        }
+
+        HideSensitiveTotals();
+        e.Handled = true;
     }
 
     private void HideSensitiveTotals()

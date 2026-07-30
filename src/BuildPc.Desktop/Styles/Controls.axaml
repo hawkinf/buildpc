@@ -150,6 +150,18 @@
     <Setter Property="BorderThickness" Value="2" />
   </Style>
 
+  <!--
+    Antes, um campo obrigatório vazio (nome/telefone do cliente, custo,
+    nome de categoria, margem mínima) só avisava por uma TextBlock de status
+    separada do campo — fácil de não notar. A classe "invalid" destaca o
+    próprio campo com borda vermelha; quem usa também deve marcar
+    AutomationProperties.HelpText ou similar para leitores de tela.
+  -->
+  <Style Selector="TextBox.invalid, NumericUpDown.invalid">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+
   <Style Selector="ScrollBar:vertical">
     <Setter Property="Width" Value="18" />
     <Setter Property="MinWidth" Value="18" />

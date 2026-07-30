@@ -15,6 +15,8 @@ public sealed class FlexibleListViewModel : ViewModelBase
     private BusinessSettings _settings;
     private string _clientName = string.Empty;
     private string _clientPhone = string.Empty;
+    private bool _isClientNameInvalid;
+    private bool _isClientPhoneInvalid;
     private string _notes = string.Empty;
     private string _statusMessage = string.Empty;
     private bool _isStatusSuccess;
@@ -242,6 +244,10 @@ public sealed class FlexibleListViewModel : ViewModelBase
             if (SetProperty(ref _clientName, value ?? string.Empty))
             {
                 MarkDirty();
+                // Corrige o destaque assim que o usuário começa a preencher,
+                // sem esperar uma nova tentativa de gravar.
+                IsClientNameInvalid = string.IsNullOrWhiteSpace(_clientName) &&
+                    IsClientNameInvalid;
             }
         }
     }
@@ -256,8 +262,26 @@ public sealed class FlexibleListViewModel : ViewModelBase
                     PhoneNumberFormatter.FormatBrazilian(value)))
             {
                 MarkDirty();
+                IsClientPhoneInvalid = string.IsNullOrWhiteSpace(_clientPhone) &&
+                    IsClientPhoneInvalid;
             }
         }
+    }
+
+    /// <summary>
+    /// Liga a borda de erro do campo "Nome do cliente" — sem isto, a única
+    /// pista de que faltava preencher era uma mensagem de texto no rodapé.
+    /// </summary>
+    public bool IsClientNameInvalid
+    {
+        get => _isClientNameInvalid;
+        private set => SetProperty(ref _isClientNameInvalid, value);
+    }
+
+    public bool IsClientPhoneInvalid
+    {
+        get => _isClientPhoneInvalid;
+        private set => SetProperty(ref _isClientPhoneInvalid, value);
     }
 
     public string Notes
@@ -447,6 +471,8 @@ public sealed class FlexibleListViewModel : ViewModelBase
         Items.Clear();
         ClientName = string.Empty;
         ClientPhone = string.Empty;
+        IsClientNameInvalid = false;
+        IsClientPhoneInvalid = false;
         Notes = string.Empty;
         DiscountText = string.Empty;
         ValidityDays = 0;
@@ -745,8 +771,9 @@ public sealed class FlexibleListViewModel : ViewModelBase
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(ClientName) ||
-            string.IsNullOrWhiteSpace(ClientPhone))
+        IsClientNameInvalid = string.IsNullOrWhiteSpace(ClientName);
+        IsClientPhoneInvalid = string.IsNullOrWhiteSpace(ClientPhone);
+        if (IsClientNameInvalid || IsClientPhoneInvalid)
         {
             Fail("Informe o nome e o telefone do cliente.");
             return;

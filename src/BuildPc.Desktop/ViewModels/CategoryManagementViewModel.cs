@@ -10,6 +10,7 @@ public sealed class CategoryManagementViewModel : ViewModelBase
     private readonly Func<IReadOnlyList<ProductCategoryDefinition>, Task<string?>> _save;
     private CategoryManagementItemViewModel? _selectedCategory;
     private string _categoryName = string.Empty;
+    private bool _isCategoryNameInvalid;
     private string _statusMessage = string.Empty;
     private bool _isSuccess;
     private bool _isDeleteConfirmationVisible;
@@ -67,8 +68,15 @@ public sealed class CategoryManagementViewModel : ViewModelBase
             if (SetProperty(ref _categoryName, value ?? string.Empty))
             {
                 ClearStatus();
+                IsCategoryNameInvalid = false;
             }
         }
+    }
+
+    public bool IsCategoryNameInvalid
+    {
+        get => _isCategoryNameInvalid;
+        private set => SetProperty(ref _isCategoryNameInvalid, value);
     }
 
     public bool IsEditingCategory => SelectedCategory is not null;
@@ -129,6 +137,7 @@ public sealed class CategoryManagementViewModel : ViewModelBase
         var name = CategoryName.Trim();
         if (string.IsNullOrWhiteSpace(name))
         {
+            IsCategoryNameInvalid = true;
             Fail("Informe o nome da categoria.");
             return;
         }

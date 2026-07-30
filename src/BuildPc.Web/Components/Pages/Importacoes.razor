@@ -101,10 +101,15 @@ else
     // Mesmas URLs já configuradas no Desktop (buildpc.config.json) — servem
     // de ponto de partida a cada sessão, já que essa configuração não é
     // persistida no servidor (ver histórico da fase de Importações no
-    // CONTEXTO_DO_PROJETO.md). HardDrive não está aqui porque também não
-    // está configurada no Desktop.
+    // CONTEXTO_DO_PROJETO.md). HardDrive é exceção: não estava configurada
+    // no Desktop; a URL abaixo foi localizada e montada manualmente (mesmo
+    // padrão de query string das demais), sem poder confirmar via teste
+    // automatizado que o __NEXT_DATA__ da página tem o formato esperado —
+    // testar a importação dessa categoria primeiro.
     private static readonly Dictionary<ComponentCategory, string> DefaultUrls = new()
     {
+        [ComponentCategory.HardDrive] =
+            "https://www.kabum.com.br/hardware/disco-rigido-hd/pessoal/interno?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
         [ComponentCategory.Processor] =
             "https://www.kabum.com.br/hardware/processadores?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
         [ComponentCategory.Cooler] =

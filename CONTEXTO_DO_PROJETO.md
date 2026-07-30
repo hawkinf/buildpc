@@ -967,6 +967,23 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — duplo clique na linha do seletor de produtos da
+  Montagem já adiciona o item (com a quantidade atual), sem precisar
+  selecionar e depois clicar em "Adicionar" (`SelectAndAdd(product)`,
+  reaproveita o `AddItem()` existente).
+- Cliente web (30/07) — Validade/Desconto/Pagamento/Prazo de entrega (fig2)
+  e Gravar/Limpar/Exportar (fig3) subiram para dentro do topo fixo
+  (`.build-fixed-top`), ao lado do resumo Custo/Venda/Lucro — antes ficavam
+  mais abaixo na página e só apareciam depois de adicionar um item
+  (`@if (HasItems)`), pedido explícito do usuário ("nao preciso adicionar
+  um item para ele aparecer"). `SaveAsync` já tinha a validação "adicione
+  ao menos um produto antes de gravar", então tirar o `HasItems` da
+  visibilidade não abre brecha nova. Título "Montagem" removido e padding
+  superior do topo fixo reduzido para tirar espaço em branco. CSS: a antiga
+  `.build-footer-row` (Gravar/Limpar + cartão de condições lado a lado,
+  30/07 mais cedo) virou `.build-summary-row` (resumo + cartão de condições
+  lado a lado); os botões passaram a ficar embaixo dos dois, dentro do
+  mesmo topo fixo.
 - Cliente web (30/07) — dois ajustes visuais na Montagem/Consulta de
   Preços. (1) A linha Validade/Desconto/Pagamento/Prazo de entrega (fig2)
   ganhou o mesmo padrão de cartão do resumo Custo/Venda/Lucro (fig1):

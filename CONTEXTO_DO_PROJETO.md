@@ -967,6 +967,20 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — corrigida a URL de importação de HD, que eu tinha
+  montado errado na fase anterior (busquei na web em vez de checar o
+  próprio código do Desktop). `MainWindowViewModel.cs:330-337` já tinha a
+  categoria HardDrive com um `ImportSource` explícito — path
+  `/hardware/disco-rigido-hd` (sem o `/pessoal/interno` que eu tinha
+  inventado) e, importante, `sourceKey: "kabum-hd"` — diferente do
+  `"kabum"` usado por todas as outras categorias. `Importacoes.razor`
+  corrigido nos dois pontos: URL certa e um `SourceKeyFor(category)` que
+  usa `"kabum-hd"` só para HardDrive (as outras continuam `"kabum"`) — sem
+  isso, `GetLastImportsAsync` trataria a mesma categoria como duas origens
+  diferentes dependendo de qual cliente importou por último. Lição: quando
+  o comportamento de referência já existe no código do próprio projeto,
+  checar o código primeiro é mais confiável que buscar na web. 277/277
+  testes.
 - Cliente web (30/07) — responsividade mobile em todo o `BuildPc.Web`.
   Reset global `box-sizing: border-box` (`app.css`) evita que padding/
   borda estourem a largura do container — causa comum de scroll

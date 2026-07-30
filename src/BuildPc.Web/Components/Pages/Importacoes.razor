@@ -98,18 +98,14 @@ else
 
 @code {
     private IReadOnlyList<ProductCategoryDefinition> _categories = [];
-    // Mesmas URLs já configuradas no Desktop (buildpc.config.json) — servem
-    // de ponto de partida a cada sessão, já que essa configuração não é
-    // persistida no servidor (ver histórico da fase de Importações no
-    // CONTEXTO_DO_PROJETO.md). HardDrive é exceção: não estava configurada
-    // no Desktop; a URL abaixo foi localizada e montada manualmente (mesmo
-    // padrão de query string das demais), sem poder confirmar via teste
-    // automatizado que o __NEXT_DATA__ da página tem o formato esperado —
-    // testar a importação dessa categoria primeiro.
+    // Mesmas URLs já configuradas no Desktop (buildpc.config.json /
+    // MainWindowViewModel.ImportSource) — servem de ponto de partida a cada
+    // sessão, já que essa configuração não é persistida no servidor (ver
+    // histórico da fase de Importações no CONTEXTO_DO_PROJETO.md).
     private static readonly Dictionary<ComponentCategory, string> DefaultUrls = new()
     {
         [ComponentCategory.HardDrive] =
-            "https://www.kabum.com.br/hardware/disco-rigido-hd/pessoal/interno?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
+            "https://www.kabum.com.br/hardware/disco-rigido-hd?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
         [ComponentCategory.Processor] =
             "https://www.kabum.com.br/hardware/processadores?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
         [ComponentCategory.Cooler] =
@@ -164,6 +160,13 @@ else
     private bool HasConfiguredUrl(ProductCategoryDefinition category) =>
         !string.IsNullOrWhiteSpace(_urls.GetValueOrDefault(category.Value));
 
+    // Mesma chave de origem que o Desktop usa por categoria
+    // (MainWindowViewModel.ImportSource) — HardDrive é rastreado
+    // separadamente como "kabum-hd", as demais como "kabum". Manter igual
+    // aqui é o que faz GetLastImportsAsync bater entre os dois clientes.
+    private static string SourceKeyFor(ComponentCategory category) =>
+        category == ComponentCategory.HardDrive ? "kabum-hd" : "kabum";
+
     private async Task ImportAllAsync()
     {
         _confirmingAll = false;
@@ -209,7 +212,7 @@ else
                 progress);
             var result = await CatalogRepository.ReplaceImportedAsync(
                 category,
-                "kabum",
+                SourceKeyFor(category),
                 components);
             _results[category] = result;
         }

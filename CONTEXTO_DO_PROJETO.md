@@ -967,6 +967,11 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — a lista de seleção de produtos na Montagem
+  (`.build-picker-table-wrap`) ganha mais altura visível automaticamente
+  quando o topo fixo e/ou a tabela de itens adicionados está recolhido
+  (20rem → até 46rem com os dois recolhidos), aproveitando o espaço
+  liberado em vez de deixar em branco.
 - **Bug corrigido (30/07), afeta Desktop e Web igualmente: "Lucro" não
   reagia ao Desconto.** `TotalProfit`/`TotalProfitValue` sempre calculava
   `TotalPrice - TotalCost` (preço cheio, antes do desconto) em vez de

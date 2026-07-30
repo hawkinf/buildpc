@@ -14,7 +14,7 @@ public sealed record QuoteDraft
     public string ClientPhone { get; init; } = string.Empty;
     public string Notes { get; init; } = string.Empty;
     public IReadOnlyList<SavedQuoteItem> Items { get; init; } = [];
-    public BusinessSettings CompanySnapshot { get; init; } = new();
+    public CompanySnapshot CompanySnapshot { get; init; } = new();
 
     /// <summary>Desconto concedido sobre o total de venda, em reais.</summary>
     public decimal DiscountAmount { get; init; }

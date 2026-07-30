@@ -898,6 +898,18 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Auditoria completa (30/07), lote 2 — lógica de negócio: CSV agora rejeita
+  custo zero (só negativo era barrado) e categoria fora do enum (antes virava
+  produto "fantasma": gravado, mas invisível em toda lista filtrada, sem erro
+  visível). Importador Kabum agora repete também em timeout de rede
+  (`TaskCanceledException` sem cancelamento do usuário), não só em status
+  HTTP transitório. `CompanySnapshot` (novo, em `BuildPc.Core.Models`)
+  substitui `BusinessSettings` como tipo de `SavedQuote.CompanySnapshot` e
+  `QuoteDraft.CompanySnapshot` — só os campos de identificação da empresa
+  (nome, documento, telefone, e-mail, site, endereço, logo, informações
+  adicionais), não mais a margem global/por categoria nem o tema. Orçamentos
+  antigos continuam legíveis: o JSON gravado antes tinha mais campos, e o
+  `System.Text.Json` ignora os que não existem no tipo novo.
 - Auditoria completa (30/07): `/connection` agora executa `SELECT 1` de
   verdade no PostgreSQL (`PostgresBuildPcRepository.CanConnect`) — antes só
   confirmava que o processo da API estava de pé, então o rodapé podia mostrar

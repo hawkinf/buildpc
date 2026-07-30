@@ -74,7 +74,7 @@ public sealed class QuoteRepositoryTests
                             UnitPrice = 125m
                         }
                     ],
-                    CompanySnapshot = loadedSettings
+                    CompanySnapshot = CompanySnapshot.From(loadedSettings)
                 });
 
             var loaded = Assert.Single(repository.GetQuotes());
@@ -158,7 +158,7 @@ public sealed class QuoteRepositoryTests
                     ClientName = "Nina",
                     ClientPhone = "(11) 91111-0000",
                     Items = [Item(quantity: 2, unitPrice: 500m)],
-                    CompanySnapshot = new BusinessSettings(),
+                    CompanySnapshot = new CompanySnapshot(),
                     DiscountAmount = 150m,
                     ValidityDays = 15,
                     PaymentTerms = "3x sem juros",
@@ -203,7 +203,7 @@ public sealed class QuoteRepositoryTests
                     ClientName = "Otto",
                     ClientPhone = "(11) 92222-0000",
                     Items = [Item(quantity: 1, unitPrice: 100m)],
-                    CompanySnapshot = new BusinessSettings(),
+                    CompanySnapshot = new CompanySnapshot(),
                     DiscountAmount = 500m
                 });
 
@@ -217,7 +217,7 @@ public sealed class QuoteRepositoryTests
                     ClientName = "Otto",
                     ClientPhone = "(11) 92222-0000",
                     Items = [Item(quantity: 1, unitPrice: 100m)],
-                    CompanySnapshot = new BusinessSettings(),
+                    CompanySnapshot = new CompanySnapshot(),
                     DiscountAmount = -10m
                 }));
         }
@@ -306,7 +306,7 @@ public sealed class QuoteRepositoryTests
                     ClientName = "Paulo",
                     ClientPhone = "(11) 93333-0000",
                     Items = [belowFloor],
-                    CompanySnapshot = new BusinessSettings()
+                    CompanySnapshot = new CompanySnapshot()
                 }));
         }
         finally
@@ -351,6 +351,6 @@ public sealed class QuoteRepositoryTests
                         UnitPrice = 125m
                     }
                 ],
-                CompanySnapshot = new BusinessSettings()
+                CompanySnapshot = new CompanySnapshot()
             });
 }

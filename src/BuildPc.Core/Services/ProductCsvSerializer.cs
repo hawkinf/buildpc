@@ -122,8 +122,12 @@ public static class ProductCsvSerializer
             if (!int.TryParse(
                     fields[1].Trim(),
                     CultureInfo.InvariantCulture,
-                    out var categoryValue))
+                    out var categoryValue) ||
+                !Enum.IsDefined((ComponentCategory)categoryValue))
             {
+                // Um valor fora do enum não dava erro nenhum: o produto
+                // entrava no catálogo e sumia de toda lista filtrada por
+                // categoria, sem nenhum aviso ao usuário.
                 errors.Add($"Linha {index + 1}: categoria inválida.");
                 continue;
             }
@@ -135,7 +139,7 @@ public static class ProductCsvSerializer
                 continue;
             }
 
-            if (!TryParsePrice(fields[5], out var price) || price < 0)
+            if (!TryParsePrice(fields[5], out var price) || price <= 0)
             {
                 errors.Add(
                     $"Linha {index + 1}: custo inválido \"{fields[5].Trim()}\".");

@@ -157,6 +157,19 @@ public sealed partial class KabumCatalogImporter
                     return null;
                 }
             }
+            // Timeout de requisição do HttpClient: sem isto, uma conexão
+            // lenta/instável abortava a importação da página inteira na
+            // primeira falha, sem passar pela mesma espera crescente já
+            // aplicada a 429/408/5xx. "when" distingue de um cancelamento
+            // pedido pelo próprio usuário, que deve propagar normalmente.
+            catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                response?.Dispose();
+                if (attempt >= MaximumAttemptsPerPage)
+                {
+                    return null;
+                }
+            }
 
             if (attempt >= MaximumAttemptsPerPage)
             {

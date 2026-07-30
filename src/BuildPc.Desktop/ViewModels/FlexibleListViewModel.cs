@@ -699,14 +699,14 @@ public sealed class FlexibleListViewModel : ViewModelBase
     /// Monta os dados do orçamento a gravar, incluindo desconto, validade e
     /// condições comerciais informados nesta tela.
     /// </summary>
-    public QuoteDraft BuildQuoteDraft(BusinessSettings companySnapshot) =>
+    public QuoteDraft BuildQuoteDraft(BusinessSettings businessSettings) =>
         new()
         {
             ClientName = ClientName,
             ClientPhone = ClientPhone,
             Notes = Notes,
             Items = BuildQuoteItems(),
-            CompanySnapshot = companySnapshot,
+            CompanySnapshot = CompanySnapshot.From(businessSettings),
             DiscountAmount = DiscountValue,
             ValidityDays = ValidityDays,
             PaymentTerms = PaymentTerms,

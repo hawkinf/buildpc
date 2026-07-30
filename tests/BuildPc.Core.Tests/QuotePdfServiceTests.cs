@@ -25,7 +25,7 @@ public sealed class QuotePdfServiceTests
                 Notes = "Montagem e testes inclusos.",
                 TotalCost = 3500m,
                 TotalPrice = 4375m,
-                CompanySnapshot = new BusinessSettings
+                CompanySnapshot = new CompanySnapshot
                 {
                     CompanyName = "BuildPC Tecnologia",
                     CompanyDocument = "12.345.678/0001-90",
@@ -202,7 +202,7 @@ public sealed class QuotePdfServiceTests
                 ValidityDays = 10,
                 PaymentTerms = "3x sem juros",
                 DeliveryTerms = "5 dias úteis",
-                CompanySnapshot = new BusinessSettings { CompanyName = "BuildPC" },
+                CompanySnapshot = new CompanySnapshot { CompanyName = "BuildPC" },
                 Items = [Item("Processador", "CPU Teste", 1, 1000m)]
             };
 

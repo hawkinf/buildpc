@@ -41,7 +41,7 @@ public sealed record SavedQuote
     public string DeliveryTerms { get; init; } = string.Empty;
 
     public IReadOnlyList<SavedQuoteItem> Items { get; init; } = [];
-    public BusinessSettings CompanySnapshot { get; init; } = new();
+    public CompanySnapshot CompanySnapshot { get; init; } = new();
 
     /// <summary>Valor que o cliente paga: total dos itens menos o desconto.</summary>
     public decimal FinalPrice => Math.Max(0m, TotalPrice - DiscountAmount);

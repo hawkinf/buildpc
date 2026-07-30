@@ -352,6 +352,39 @@ public sealed class KabumCatalogImporterTests
     }
 
     [Fact]
+    public async Task FetchAsync_RetriesOnRequestTimeoutBeforeGivingUpOnAPage()
+    {
+        // Timeout do HttpClient (TaskCanceledException sem o usuário ter
+        // pedido cancelamento) antes só derrubava a página inteira na
+        // primeira falha, sem passar pela espera crescente do restante da
+        // política de novas tentativas.
+        var attempts = 0;
+        var handler = new ThrowThenSucceedHandler(uri =>
+        {
+            if (PageNumber(uri) != 1)
+            {
+                return (HttpStatusCode.NotFound, string.Empty);
+            }
+
+            attempts++;
+            if (attempts == 1)
+            {
+                throw new TaskCanceledException("Tempo esgotado.");
+            }
+
+            return (HttpStatusCode.OK, CatalogHtml(Product(1, "Processador Um")));
+        });
+        var importer = CreateImporter(handler, []);
+
+        var products = await importer.FetchAsync(
+            "https://www.kabum.com.br/hardware/processadores",
+            ComponentCategory.Processor);
+
+        Assert.Equal(2, attempts);
+        Assert.Single(products);
+    }
+
+    [Fact]
     public async Task FetchAsync_FailsWhenTheFirstPageNeverResponds()
     {
         var handler = new StatusHttpHandler(
@@ -417,6 +450,22 @@ public sealed class KabumCatalogImporterTests
             }
 
             return Task.FromResult(response);
+        }
+    }
+
+    private sealed class ThrowThenSucceedHandler(
+        Func<Uri, (HttpStatusCode Status, string Body)> responseFactory)
+        : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var (status, body) = responseFactory(request.RequestUri!);
+            return Task.FromResult(new HttpResponseMessage(status)
+            {
+                Content = new StringContent(body)
+            });
         }
     }
 

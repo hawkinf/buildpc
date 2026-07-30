@@ -224,9 +224,9 @@ public sealed class QuoteRepository :
                                 reader.GetString(8),
                                 JsonOptions) ?? [],
                     CompanySnapshot =
-                        JsonSerializer.Deserialize<BusinessSettings>(
+                        JsonSerializer.Deserialize<CompanySnapshot>(
                             reader.GetString(9),
-                            JsonOptions) ?? new BusinessSettings(),
+                            JsonOptions) ?? new CompanySnapshot(),
                     // Orçamentos gravados antes destes campos existirem leem
                     // zero e vazio, e continuam válidos.
                     DiscountAmount = reader.IsDBNull(10) ? 0m : reader.GetInt64(10) / 100m,

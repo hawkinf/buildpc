@@ -555,10 +555,10 @@ public sealed class PostgresBuildPcRepository :
                     Items = JsonSerializer.Deserialize<List<SavedQuoteItem>>(
                                 reader.GetString(8),
                                 JsonOptions) ?? [],
-                    CompanySnapshot = JsonSerializer.Deserialize<BusinessSettings>(
+                    CompanySnapshot = JsonSerializer.Deserialize<CompanySnapshot>(
                                           reader.GetString(9),
                                           JsonOptions) ??
-                                      new BusinessSettings(),
+                                      new CompanySnapshot(),
                     // Orçamentos gravados antes destes campos leem zero e vazio.
                     DiscountAmount = reader.IsDBNull(10) ? 0m : reader.GetInt64(10) / 100m,
                     ValidityDays = reader.IsDBNull(11) ? 0 : reader.GetInt32(11),

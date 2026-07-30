@@ -75,7 +75,6 @@ public sealed class ProductCsvSerializerTests
     [InlineData("1234,56", 1234.56)]
     [InlineData("1234.56", 1234.56)]
     [InlineData("R$ 99,90", 99.90)]
-    [InlineData("0,00", 0)]
     // Tres digitos depois do separador significam agrupamento, nao centavos.
     [InlineData("1.234", 1234)]
     [InlineData("1234", 1234)]
@@ -139,6 +138,30 @@ public sealed class ProductCsvSerializerTests
 
         Assert.Empty(result.Products);
         Assert.True(result.HasErrors);
+    }
+
+    [Fact]
+    public void ZeroPriceIsRejected()
+    {
+        // Um custo zerado zeraria também o preço de venda (custo x margem) e
+        // quebraria qualquer cálculo de lucro percentual (divisão por zero).
+        var result = ProductCsvSerializer.Parse(
+            "custom-zero;0;CPU;AMD;Descrição;0,00");
+
+        Assert.Empty(result.Products);
+        Assert.True(result.HasErrors);
+    }
+
+    [Fact]
+    public void CategoryOutsideTheEnumIsRejected()
+    {
+        // Antes virava um produto "fantasma": gravado, mas invisível em toda
+        // lista filtrada por categoria, sem nenhum erro visível ao usuário.
+        var result = ProductCsvSerializer.Parse(
+            "custom-categoria;999;CPU;AMD;Descrição;100,00");
+
+        Assert.Empty(result.Products);
+        Assert.Contains(result.Errors, error => error.Contains("categoria inválida"));
     }
 
     [Fact]

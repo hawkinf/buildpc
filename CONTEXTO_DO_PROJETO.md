@@ -930,6 +930,29 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07), fase 6/9 — tela de Orçamentos (`Orcamentos.razor`,
+  `/orcamentos`). Lista + detalhe (mesmo padrão mestre-detalhe do
+  `QuoteManagerViewModel` do Desktop): filtro por período
+  (`QuoteFilter.IsInPeriod`) e busca com debounce de 300ms
+  (`QuoteFilter.Matches`), excluir com confirmação em duas etapas,
+  "Abrir na Montagem" e "Duplicar" — como a tela de Montagem só chega na
+  fase 7, os dois viram links pra `/montagem?editar={id}` e
+  `/montagem?duplicar={id}` que ainda não resolvem (mesma situação dos
+  links de nav criados na fase 4): o handoff de estado entre as duas
+  páginas é só esse id na query string — a Montagem vai recarregar o
+  orçamento do zero via `GetQuotesAsync()`, não hà nada compartilhado em
+  memória entre circuitos Blazor Server diferentes. PDF é outro endpoint
+  minimal-API (`GET /pdf/orcamento/{id:guid}`, mesmo padrão da fase 5):
+  como `IQuoteRepository` não tem "buscar por id", filtra a lista completa
+  de `GetQuotesAsync()` em memória (orçamento não tem volume que
+  justifique um endpoint dedicado na API) e usa `QuotePdfService.Export`
+  (não o `PdfPreviewService` do Desktop, que grava em pasta temporária
+  local — sem sentido num servidor) escrevendo num arquivo temporário,
+  lendo os bytes e apagando antes de responder. 277/277 testes (sem
+  novos — a página só orquestra `QuoteFilter`, já coberto). Testado
+  manualmente via `curl` com cookie: `/orcamentos` carrega, PDF exige
+  login (302 sem cookie) e falha só pela API de teste inalcançável
+  (mesma `InvalidOperationException` de sempre).
 - Cliente web (30/07), fase 5/9 — primeira tela real: Consulta de Preços
   (`Precos.razor`, `/precos`). `PriceTableRowBuilder` (novo,
   `BuildPc.Core.Services` — mesmo motivo do `StaffPasswordValidator` na fase

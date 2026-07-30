@@ -185,6 +185,42 @@ app.MapGet(
     })
     .RequireAuthorization();
 
+// Mesmo raciocínio do endpoint acima: GetQuotesAsync não tem uma versão
+// "por id" na API, então filtra a lista completa em memória — a lista de
+// orçamentos não chega perto do volume que justificaria um endpoint novo.
+app.MapGet(
+    "/pdf/orcamento/{id:guid}",
+    async Task<IResult> (Guid id, IQuoteRepository quoteRepository) =>
+    {
+        var quotes = await quoteRepository.GetQuotesAsync();
+        var quote = quotes.FirstOrDefault(quote => quote.Id == id);
+        if (quote is null)
+        {
+            return Results.NotFound();
+        }
+
+        var tempPath = Path.Combine(
+            Path.GetTempPath(),
+            $"buildpc-web-orcamento-{Guid.NewGuid():N}.pdf");
+        try
+        {
+            await Task.Run(() => new QuotePdfService().Export(quote, tempPath));
+            var bytes = await File.ReadAllBytesAsync(tempPath);
+            return Results.File(
+                bytes,
+                "application/pdf",
+                $"orcamento-{quote.Number:000000}.pdf");
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
+    })
+    .RequireAuthorization();
+
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

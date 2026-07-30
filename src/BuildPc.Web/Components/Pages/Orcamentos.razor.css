@@ -1,0 +1,73 @@
+.quote-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.quote-toolbar select,
+.quote-toolbar input[type="search"] {
+    padding: 0.5rem;
+    font-size: 1rem;
+}
+
+.quote-status {
+    color: #1f2933;
+    font-weight: 600;
+}
+
+.quote-error {
+    color: #e50000;
+}
+
+.quote-layout {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.quote-table {
+    border-collapse: collapse;
+    flex: 1;
+    min-width: 20rem;
+}
+
+.quote-table th,
+.quote-table td {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.quote-table tr {
+    cursor: pointer;
+}
+
+.quote-table tr.selected {
+    background: #e2e8f0;
+}
+
+.quote-detail {
+    min-width: 18rem;
+    max-width: 24rem;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+}
+
+.quote-items {
+    padding-left: 1.25rem;
+}
+
+.quote-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.quote-actions button {
+    cursor: pointer;
+}

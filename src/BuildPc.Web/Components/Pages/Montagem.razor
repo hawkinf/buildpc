@@ -222,74 +222,76 @@ else
 
     @if (HasItems)
     {
-        <section class="build-terms">
-            <label class="build-field-narrow">
-                <span class="build-field-label">Validade</span>
-                <input
-                    type="number"
-                    min="0"
-                    max="365"
-                    value="@_validityDays"
-                    @onchange="e => _validityDays = Math.Clamp(int.TryParse(e.Value?.ToString(), out var d) ? d : 0, 0, 365)" />
-            </label>
-            <label class="build-field-narrow">
-                <span class="build-field-label">Desconto</span>
-                @if (_discountRevealed)
+        <section class="build-footer-row">
+            <div class="build-actions">
+                <button type="button" @onclick="SaveAsync">Gravar orçamento</button>
+                <button type="button" @onclick="RequestClear">Limpar</button>
+                @if (_savedQuote is not null && !_isDirty)
                 {
-                    <span class="build-currency-input">
-                        <span class="build-currency-prefix">R$</span>
-                        <input
-                            type="text"
-                            inputmode="numeric"
-                            value="@_discountDisplay"
-                            @oninput="OnDiscountInput"
-                            @onblur="() => _discountRevealed = false" />
-                    </span>
+                    <a href="@($"/pdf/orcamento/{_savedQuote.Id}")" target="_blank">Exportar PDF</a>
                 }
                 else
                 {
-                    <button type="button" class="reveal-cost" title="Toque para ver e alterar" @onclick="() => _discountRevealed = true">
-                        <span class="reveal-cost-masked" aria-hidden="true">••••</span>
-                    </button>
+                    <span class="build-export-hint">Grave o orçamento para exportar o PDF.</span>
                 }
-            </label>
-            <label class="build-field-narrow">
-                <span class="build-field-label">Pagamento</span>
-                <select value="@_paymentTerms" @onchange="e => _paymentTerms = e.Value?.ToString() ?? string.Empty">
-                    <option value="">Selecione</option>
-                    <option value="À vista">À vista</option>
-                    <option value="Dinheiro/Pix">Dinheiro/Pix</option>
-                    <option value="Parcelado no cartão (Visa/Master)">Parcelado no cartão (Visa/Master)</option>
-                </select>
-            </label>
-            <label class="build-field-narrow">
-                <span class="build-field-label">Prazo de entrega</span>
-                <span class="build-delivery-input">
+            </div>
+
+            <div class="build-terms-card">
+                <label class="build-term-stat build-field-narrow">
+                    <span class="build-term-label">Validade</span>
                     <input
                         type="number"
                         min="0"
                         max="365"
-                        value="@_deliveryDays"
-                        @onchange="e => OnDeliveryDaysChanged(e)" />
-                    <select value="@_deliveryDayType" @onchange="e => OnDeliveryDayTypeChanged(e)">
-                        <option value="úteis">dias úteis</option>
-                        <option value="corridos">dias corridos</option>
+                        value="@_validityDays"
+                        @onchange="e => _validityDays = Math.Clamp(int.TryParse(e.Value?.ToString(), out var d) ? d : 0, 0, 365)" />
+                </label>
+                <label class="build-term-stat build-field-narrow">
+                    <span class="build-term-label">Desconto</span>
+                    @if (_discountRevealed)
+                    {
+                        <span class="build-currency-input">
+                            <span class="build-currency-prefix">R$</span>
+                            <input
+                                type="text"
+                                inputmode="numeric"
+                                value="@_discountDisplay"
+                                @oninput="OnDiscountInput"
+                                @onblur="() => _discountRevealed = false" />
+                        </span>
+                    }
+                    else
+                    {
+                        <button type="button" class="reveal-cost" title="Toque para ver e alterar" @onclick="() => _discountRevealed = true">
+                            <span class="reveal-cost-masked" aria-hidden="true">••••</span>
+                        </button>
+                    }
+                </label>
+                <label class="build-term-stat build-field-narrow">
+                    <span class="build-term-label">Pagamento</span>
+                    <select value="@_paymentTerms" @onchange="e => _paymentTerms = e.Value?.ToString() ?? string.Empty">
+                        <option value="">Selecione</option>
+                        <option value="À vista">À vista</option>
+                        <option value="Dinheiro/Pix">Dinheiro/Pix</option>
+                        <option value="Parcelado no cartão (Visa/Master)">Parcelado no cartão (Visa/Master)</option>
                     </select>
-                </span>
-            </label>
-        </section>
-
-        <section class="build-actions">
-            <button type="button" @onclick="SaveAsync">Gravar orçamento</button>
-            <button type="button" @onclick="RequestClear">Limpar</button>
-            @if (_savedQuote is not null && !_isDirty)
-            {
-                <a href="@($"/pdf/orcamento/{_savedQuote.Id}")" target="_blank">Exportar PDF</a>
-            }
-            else
-            {
-                <span class="build-export-hint">Grave o orçamento para exportar o PDF.</span>
-            }
+                </label>
+                <label class="build-term-stat build-field-narrow">
+                    <span class="build-term-label">Prazo de entrega</span>
+                    <span class="build-delivery-input">
+                        <input
+                            type="number"
+                            min="0"
+                            max="365"
+                            value="@_deliveryDays"
+                            @onchange="e => OnDeliveryDaysChanged(e)" />
+                        <select value="@_deliveryDayType" @onchange="e => OnDeliveryDayTypeChanged(e)">
+                            <option value="úteis">dias úteis</option>
+                            <option value="corridos">dias corridos</option>
+                        </select>
+                    </span>
+                </label>
+            </div>
         </section>
 
         @if (_isClearConfirmationVisible)

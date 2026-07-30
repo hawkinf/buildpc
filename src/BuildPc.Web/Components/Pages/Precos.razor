@@ -68,7 +68,6 @@ else
                         Produto @(SortIcon(byPrice: false))
                     </button>
                 </th>
-                <th>Categoria</th>
                 <th>
                     <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: true)">
                         @(_showSalePrice ? "Preço de venda" : "Custo") @(SortIcon(byPrice: true))
@@ -95,7 +94,6 @@ else
                             @row.Title
                         </ProductHoverPreview>
                     </td>
-                    <td>@row.CategoryName</td>
                     <td>
                         @if (_showSalePrice)
                         {

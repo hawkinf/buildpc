@@ -8,4 +8,5 @@ TestResults/
 dist/
 output/
 tmp/
+publish/
 buildpc.config.json

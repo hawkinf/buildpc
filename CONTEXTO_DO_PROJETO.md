@@ -967,6 +967,35 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — resumo da Montagem redesenhado (feedback direto do
+  usuário: "extremamente amador"). Antes era texto simples com labels
+  inline; agora é um cartão de estatísticas centralizado
+  (`build-summary-header`): 3 blocos (Custo total/Total de venda/Lucro)
+  separados por divisórias verticais, rótulo pequeno em maiúsculas acima
+  do valor grande (1.6-2rem), Total de venda em azul e maior que os
+  outros (é o número voltado pro cliente), Custo em vermelho, Lucro em
+  verde — tudo dentro de `RevealCost`/mascarado como antes. **Passou a
+  aparecer sempre**, mesmo com o carrinho vazio (mostra zerado) — antes só
+  renderizava depois do primeiro item adicionado (`@if (HasItems)` também
+  envolvia o resumo; separei o resumo dessa condição, mantida só pro
+  restante do formulário — desconto/cliente/etc. continuam fazendo sentido
+  só depois de ter item).
+
+  Lucro agora mostra o percentual junto (`TotalProfitPercent =
+  round(lucro/custo × 100, 1)`, mesma fórmula do Desktop) — mas **dentro do
+  mesmo toque-para-revelar**, não como texto separado sempre visível: o
+  percentual sozinho já permitiria calcular o custo de volta a partir do
+  Total de venda (esse sim sempre visível), então mascarar só o valor em
+  R$ e deixar a % solta anularia a proteção. `RevealCost` (Core, fase 4)
+  ganhou um parâmetro `Suffix` opcional pra isso — revelado junto com o
+  valor principal, não antes. Estilo do `RevealCost` dentro do cartão
+  sobrescrito via `::deep` (CSS isolation não alcança um componente-filho
+  por padrão) só dentro de `.build-summary-header`, sem afetar as outras
+  instâncias (tabela de itens, Consulta de Preços). No celular, o cartão
+  vira coluna única e sai do modo `sticky` (empilhado ficaria alto demais
+  fixo permanentemente na tela). 282/282 testes (sem novos — só
+  reorganização visual e uma fórmula já coberta indiretamente pelos
+  cálculos de `PricingCalculator`).
 - Cliente web (30/07) — correção sobre o item anterior: só tinha movido as
   3 linhas de total (custo/venda/lucro) pro topo da Montagem, mas a
   captura de tela do usuário mostrava o bloco inteiro (desconto, validade,

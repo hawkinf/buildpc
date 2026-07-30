@@ -24,25 +24,29 @@ else
         <p class="build-status">@_statusMessage</p>
     }
 
-    @if (HasItems)
-    {
-        <section class="build-summary build-summary-header">
-            <p>
-                Custo total: <RevealCost Value="TotalCost" />
-            </p>
-            <p>
-                Total de venda:
+    <section class="build-summary-header">
+        <div class="build-summary-stat build-summary-cost">
+            <span class="build-summary-label">Custo total</span>
+            <RevealCost Value="TotalCost" />
+        </div>
+        <div class="build-summary-stat build-summary-price">
+            <span class="build-summary-label">Total de venda</span>
+            <span class="build-summary-value">
                 @if (HasDiscount)
                 {
-                    <s>@TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)</s>
+                    <s class="build-summary-strike">@TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)</s>
                 }
-                <strong>@FinalPrice.ToString("C", CultureHelpers.BrazilianCulture)</strong>
-            </p>
-            <p>
-                Lucro: <RevealCost Value="TotalProfit" />
-            </p>
-        </section>
+                @FinalPrice.ToString("C", CultureHelpers.BrazilianCulture)
+            </span>
+        </div>
+        <div class="build-summary-stat build-summary-profit">
+            <span class="build-summary-label">Lucro</span>
+            <RevealCost Value="TotalProfit" Suffix="@($"({TotalProfitPercent.ToString("0.0", CultureHelpers.BrazilianCulture)}%)")" />
+        </div>
+    </section>
 
+    @if (HasItems)
+    {
         <section class="build-terms">
             <label>
                 Desconto (R$)
@@ -414,6 +418,8 @@ else
     private decimal TotalCost => _items.Sum(item => item.TotalCost);
     private decimal TotalPrice => _items.Sum(item => item.TotalPrice);
     private decimal TotalProfit => TotalPrice - TotalCost;
+    private decimal TotalProfitPercent =>
+        TotalCost > 0m ? Math.Round(TotalProfit / TotalCost * 100m, 1) : 0m;
     private bool HasDiscount => _discountAmount > 0m;
     private decimal FinalPrice => Math.Max(0m, TotalPrice - _discountAmount);
 

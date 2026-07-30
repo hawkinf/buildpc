@@ -16,6 +16,12 @@
     [Parameter, EditorRequired]
     public decimal Value { get; set; }
 
+    // Revelado junto com o valor, nunca separado: um percentual de lucro
+    // sozinho já permitiria calcular o custo de volta a partir do total de
+    // venda (sempre visível), então não pode ficar visível antes do toque.
+    [Parameter]
+    public string? Suffix { get; set; }
+
     // Toque revela por alguns segundos em vez de "segurar" (padrão do
     // Desktop): mais confiável em touch, onde toque longo costuma abrir o
     // menu de contexto do navegador/SO.
@@ -25,7 +31,9 @@
     private bool _revealed;
     private CancellationTokenSource? _cts;
 
-    private string FormattedValue => Value.ToString("C", CultureHelpers.BrazilianCulture);
+    private string FormattedValue => string.IsNullOrEmpty(Suffix)
+        ? Value.ToString("C", CultureHelpers.BrazilianCulture)
+        : $"{Value.ToString("C", CultureHelpers.BrazilianCulture)} {Suffix}";
 
     private void Reveal()
     {

@@ -208,7 +208,7 @@ public sealed partial class MainWindow : Window
             MimeTypes = ["text/csv"]
         };
 
-    private async void CatalogProduct_Click(
+    private void CatalogProduct_Click(
         object? sender,
         Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -221,25 +221,14 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        // Único formulário de edição de produto: EditProductCommand já leva
+        // para a tela de Gerenciar Produtos (BeginEditProductAsync chama
+        // ShowToolView antes do primeiro "await").
         product.SelectCommand.Execute(null);
         viewModel.EditProductCommand.Execute(null);
-        if (!viewModel.IsEditingProduct)
+        if (viewModel.IsEditingProduct)
         {
-            return;
-        }
-
-        e.Handled = true;
-        try
-        {
-            var editor = new ProductEditWindow
-            {
-                DataContext = viewModel
-            };
-            await editor.ShowDialog(this);
-        }
-        catch (Exception exception)
-        {
-            CrashLogService.Record("Edição de produto", exception);
+            e.Handled = true;
         }
     }
 }

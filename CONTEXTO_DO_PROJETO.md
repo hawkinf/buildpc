@@ -900,6 +900,31 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Auditoria completa (30/07), lote 3c — consolidação da edição de produto:
+  existiam dois formulários completos para o mesmo produto (`ProductEditWindow`,
+  modal aberto ao clicar numa linha em Gerenciar Produtos, e
+  `ProductManagementView`, tela cheia aberta por "Novo produto"), ambos ligados
+  às mesmas propriedades/comandos de `MainWindowViewModel` mas com UI
+  duplicada e divergente — só o modal tinha o "olho" de custo/lucro
+  (mascarado + venda/lucro/%lucro) e o painel de histórico de preço.
+  `ProductEditWindow` foi removido; `ProductManagementView.axaml` ganhou o
+  bloco de custo/venda/lucro com o olho (pointer + Espaço/Enter, mesmo
+  padrão da Montagem) e o painel de histórico de preço, portados do modal.
+  `BeginEditProductAsync` agora chama `ShowToolView("product-management")`
+  antes do primeiro `await`, então `EditProductCommand` navega sozinho para
+  a tela — `CatalogProduct_Click` (clique numa linha de Gerenciar Produtos)
+  não abre mais janela nenhuma, só seleciona e edita. `ShowView` já era
+  idempotente (não faz nada se a view pedida já é a atual), então chamar a
+  partir do próprio botão "Editar" dentro de `ProductManagementView` é
+  seguro. **Sem cobertura de teste automatizado para nenhum dos dois fluxos
+  antes ou depois** (confirmado por busca — nenhum teste referencia
+  `MainWindowViewModel`, `ProductEditWindow` ou `ProductManagementView`);
+  verificação feita por build com compiled bindings (0 erros/avisos, pega
+  binding quebrado) e leitura de código; a verificação visual manual nesta
+  sessão foi interrompida por instabilidade do ambiente de automação de
+  clique (janela sendo minimizada sozinha), não por um erro do aplicativo —
+  vale um teste manual de verdade (clicar numa linha, conferir olho e
+  histórico, salvar) antes do próximo release.
 - Auditoria completa (30/07), lote 3b — duas funcionalidades novas: (1)
   `CompatibilityService` (soquete CPU/placa-mãe, tipo de memória, cooler,
   formato do gabinete, wattagem da fonte) já existia testado mas nenhuma

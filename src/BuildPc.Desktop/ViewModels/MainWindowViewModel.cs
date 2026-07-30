@@ -1819,6 +1819,12 @@ public sealed class MainWindowViewModel : ViewModelBase
         SelectCatalogProduct(null);
         SetProductEditCostVisible(false);
         SetEditingProductId(selected.Id);
+
+        // Único formulário de edição de produto agora: a lista de Gerenciar
+        // Produtos e o próprio Gerenciar Produtos (tela cheia) levam para cá.
+        // Chamado antes do primeiro "await" para navegar já na parte síncrona.
+        ShowToolView("product-management");
+
         SelectedProductCategory = CategoryOptions.First(category =>
             category.Value == selected.Category);
         ProductName = selected.Name;

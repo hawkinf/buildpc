@@ -95,13 +95,123 @@
                          MinHeight="70" />
               </StackPanel>
 
-              <StackPanel Spacing="6">
-                <TextBlock Text="Custo *"
-                           FontSize="11"
-                           Foreground="{DynamicResource Brush.TextLabel}" />
-                <TextBox Text="{Binding ProductPrice, Mode=TwoWay}"
-                         PlaceholderText="Ex.: 1299,90" />
-              </StackPanel>
+              <Border Classes="input-group" Padding="10,8">
+                <Grid ColumnDefinitions="*,1.35*,*,*" ColumnSpacing="8">
+                  <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock Text="Valor de venda"
+                               FontSize="9"
+                               Foreground="{DynamicResource Brush.TextLabel}" />
+                    <Border Height="34"
+                            CornerRadius="7"
+                            BorderBrush="{DynamicResource Brush.InputBorder}"
+                            BorderThickness="1"
+                            Background="{DynamicResource Brush.InputBackground}"
+                            Padding="9,0">
+                      <TextBlock Text="{Binding ProductSalePrice}"
+                                 HorizontalAlignment="Right"
+                                 VerticalAlignment="Center"
+                                 FontSize="11"
+                                 FontWeight="SemiBold" />
+                    </Border>
+                  </StackPanel>
+
+                  <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock Text="Custo *"
+                               FontSize="9"
+                               Foreground="{DynamicResource Brush.TextLabel}" />
+                    <Grid>
+                      <TextBox Text="{Binding ProductPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                               PasswordChar="*"
+                               IsVisible="{Binding IsProductEditCostHidden}"
+                               PlaceholderText="********"
+                               MinHeight="34"
+                               Height="34"
+                               Padding="25,4,38,4"
+                               TextAlignment="Right" />
+                      <TextBox Text="{Binding ProductPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                               IsVisible="{Binding IsProductEditCostVisible}"
+                               MinHeight="34"
+                               Height="34"
+                               Padding="25,4,38,4"
+                               TextAlignment="Right" />
+                      <TextBlock Text="R$"
+                                 Margin="8,0,0,0"
+                                 HorizontalAlignment="Left"
+                                 VerticalAlignment="Center"
+                                 IsHitTestVisible="False"
+                                 FontSize="9"
+                                 Foreground="{DynamicResource Brush.TextSecondary}" />
+                      <Button x:Name="productCostEyeButton"
+                              Classes="list-header"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Center"
+                              Margin="0,0,3,0"
+                              Width="28"
+                              MinWidth="28"
+                              Height="28"
+                              MinHeight="28"
+                              Padding="5"
+                              AutomationProperties.Name="Mantenha pressionado para revelar custo e lucro"
+                              ToolTip.Tip="Mantenha pressionado para revelar custo e lucro">
+                        <PathIcon Data="{StaticResource Icon.Eye}"
+                                  Width="13"
+                                  Height="13"
+                                  Foreground="{DynamicResource Brush.AccentLight}" />
+                      </Button>
+                    </Grid>
+                  </StackPanel>
+
+                  <StackPanel Grid.Column="2" Spacing="4">
+                    <TextBlock Text="Lucro"
+                               FontSize="9"
+                               Foreground="{DynamicResource Brush.TextLabel}" />
+                    <Border Height="34"
+                            CornerRadius="7"
+                            BorderBrush="{DynamicResource Brush.InputBorder}"
+                            BorderThickness="1"
+                            Background="{DynamicResource Brush.InputBackground}"
+                            Padding="8,0">
+                      <Grid>
+                        <TextBlock Text="********"
+                                   IsVisible="{Binding IsProductEditCostHidden}"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ProductProfit}"
+                                   IsVisible="{Binding IsProductEditCostVisible}"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center"
+                                   FontSize="10"
+                                   FontWeight="SemiBold" />
+                      </Grid>
+                    </Border>
+                  </StackPanel>
+
+                  <StackPanel Grid.Column="3" Spacing="4">
+                    <TextBlock Text="% de lucro"
+                               FontSize="9"
+                               Foreground="{DynamicResource Brush.TextLabel}" />
+                    <Border Height="34"
+                            CornerRadius="7"
+                            BorderBrush="{DynamicResource Brush.InputBorder}"
+                            BorderThickness="1"
+                            Background="{DynamicResource Brush.InputBackground}"
+                            Padding="8,0">
+                      <Grid>
+                        <TextBlock Text="********"
+                                   IsVisible="{Binding IsProductEditCostHidden}"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ProductProfitPercent}"
+                                   IsVisible="{Binding IsProductEditCostVisible}"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center"
+                                   FontSize="10"
+                                   FontWeight="SemiBold" />
+                      </Grid>
+                    </Border>
+                  </StackPanel>
+                </Grid>
+              </Border>
             </StackPanel>
           </Border>
 
@@ -167,6 +277,71 @@
                      IsVisible="{Binding IsProductFormSuccess}"
                      Foreground="{DynamicResource Brush.Success}"
                      FontSize="11" />
+
+          <!--
+            Histórico de custo: mostra se o fornecedor subiu ou baixou o
+            preço desde a carga anterior, para decidir a margem com contexto.
+          -->
+          <Border Classes="card" IsVisible="{Binding HasPriceHistory}">
+            <StackPanel Spacing="10">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Histórico de custo" FontSize="14" FontWeight="Bold" />
+                <TextBlock Text="{Binding PriceHistoryCountText}"
+                           FontSize="10"
+                           Foreground="{DynamicResource Brush.TextSecondary}" />
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding PriceHistory}"
+                            AutomationProperties.Name="Histórico de custo do produto">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PriceHistoryItemViewModel">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto"
+                          ColumnSpacing="10"
+                          Margin="0,0,0,5">
+                      <TextBlock Text="{Binding RecordedAt}"
+                                 FontSize="10"
+                                 VerticalAlignment="Center"
+                                 Foreground="{DynamicResource Brush.TextSecondary}" />
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding Source}"
+                                 FontSize="9"
+                                 VerticalAlignment="Center"
+                                 Foreground="{DynamicResource Brush.TextMuted}" />
+                      <TextBlock Grid.Column="2"
+                                 Text="{Binding Price}"
+                                 FontSize="11"
+                                 FontWeight="SemiBold"
+                                 VerticalAlignment="Center"
+                                 TextAlignment="Right" />
+                      <StackPanel Grid.Column="3"
+                                  Orientation="Horizontal"
+                                  Spacing="5"
+                                  MinWidth="120"
+                                  VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Difference}"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   IsVisible="{Binding IsIncrease}"
+                                   Foreground="{DynamicResource Brush.Error}" />
+                        <TextBlock Text="{Binding PercentChange}"
+                                   FontSize="9"
+                                   IsVisible="{Binding IsIncrease}"
+                                   Foreground="{DynamicResource Brush.Error}" />
+                        <TextBlock Text="{Binding Difference}"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   IsVisible="{Binding IsDecrease}"
+                                   Foreground="{DynamicResource Brush.Success}" />
+                        <TextBlock Text="{Binding PercentChange}"
+                                   FontSize="9"
+                                   IsVisible="{Binding IsDecrease}"
+                                   Foreground="{DynamicResource Brush.Success}" />
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
 
           <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
             <Button Classes="secondary"

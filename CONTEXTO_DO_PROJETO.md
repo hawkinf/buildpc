@@ -967,6 +967,42 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- **Bug corrigido (30/07), afeta Desktop e Web igualmente: "Lucro" não
+  reagia ao Desconto.** `TotalProfit`/`TotalProfitValue` sempre calculava
+  `TotalPrice - TotalCost` (preço cheio, antes do desconto) em vez de
+  `FinalPrice - TotalCost` (preço final, depois do desconto) — digitar um
+  desconto atualizava corretamente "Total de venda", mas "Lucro" ficava
+  parado. No Desktop havia um segundo problema empilhado: mesmo corrigindo
+  a fórmula, o setter de `DiscountText` nunca disparava
+  `OnPropertyChanged(nameof(TotalProfitValue))`/`TotalProfitPercent`, então
+  a tela nem repintava. Corrigido nos dois lados (não há fórmula
+  compartilhada aqui porque Desktop e Web mantêm suas próprias árvores de
+  propriedades, mas a regra passou a ser idêntica). Novo teste
+  `DiscountReducesTotalProfit` cobre a regressão.
+- **Mudança de regra de negócio (30/07), afeta Desktop e Web igualmente:
+  margem mínima de 15% para 20%.** Pedido do usuário: poder editar o preço
+  unitário manualmente, contanto que nunca fique abaixo de 20% de margem
+  sobre o custo. A trava já existia
+  (`BusinessSettings.MinimumMarginPercent`, único lugar que define o piso,
+  usado tanto para clampar margens configuradas quanto para o preço mínimo
+  ao editar manualmente na tabela de itens) — só o valor estava em 15%.
+  Mudar essa única constante bastou; nenhum código novo em Desktop ou Web.
+  3 testes recalculados para o novo piso (não eram bugs, só ficaram
+  desatualizados com o 15% antigo): `BusinessSettings_
+  ClampPersistedMarginsBelowMinimum`, `SellingPrice_
+  CannotProduceProfitBelowFifteenPercent` (renomeado para `...
+  BelowTwentyPercent`), e `QuoteRepositoryTests.
+  SettingsAndQuote_RoundTripThroughSqlite` (a margem de categoria de teste
+  subiu de 18,5% para 22,5% pra continuar testando round-trip sem
+  colidir com o novo piso). `dist/x64/BuildPc.Desktop.exe` republicado.
+- Cliente web (30/07) — topo fixo (cliente/resumo/condições/ações) e a
+  tabela de itens da Montagem agora podem ser recolhidos individualmente
+  (botão "▲ Recolher"/"▼ Mostrar" em cada um) pra ganhar espaço de tela ao
+  rolar pelo seletor de produtos — o topo recolhido vira uma linha só com
+  nome do cliente, quantidade de itens e total.
+- Cliente web (30/07) — máscara do telefone na Montagem passou de
+  `@onchange` (só formatava ao perder o foco) para `@oninput` (formata a
+  cada tecla), mesmo padrão já usado no campo Desconto.
 - Cliente web (30/07) — duplo clique na linha do seletor de produtos da
   Montagem já adiciona o item (com a quantidade atual), sem precisar
   selecionar e depois clicar em "Adicionar" (`SelectAndAdd(product)`,

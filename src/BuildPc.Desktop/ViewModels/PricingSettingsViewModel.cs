@@ -24,6 +24,9 @@ public sealed class PricingSettingsViewModel : ViewModelBase
     private string _companyAddress;
     private string _logoPath;
     private string _additionalQuoteInfo;
+    private string _defaultValidityDaysText;
+    private string _defaultDeliveryDaysText;
+    private string _selectedDeliveryDayType;
     private string _statusMessage = string.Empty;
     private bool _isSuccess;
 
@@ -62,6 +65,11 @@ public sealed class PricingSettingsViewModel : ViewModelBase
         _companyAddress = settings.CompanyAddress;
         _logoPath = settings.LogoPath;
         _additionalQuoteInfo = settings.AdditionalQuoteInfo;
+        _defaultValidityDaysText = settings.DefaultValidityDays.ToString(MainWindowViewModel.BrazilianCulture);
+        _defaultDeliveryDaysText = settings.DefaultDeliveryDays.ToString(MainWindowViewModel.BrazilianCulture);
+        _selectedDeliveryDayType = string.IsNullOrWhiteSpace(settings.DefaultDeliveryDayType)
+            ? "úteis"
+            : settings.DefaultDeliveryDayType;
         ServerSettings = new DataServerSettingsViewModel(
             apiSettings,
             saveApiSettings,
@@ -155,6 +163,15 @@ public sealed class PricingSettingsViewModel : ViewModelBase
     public bool HasLogo => !string.IsNullOrWhiteSpace(LogoPath);
     public string AdditionalQuoteInfo { get => _additionalQuoteInfo; set => SetProperty(ref _additionalQuoteInfo, value ?? string.Empty); }
 
+    public string DefaultValidityDaysText { get => _defaultValidityDaysText; set => SetProperty(ref _defaultValidityDaysText, value ?? string.Empty); }
+    public string DefaultDeliveryDaysText { get => _defaultDeliveryDaysText; set => SetProperty(ref _defaultDeliveryDaysText, value ?? string.Empty); }
+    public IReadOnlyList<string> DeliveryDayTypeOptions { get; } = ["úteis", "corridos"];
+    public string SelectedDeliveryDayType
+    {
+        get => _selectedDeliveryDayType;
+        set => SetProperty(ref _selectedDeliveryDayType, string.IsNullOrWhiteSpace(value) ? "úteis" : value);
+    }
+
     public string StatusMessage
     {
         get => _statusMessage;
@@ -174,7 +191,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
         if (SelectedCategory is null ||
             !TryParsePercent(NewMarginText, out var margin))
         {
-            Fail("Selecione uma categoria e informe uma margem de pelo menos 15%.");
+            Fail("Selecione uma categoria e informe uma margem de pelo menos 20%.");
             return;
         }
 
@@ -201,7 +218,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
     {
         if (!TryParsePercent(GlobalMarginText, out var globalMargin))
         {
-            Fail("A margem de lucro global deve ser de pelo menos 15%.");
+            Fail("A margem de lucro global deve ser de pelo menos 20%.");
             return;
         }
 
@@ -210,7 +227,7 @@ public sealed class PricingSettingsViewModel : ViewModelBase
         {
             if (!margin.TryGetMargin(out var value))
             {
-                Fail($"A margem de {margin.CategoryName} deve ser de pelo menos 15%.");
+                Fail($"A margem de {margin.CategoryName} deve ser de pelo menos 20%.");
                 return;
             }
 
@@ -230,7 +247,20 @@ public sealed class PricingSettingsViewModel : ViewModelBase
             CompanyAddress = CompanyAddress.Trim(),
             LogoPath = LogoPath.Trim(),
             AdditionalQuoteInfo = AdditionalQuoteInfo.Trim(),
-            ThemeMode = SelectedThemeOption.Mode
+            ThemeMode = SelectedThemeOption.Mode,
+            DefaultValidityDays = Math.Clamp(
+                int.TryParse(DefaultValidityDaysText, NumberStyles.Number, MainWindowViewModel.BrazilianCulture, out var validityDays)
+                    ? validityDays
+                    : 0,
+                0,
+                365),
+            DefaultDeliveryDays = Math.Clamp(
+                int.TryParse(DefaultDeliveryDaysText, NumberStyles.Number, MainWindowViewModel.BrazilianCulture, out var deliveryDays)
+                    ? deliveryDays
+                    : 0,
+                0,
+                365),
+            DefaultDeliveryDayType = SelectedDeliveryDayType
         };
         var error = await _save(settings);
         if (error is not null)

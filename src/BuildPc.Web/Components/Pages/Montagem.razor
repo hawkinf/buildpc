@@ -498,6 +498,7 @@ else
             _settings = await QuoteRepository.GetSettingsAsync();
             _categories = _settings.EffectiveProductCategories();
             _pickerCategory = _categories.Count > 0 ? _categories[0].Value : ComponentCategory.Processor;
+            ApplyDefaultTerms();
             _templates = await TemplateRepository.GetTemplatesAsync();
 
             if (EditarId is { } editId)
@@ -687,6 +688,16 @@ else
             ? $"{_deliveryDays} dias {_deliveryDayType}"
             : string.Empty;
 
+    private void ApplyDefaultTerms()
+    {
+        _validityDays = _settings.DefaultValidityDays;
+        _deliveryDays = _settings.DefaultDeliveryDays;
+        _deliveryDayType = string.IsNullOrWhiteSpace(_settings.DefaultDeliveryDayType)
+            ? "úteis"
+            : _settings.DefaultDeliveryDayType;
+        UpdateDeliveryTerms();
+    }
+
     private void MarkDirty()
     {
         _isDirty = true;
@@ -841,11 +852,8 @@ else
         _notes = string.Empty;
         _discountPercent = 0m;
         _discountRevealed = false;
-        _validityDays = 0;
         _paymentTerms = string.Empty;
-        _deliveryTerms = string.Empty;
-        _deliveryDays = 0;
-        _deliveryDayType = "úteis";
+        ApplyDefaultTerms();
         _savedQuote = null;
         _isDirty = false;
         _isClearConfirmationVisible = false;

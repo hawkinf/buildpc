@@ -165,7 +165,7 @@
               <StackPanel Spacing="5">
                 <TextBlock Text="Margem de lucro global (%)" FontSize="11"
                            Foreground="{DynamicResource Brush.TextLabel}" />
-                <TextBlock Text="Mínimo obrigatório: 15%" FontSize="9"
+                <TextBlock Text="Mínimo obrigatório: 20%" FontSize="9"
                            Foreground="{DynamicResource Brush.TextMuted}" />
                 <TextBox Text="{Binding GlobalMarginText, Mode=TwoWay}"
                          PlaceholderText="Ex.: 25,00" />
@@ -213,6 +213,35 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card">
+            <StackPanel Spacing="14">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Padrões do orçamento" FontSize="16" FontWeight="Bold" />
+                <TextBlock Text="Usados como ponto de partida ao iniciar uma nova montagem, no Desktop e na Web."
+                           Foreground="{DynamicResource Brush.TextSecondary}" FontSize="10"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <StackPanel Spacing="5">
+                  <TextBlock Text="Validade padrão (dias)" FontSize="10" />
+                  <TextBox Text="{Binding DefaultValidityDaysText, Mode=TwoWay}"
+                           PlaceholderText="0 = pronta entrega" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="5">
+                  <TextBlock Text="Prazo de entrega padrão (dias)" FontSize="10" />
+                  <TextBox Text="{Binding DefaultDeliveryDaysText, Mode=TwoWay}"
+                           PlaceholderText="0" />
+                </StackPanel>
+              </Grid>
+              <StackPanel Spacing="5">
+                <TextBlock Text="Tipo de dias do prazo de entrega" FontSize="10" />
+                <ComboBox ItemsSource="{Binding DeliveryDayTypeOptions}"
+                          SelectedItem="{Binding SelectedDeliveryDayType, Mode=TwoWay}"
+                          HorizontalAlignment="Stretch" />
+              </StackPanel>
             </StackPanel>
           </Border>
         </StackPanel>

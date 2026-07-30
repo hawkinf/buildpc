@@ -54,6 +54,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
             ProductsForSelectedCategory(),
             _ => DraftSelectionChanged(),
             SellingPriceFor);
+        ApplyDefaultTerms();
         AddCommand = new RelayCommand(Add);
         RequestClearCommand = new RelayCommand(RequestClear);
         ConfirmClearCommand = new RelayCommand(Clear);
@@ -481,6 +482,14 @@ public sealed class FlexibleListViewModel : ViewModelBase
 
     private void CancelClear() => IsClearConfirmationVisible = false;
 
+    private void ApplyDefaultTerms()
+    {
+        ValidityDays = _settings.DefaultValidityDays;
+        DeliveryTerms = _settings.DefaultDeliveryDays > 0
+            ? $"{_settings.DefaultDeliveryDays} dias {_settings.DefaultDeliveryDayType}"
+            : string.Empty;
+    }
+
     private void Clear()
     {
         IsClearConfirmationVisible = false;
@@ -491,9 +500,8 @@ public sealed class FlexibleListViewModel : ViewModelBase
         IsClientPhoneInvalid = false;
         Notes = string.Empty;
         DiscountText = string.Empty;
-        ValidityDays = 0;
         PaymentTerms = string.Empty;
-        DeliveryTerms = string.Empty;
+        ApplyDefaultTerms();
         ProductPicker.Selected = null;
         ProductPicker.FilterText = string.Empty;
         Quantity = 1;

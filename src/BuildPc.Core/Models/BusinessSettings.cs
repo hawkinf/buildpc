@@ -16,6 +16,9 @@ public sealed record BusinessSettings
     public string LogoPath { get; init; } = string.Empty;
     public string AdditionalQuoteInfo { get; init; } = string.Empty;
     public AppThemeMode ThemeMode { get; init; } = AppThemeMode.System;
+    public int DefaultValidityDays { get; init; }
+    public int DefaultDeliveryDays { get; init; }
+    public string DefaultDeliveryDayType { get; init; } = "úteis";
 
     public decimal MarginFor(ComponentCategory category)
     {

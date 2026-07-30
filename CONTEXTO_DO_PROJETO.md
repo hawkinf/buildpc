@@ -967,6 +967,56 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — Importações adicionada ao `BuildPc.Web`
+  (`/importacoes`), fora do plano original de 9 fases: a exclusão inicial
+  ("Importações fica só no Desktop, depende de scraping bloqueado por
+  CORS") valia para uma abordagem client-side/WASM, mas o `BuildPc.Web` é
+  Blazor **Server** — todo o código, inclusive as chamadas HTTP pro Kabum,
+  roda no servidor, exatamente como já roda hoje no Desktop (só que na VPS
+  em vez da máquina do usuário). CORS é uma política do navegador; não se
+  aplica a uma chamada servidor-servidor. `KabumCatalogImporter` já vivia
+  em `BuildPc.Core` (puro `HttpClient`, sem nada de Windows/Avalonia/
+  headless-browser — o catálogo já vem embutido no HTML via SSR do Next.js
+  da Kabum, `__NEXT_DATA__`), então a página só chama o que já existia.
+  Registrado via `AddHttpClient<KabumCatalogImporter>` (cliente tipado, não
+  `new HttpClient()` direto — evita esgotamento de socket num processo de
+  longa duração, diferente do Desktop que abre um por sessão).
+
+  Decisão consciente: as URLs configuradas por categoria **não são
+  persistidas** (nem em `BusinessSettings`, nem em nenhum lugar
+  compartilhado) — só vivem no estado do componente durante a sessão.
+  Motivo: `BusinessSettings` já é sincronizado via API
+  (`GetSettingsAsync`/`SaveSettingsAsync`), mas o Desktop grava a URLs de
+  importação num arquivo **local** (`buildpc.config.json`,
+  `BuildPcApplicationSettingsStore`) totalmente separado de
+  `BusinessSettings` — e `PostgresBuildPcRepository.SaveSettings` faz um
+  UPSERT que **substitui o registro inteiro** (não faz merge por campo).
+  Se `ImportSourceUrls` fosse adicionado a `BusinessSettings`, qualquer
+  save do Desktop em modo servidor (ex.: editar margem) usaria sua cópia
+  local de `BusinessSettings` — que nunca teria essa chave populada — e
+  apagaria silenciosamente as URLs que a Web tivesse configurado. Persistir
+  direito exigiria também atualizar o Desktop pra ler/preservar esse campo
+  no round-trip, fora do escopo desta adição pontual. Fica documentado como
+  melhoria futura, não como bug.
+
+  Mesmo fluxo do Desktop: card por categoria (`ProductCategoryDefinition`
+  ativas), URL editável, confirmação em duas etapas antes de importar (a
+  operação é destrutiva — substitui o catálogo da categoria), progresso via
+  `IProgress<KabumImportProgress>`, "Importar tudo" roda as categorias com
+  URL preenchida sequencialmente (mesmo motivo do Desktop: não fazer rajada
+  concorrente contra a Kabum). Usa a mesma chave de origem `"kabum"` que o
+  Desktop (`ImportKeys.For`), então `GetLastImportsAsync` fica consistente
+  entre os dois clientes. Trava de concorrência (`pg_advisory_xact_lock`
+  por categoria+origem) já existe em `PostgresBuildPcRepository`, então
+  duas pessoas importando a mesma categoria ao mesmo tempo (Desktop e Web,
+  ou duas abas da Web) já é seguro sem mudança nenhuma. 277/277 testes
+  (sem novos — a página só orquestra `KabumCatalogImporter` e
+  `IComponentCatalogRepository`, ambos já cobertos). Único risco genuíno
+  (não é CORS): todas as importações agora saem do mesmo IP da VPS em vez
+  de IPs residenciais distribuídos dos desktops da equipe — o
+  autothrottling já embutido no importer (350ms entre páginas, retry com
+  backoff em 429/5xx) não muda, mas vale observar se a Kabum passar a
+  bloquear esse IP com uso mais frequente.
 - Cliente web (30/07), fase 9/9 — **em produção**: `https://precos.hawk.com.br`
   está no ar, autenticado, servindo as três telas contra o catálogo/
   orçamentos reais (1420 produtos, 2 orçamentos — confere com a auditoria do

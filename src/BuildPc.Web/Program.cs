@@ -31,6 +31,16 @@ builder.Services.AddSingleton<IAssemblyTemplateRepository>(
 builder.Services.AddSingleton(sp =>
     StaffPasswordValidator.FromConfiguration(sp.GetRequiredService<IConfiguration>()));
 
+// KabumCatalogImporter roda inteiramente no servidor (é assim que o Desktop
+// já faz hoje, só que na máquina do usuário) — sem CORS envolvido, porque
+// não é o navegador quem chama o Kabum. Tipo tipado em vez de "new
+// HttpClient()" direto: evita esgotamento de sockets num processo de longa
+// duração como este (diferente do app desktop, que abre uma vez por sessão).
+builder.Services.AddHttpClient<KabumCatalogImporter>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(45);
+});
+
 // O usuário de sistema que roda o serviço em produção não tem diretório
 // home (endurecimento do systemd) — sem um caminho explícito, o Data
 // Protection cai para uma chave efêmera e todo reinício do serviço

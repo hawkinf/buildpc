@@ -1,0 +1,193 @@
+@page "/importacoes"
+@rendermode InteractiveServer
+@using System.Text.Json
+@using BuildPc.Core.Models
+@inject IComponentCatalogRepository CatalogRepository
+@inject IQuoteRepository QuoteRepository
+@inject KabumCatalogImporter Importer
+
+<PageTitle>Importações - BuildPC</PageTitle>
+
+<h1>Importações</h1>
+
+<p class="import-warning">
+    Cada importação <strong>substitui</strong> o catálogo da categoria pelos
+    produtos encontrados na URL informada. Produtos que não aparecerem mais na
+    loja são removidos do catálogo. As URLs abaixo não são salvas entre
+    sessões — cole de novo se recarregar a página.
+</p>
+
+@if (_loadError is not null)
+{
+    <p class="import-error">Falha ao carregar: @_loadError</p>
+}
+else if (_isLoading)
+{
+    <p>Carregando...</p>
+}
+else
+{
+    @if (_confirmingAll)
+    {
+        <p class="import-confirm">
+            Importar todas as categorias com URL preenchida agora?
+            <button type="button" @onclick="ImportAllAsync">Confirmar</button>
+            <button type="button" @onclick="() => _confirmingAll = false">Cancelar</button>
+        </p>
+    }
+    else
+    {
+        <button
+            type="button"
+            disabled="@(_isImporting || !_categories.Any(HasConfiguredUrl))"
+            @onclick="() => _confirmingAll = true">
+            Importar tudo
+        </button>
+    }
+
+    @if (_isImporting)
+    {
+        <p class="import-progress">@_progressText</p>
+    }
+
+    <div class="import-cards">
+        @foreach (var category in _categories)
+        {
+            <div class="import-card">
+                <h2>@category.Name</h2>
+                <input
+                    type="url"
+                    placeholder="URL da categoria no Kabum"
+                    value="@_urls.GetValueOrDefault(category.Value)"
+                    @onchange="e => _urls[category.Value] = e.Value?.ToString() ?? string.Empty" />
+
+                @if (_confirmingCategory == category.Value)
+                {
+                    <p>
+                        Substituir o catálogo de "@category.Name" agora?
+                        <button type="button" @onclick="() => ImportCategoryAsync(category)">Confirmar</button>
+                        <button type="button" @onclick="() => _confirmingCategory = null">Cancelar</button>
+                    </p>
+                }
+                else
+                {
+                    <button
+                        type="button"
+                        disabled="@(_isImporting || !HasConfiguredUrl(category))"
+                        @onclick="() => _confirmingCategory = category.Value">
+                        Importar
+                    </button>
+                }
+
+                @if (_results.TryGetValue(category.Value, out var result))
+                {
+                    <p class="import-result">
+                        @result.Imported importados, @result.Removed removidos, @result.Kept mantidos
+                        (@result.ImportedAt.ToString("dd/MM HH:mm"))
+                    </p>
+                }
+                @if (_errors.TryGetValue(category.Value, out var error))
+                {
+                    <p class="import-error">@error</p>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private IReadOnlyList<ProductCategoryDefinition> _categories = [];
+    private readonly Dictionary<ComponentCategory, string> _urls = [];
+    private readonly Dictionary<ComponentCategory, ImportReplaceResult> _results = [];
+    private readonly Dictionary<ComponentCategory, string> _errors = [];
+    private bool _isLoading = true;
+    private bool _isImporting;
+    private bool _confirmingAll;
+    private ComponentCategory? _confirmingCategory;
+    private string? _loadError;
+    private string _progressText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var settings = await QuoteRepository.GetSettingsAsync();
+            _categories = settings.EffectiveProductCategories();
+        }
+        catch (InvalidOperationException exception)
+        {
+            _loadError = exception.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private bool HasConfiguredUrl(ProductCategoryDefinition category) =>
+        !string.IsNullOrWhiteSpace(_urls.GetValueOrDefault(category.Value));
+
+    private async Task ImportAllAsync()
+    {
+        _confirmingAll = false;
+        foreach (var category in _categories.Where(HasConfiguredUrl))
+        {
+            await RunImportAsync(category.Value, _urls[category.Value]);
+        }
+    }
+
+    private async Task ImportCategoryAsync(ProductCategoryDefinition category)
+    {
+        _confirmingCategory = null;
+        if (HasConfiguredUrl(category))
+        {
+            await RunImportAsync(category.Value, _urls[category.Value]);
+        }
+    }
+
+    private async Task RunImportAsync(ComponentCategory category, string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var parsedUrl) ||
+            (parsedUrl.Scheme != Uri.UriSchemeHttp && parsedUrl.Scheme != Uri.UriSchemeHttps))
+        {
+            _errors[category] = "URL inválida.";
+            return;
+        }
+
+        _isImporting = true;
+        _errors.Remove(category);
+        var progress = new Progress<KabumImportProgress>(report =>
+        {
+            _progressText =
+                $"{category}: página {report.PageNumber}, {report.ProductCount} produtos — {report.Status}";
+            InvokeAsync(StateHasChanged);
+        });
+
+        try
+        {
+            var components = await Importer.FetchAsync(
+                url,
+                category,
+                CancellationToken.None,
+                progress);
+            var result = await CatalogRepository.ReplaceImportedAsync(
+                category,
+                "kabum",
+                components);
+            _results[category] = result;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                InvalidOperationException or
+                JsonException or
+                TaskCanceledException)
+        {
+            _errors[category] = $"Falha ao importar: {exception.Message}";
+        }
+        finally
+        {
+            _isImporting = false;
+            _progressText = string.Empty;
+        }
+    }
+}

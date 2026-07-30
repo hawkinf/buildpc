@@ -1,0 +1,40 @@
+.import-warning {
+    color: #64748b;
+    max-width: 40rem;
+}
+
+.import-error {
+    color: #e50000;
+}
+
+.import-confirm,
+.import-progress {
+    color: #1f2933;
+    font-weight: 600;
+}
+
+.import-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.import-card {
+    width: 16rem;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+}
+
+.import-card input {
+    width: 100%;
+    padding: 0.4rem;
+    margin: 0.5rem 0;
+    box-sizing: border-box;
+}
+
+.import-result {
+    color: #166534;
+    font-size: 0.85rem;
+}

@@ -930,6 +930,32 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07), fase 2/9 — esqueleto do projeto `BuildPc.Web`
+  (`dotnet new blazor --interactivity Server --empty --all-interactive`,
+  adicionado à solução). `Program.cs` registra `BuildPcApiClient` via DI
+  (singleton) contra `IComponentCatalogRepository`/`IQuoteRepository`/
+  `IAssemblyTemplateRepository`, lendo `BuildPc:BaseUrl`/`BuildPc:ApiKey` da
+  configuração — mesma convenção de variável de ambiente
+  (`BuildPc__BaseUrl`/`BuildPc__ApiKey`) já usada pela `BuildPc.Api`, sem
+  persistência local de chave como no Desktop. Endpoint `/health` público
+  (necessário pro gate de healthcheck do deploy, fase 8/9). Página inicial
+  (`Home.razor`) é um placeholder que injeta `IComponentCatalogRepository` e
+  mostra a contagem de produtos do catálogo — prova o caminho ponta a ponta
+  contra a API real antes de qualquer tela de verdade (fases 5-7); captura
+  `InvalidOperationException` (não `HttpRequestException` diretamente — é o
+  tipo que `BuildPcApiClient.SendAsync` usa pra embrulhar toda falha de
+  rede/servidor). Testado localmente com `dotnet run` (env vars dummy):
+  `/health` responde 200, `/` não derruba o processo quando a API está
+  inalcançável. Ainda sem autenticação (fase 3) nem layout definitivo (fase
+  4).
+- Cliente web (30/07) — corrigido o último teste que travava o CI Linux
+  depois da fase 1: `PdfPreviewService.CreatePath` sanitizava nomes de
+  arquivo com `Path.GetInvalidFileNameChars()`, que no Linux só bloqueia `/`
+  e NUL — `..`, `\`, `:`, `?` sobreviviam no nome (risco de path traversal
+  na prévia de PDF). Trocado por uma lista fixa de caracteres inválidos
+  (união Windows-Linux) + remoção explícita de sequências `..`. `CI
+  build-windows`/`build-linux` (260 aprovados, 1 falha) → ambos verdes
+  (261/261).
 - Cliente web (30/07), fase 1/9 — início do projeto `BuildPc.Web` (Blazor
   Server, hospedado em `precos.hawk.com.br`, cobrindo Montagem/Consulta de
   Preço/Orçamentos; plano completo em decisão de arquitetura registrada na

@@ -1,0 +1,39 @@
+@page "/"
+@rendermode InteractiveServer
+@using BuildPc.Core.Services
+@inject IComponentCatalogRepository CatalogRepository
+
+<PageTitle>BuildPC</PageTitle>
+
+<h1>BuildPC Web</h1>
+
+@if (_error is not null)
+{
+    <p>Falha ao falar com a API: @_error</p>
+}
+else if (_productCount is null)
+{
+    <p>Consultando o catálogo...</p>
+}
+else
+{
+    <p>Conectado à API. @_productCount produto(s) no catálogo.</p>
+}
+
+@code {
+    private int? _productCount;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var products = await CatalogRepository.GetAllAsync();
+            _productCount = products.Count;
+        }
+        catch (InvalidOperationException exception)
+        {
+            _error = exception.Message;
+        }
+    }
+}

@@ -967,6 +967,20 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — dois ajustes visuais na Montagem/Consulta de
+  Preços. (1) A linha Validade/Desconto/Pagamento/Prazo de entrega (fig2)
+  ganhou o mesmo padrão de cartão do resumo Custo/Venda/Lucro (fig1):
+  fundo `#f8fafc`, borda `#e2e8f0`, cantos arredondados, sombra suave,
+  rótulo pequeno em caixa alta cinza-azulado e divisores verticais entre
+  campos — antes era uma linha de formulário simples sem estilo. Gravar/
+  Limpar ficaram à esquerda e o cartão de condições à direita, na mesma
+  linha (`.build-footer-row`, `justify-content: space-between`), pedido
+  explícito do usuário ("fig2 do lado direito"). Novas classes
+  `.build-terms-card`/`.build-term-stat`/`.build-term-label` (antes
+  `.build-terms`/`.build-field-label` reaproveitados sem o visual de
+  cartão). (2) Coluna "Categoria" removida da tabela de Consulta de Preços
+  — redundante com o filtro de categoria já existente no topo da tela,
+  reportado pelo usuário com print da tabela.
 - **Bug corrigido (30/07): lista de produtos da Montagem mostrava preço de
   custo, não de venda.** O seletor de produtos (`PickerOptions` em
   `Montagem.razor`) ordenava e exibia `component.Price` — o preço de custo

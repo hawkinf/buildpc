@@ -216,6 +216,52 @@
     border-bottom: 1px solid #e2e8f0;
 }
 
+.build-collapse-toggle {
+    align-self: flex-end;
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.15rem 0.4rem;
+}
+
+.build-collapse-toggle:hover {
+    color: #1d4ed8;
+}
+
+.build-collapsed-summary {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 1.25rem;
+    width: 100%;
+    max-width: 56rem;
+    padding: 0.4rem 1.25rem;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.build-collapsed-total {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: #1d4ed8;
+}
+
+.build-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.build-section-header h2 {
+    font-size: 1rem;
+    margin: 0;
+}
+
 .build-field-label {
     font-size: 0.72rem;
     font-weight: 600;

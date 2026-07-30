@@ -20,7 +20,7 @@ public sealed class QuoteRepositoryTests
                 GlobalMarginPercent = 25m,
                 CategoryMargins = new Dictionary<ComponentCategory, decimal>
                 {
-                    [ComponentCategory.GraphicsCard] = 18.5m
+                    [ComponentCategory.GraphicsCard] = 22.5m
                 },
                 CompanyName = "Empresa Teste",
                 CompanyPhone = "(11) 99999-9999",
@@ -42,7 +42,7 @@ public sealed class QuoteRepositoryTests
 
             var loadedSettings = repository.GetSettings();
             Assert.Equal(25m, loadedSettings.GlobalMarginPercent);
-            Assert.Equal(18.5m, loadedSettings.MarginFor(ComponentCategory.GraphicsCard));
+            Assert.Equal(22.5m, loadedSettings.MarginFor(ComponentCategory.GraphicsCard));
             Assert.Equal(25m, loadedSettings.MarginFor(ComponentCategory.Memory));
             Assert.Equal(AppThemeMode.Light, loadedSettings.ThemeMode);
             Assert.Contains(

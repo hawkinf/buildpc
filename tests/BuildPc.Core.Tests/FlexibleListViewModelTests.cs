@@ -236,7 +236,7 @@ public sealed class FlexibleListViewModelTests
     }
 
     [Fact]
-    public void SellingPrice_CannotProduceProfitBelowFifteenPercent()
+    public void SellingPrice_CannotProduceProfitBelowTwentyPercent()
     {
         var processor = Product("cpu", ComponentCategory.Processor, "Processador", 1000m);
         var viewModel = new FlexibleListViewModel(
@@ -249,11 +249,11 @@ public sealed class FlexibleListViewModelTests
 
         item.SellingPriceText = "1.050,00";
 
-        Assert.Equal(1154.90m, item.SellingUnitPriceValue);
-        Assert.Equal("1.154,90", item.SellingPriceText);
-        Assert.Equal(15.49m, item.MarginPercent);
-        Assert.Equal(15.49m, viewModel.TotalProfitPercentValue);
-        Assert.Equal("15,49%", viewModel.TotalProfitPercent);
+        Assert.Equal(1204.90m, item.SellingUnitPriceValue);
+        Assert.Equal("1.204,90", item.SellingPriceText);
+        Assert.Equal(20.49m, item.MarginPercent);
+        Assert.Equal(20.49m, viewModel.TotalProfitPercentValue);
+        Assert.Equal("20,49%", viewModel.TotalProfitPercent);
     }
 
     [Fact]
@@ -268,8 +268,8 @@ public sealed class FlexibleListViewModelTests
             }
         };
 
-        Assert.Equal(15m, settings.MarginFor(ComponentCategory.Processor));
-        Assert.Equal(15m, settings.MarginFor(ComponentCategory.Memory));
+        Assert.Equal(20m, settings.MarginFor(ComponentCategory.Processor));
+        Assert.Equal(20m, settings.MarginFor(ComponentCategory.Memory));
     }
 
     [Fact]
@@ -511,6 +511,25 @@ public sealed class FlexibleListViewModelTests
         viewModel.DiscountText = "-50";
         Assert.Equal(0m, viewModel.DiscountValue);
         Assert.Equal(viewModel.TotalPriceValue, viewModel.FinalPriceValue);
+    }
+
+    [Fact]
+    public void DiscountReducesTotalProfit()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, "Processador", 1000m);
+        var viewModel = CreateViewModel(processor);
+        viewModel.ProductPicker.Selected = processor;
+        viewModel.AddCommand.Execute(null);
+        var profitBeforeDiscount = viewModel.TotalProfitValue;
+
+        viewModel.DiscountText = "100,00";
+
+        // O lucro tem que refletir o preço final (já com desconto), não o
+        // preço cheio antes do desconto.
+        Assert.Equal(
+            viewModel.FinalPriceValue - viewModel.TotalCostValue,
+            viewModel.TotalProfitValue);
+        Assert.True(viewModel.TotalProfitValue < profitBeforeDiscount);
     }
 
     [Fact]

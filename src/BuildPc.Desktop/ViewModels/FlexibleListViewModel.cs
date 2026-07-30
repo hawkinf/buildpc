@@ -197,6 +197,10 @@ public sealed class FlexibleListViewModel : ViewModelBase
             OnPropertyChanged(nameof(FinalPriceValue));
             OnPropertyChanged(nameof(FinalPrice));
             OnPropertyChanged(nameof(HasDiscount));
+            OnPropertyChanged(nameof(TotalProfitValue));
+            OnPropertyChanged(nameof(TotalProfit));
+            OnPropertyChanged(nameof(TotalProfitPercentValue));
+            OnPropertyChanged(nameof(TotalProfitPercent));
             MarkDirty();
         }
     }
@@ -323,7 +327,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
     public int TotalItems => Items.Sum(item => item.Quantity);
     public decimal TotalCostValue => Items.Sum(item => item.UnitPriceValue * item.Quantity);
     public decimal TotalPriceValue => Items.Sum(item => item.SellingUnitPriceValue * item.Quantity);
-    public decimal TotalProfitValue => TotalPriceValue - TotalCostValue;
+    public decimal TotalProfitValue => FinalPriceValue - TotalCostValue;
     public decimal TotalProfitPercentValue => TotalCostValue <= 0
         ? 0
         : decimal.Round(

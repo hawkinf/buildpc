@@ -2,7 +2,7 @@ namespace BuildPc.Core.Models;
 
 public sealed record BusinessSettings
 {
-    public const decimal MinimumMarginPercent = 15m;
+    public const decimal MinimumMarginPercent = 20m;
 
     public decimal GlobalMarginPercent { get; init; } = MinimumMarginPercent;
     public Dictionary<ComponentCategory, decimal> CategoryMargins { get; init; } = [];

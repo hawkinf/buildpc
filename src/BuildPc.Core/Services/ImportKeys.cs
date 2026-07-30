@@ -16,4 +16,16 @@ public static class ImportKeys
 
     public static string MetadataKey(ComponentCategory category, string source) =>
         $"{MetadataPrefix}{For(category, source)}";
+
+    /// <summary>
+    /// Chave da URL de importação configurada para uma categoria, como
+    /// <c>"kabum:Processor"</c> ou <c>"kabum-hd:HardDrive"</c>. Formato
+    /// diferente de <see cref="For"/> de propósito (nome do enum, não
+    /// minúsculo nem convertido para int) — usado tanto pelo arquivo local
+    /// do Desktop quanto pela entrada compartilhada no servidor
+    /// (<c>IQuoteRepository.GetImportSourceUrlsAsync</c>), então precisa
+    /// bater exatamente nos dois clientes.
+    /// </summary>
+    public static string SourceUrlKey(ComponentCategory category, string sourceKey) =>
+        $"{sourceKey}:{category}";
 }

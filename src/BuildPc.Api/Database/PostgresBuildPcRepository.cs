@@ -12,6 +12,7 @@ public sealed class PostgresBuildPcRepository :
     IAssemblyTemplateRepository
 {
     private const string SettingsKey = "business";
+    private const string ImportSourceUrlsKey = "import_source_urls";
     private const long QuoteNumberLock = 724_913_581;
     private const int ReplaceImportedLockNamespace = 358_112_477;
     private static readonly JsonSerializerOptions JsonOptions =
@@ -435,6 +436,59 @@ public sealed class PostgresBuildPcRepository :
     {
         SaveSettings(settings);
         return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyDictionary<string, string>> GetImportSourceUrlsAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(GetImportSourceUrls());
+
+    public IReadOnlyDictionary<string, string> GetImportSourceUrls()
+    {
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT value FROM business_settings WHERE key = @key;";
+        command.Parameters.AddWithValue("key", ImportSourceUrlsKey);
+        var json = command.ExecuteScalar() as string;
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(json, JsonOptions) ??
+                   new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+        catch (JsonException)
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    public Task SaveImportSourceUrlsAsync(
+        IReadOnlyDictionary<string, string> importSourceUrls,
+        CancellationToken cancellationToken = default)
+    {
+        SaveImportSourceUrls(importSourceUrls);
+        return Task.CompletedTask;
+    }
+
+    public void SaveImportSourceUrls(IReadOnlyDictionary<string, string> importSourceUrls)
+    {
+        ArgumentNullException.ThrowIfNull(importSourceUrls);
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT INTO business_settings(key, value)
+            VALUES (@key, @value)
+            ON CONFLICT (key) DO UPDATE SET value = excluded.value;
+            """;
+        command.Parameters.AddWithValue("key", ImportSourceUrlsKey);
+        command.Parameters.AddWithValue(
+            "value",
+            JsonSerializer.Serialize(importSourceUrls, JsonOptions));
+        command.ExecuteNonQuery();
     }
 
     public void SaveSettings(BusinessSettings settings)

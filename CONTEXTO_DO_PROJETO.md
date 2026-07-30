@@ -967,6 +967,62 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — URLs de importação por categoria agora persistem no
+  servidor, fechando a lacuna que ficou documentada (e explicada ao
+  usuário) quando a tela de Importações foi adicionada: antes, cada edição
+  só ia pro arquivo local do Desktop (`buildpc.config.json`), e a Web
+  nem lia nem gravava nada — cada sessão da Web começava do zero. Nova
+  entrada `import_source_urls` na mesma tabela `business_settings`
+  (Postgres) / `business_settings` (SQLite local), com **chave própria**
+  (não dentro do blob de `BusinessSettings`) de propósito: gravar uma nunca
+  sobrescreve a outra, mesmo risco de "UPDATE substitui o registro inteiro"
+  que já tinha descartado colocar isso dentro de `BusinessSettings` na fase
+  de Importações. Novo par de métodos em `IQuoteRepository`
+  (`GetImportSourceUrlsAsync`/`SaveImportSourceUrlsAsync`), implementado
+  nos três lugares que já implementam a interface (`QuoteRepository`
+  SQLite, `PostgresBuildPcRepository`, `BuildPcApiClient` via
+  `GET`/`PUT /settings/import-sources`). Formato de chave
+  (`"{sourceKey}:{category}"`, ex. `"kabum:Processor"`,
+  `"kabum-hd:HardDrive"`) extraído pra `ImportKeys.SourceUrlKey` (Core) —
+  antes duplicado entre o método privado `ImportSourceConfigurationKey` do
+  Desktop e o que eu ia escrever de novo na Web; "mover, não duplicar" de
+  novo (é diferente do formato de `ImportKeys.For`, usado só pro
+  metadado de "última importação").
+
+  Desktop: `MainWindowViewModel.SaveApplicationConfiguration` (chamado a
+  cada edição de URL, já existia) agora também empurra as URLs pro
+  servidor via `_ = PushImportSourceUrlsAsync(...)` — *fire-and-forget*,
+  erros engolidos (`SqliteException`/`InvalidOperationException`), porque
+  a gravação local já é o que importa pro app continuar funcionando
+  offline; uma falha de rede ao sincronizar não pode incomodar quem só
+  queria editar uma URL. Deliberadamente **não** fiz o Desktop *ler* do
+  servidor na inicialização (ficaria bidirecional só entre sessões da
+  própria Web) — mexer no startup do Desktop, já em uso diário de verdade,
+  pareceu risco desnecessário pra um recurso secundário; se um dia isso
+  incomodar, dá pra adicionar depois. Web: `Importacoes.razor` busca do
+  servidor no `OnInitializedAsync` (sobrepõe o padrão embutido só onde o
+  servidor tem valor) e grava de volta a cada edição de URL (`@onchange`),
+  mesmo espírito best-effort do Desktop.
+
+  Implantado e testado ao vivo, nessa ordem (API antes da Web, já que a Web
+  depende dos endpoints novos): API republicada (endpoints
+  `GET`/`PUT /settings/import-sources` testados direto contra o Postgres de
+  produção via `curl` — gravei um valor, li de volta, confirmei que
+  `GetSettings` continuou intacto), Web republicada (confirmei que uma URL
+  gravada direto na API aparece na tela ao recarregar — sobrepõe o padrão
+  embutido), Desktop recompilado localmente (`dist/x64/BuildPc.Desktop.exe`
+  — o usuário roda essa build para pegar o novo comportamento de push).
+  **Um problema à parte durante o deploy**: a primeira transferência do
+  release da Web via `tar | ssh` foi interrompida no meio (conexão SSH
+  caiu) e gerou um binário corrompido no servidor — `deploy-web.sh` pegou
+  isso corretamente (o teste de `/health` na porta de teste falhou porque o
+  runtime .NET não conseguiu carregar a DLL truncada) e **não trocou o
+  symlink**, produção continuou no ar no release anterior o tempo todo;
+  bastou apagar o diretório corrompido e retransmitir. 282/282 testes (5
+  novos: round-trip SQLite e Postgres da nova entrada — confirma
+  isolamento de `BusinessSettings` nos dois bancos —, checagem de
+  autenticação do endpoint novo, e dois testes de `ImportKeys.SourceUrlKey`
+  incluindo a diferença de formato contra `ImportKeys.For`).
 - Cliente web (30/07) — corrigida a URL de importação de HD, que eu tinha
   montado errado na fase anterior (busquei na web em vez de checar o
   próprio código do Desktop). `MainWindowViewModel.cs:330-337` já tinha a

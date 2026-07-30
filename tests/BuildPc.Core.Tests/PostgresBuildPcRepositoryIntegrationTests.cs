@@ -249,6 +249,31 @@ public sealed class PostgresBuildPcRepositoryIntegrationTests(PostgresFixture fi
         Assert.Equal("Loja Teste", loaded.CompanySnapshot.CompanyName);
     }
 
+    [Fact]
+    public void ImportSourceUrls_RoundTripIndependentlyOfBusinessSettings()
+    {
+        if (!Skip()) return;
+
+        var repository = new PostgresBuildPcRepository(fixture.DataSource);
+        repository.SaveSettings(new BusinessSettings { CompanyName = "Empresa Postgres" });
+
+        repository.SaveImportSourceUrls(new Dictionary<string, string>
+        {
+            ["kabum:Processor"] = "https://www.kabum.com.br/hardware/processadores",
+            ["kabum-hd:HardDrive"] = "https://www.kabum.com.br/hardware/disco-rigido-hd"
+        });
+
+        var loadedUrls = repository.GetImportSourceUrls();
+        Assert.Equal(2, loadedUrls.Count);
+        Assert.Equal(
+            "https://www.kabum.com.br/hardware/disco-rigido-hd",
+            loadedUrls["kabum-hd:HardDrive"]);
+
+        // A chave de import_source_urls vive na mesma tabela que
+        // business_settings — confirma que gravar uma não apaga a outra.
+        Assert.Equal("Empresa Postgres", repository.GetSettings().CompanyName);
+    }
+
     private static PcComponent Component(string id, ComponentCategory category) =>
         new()
         {

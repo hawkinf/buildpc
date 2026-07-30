@@ -1229,7 +1229,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void SaveApplicationConfiguration()
     {
         var importSourceUrls = ImportSources.ToDictionary(
-            source => ImportSourceConfigurationKey(
+            source => ImportKeys.SourceUrlKey(
                 source.Category,
                 source.SourceKey),
             source => source.Url,
@@ -1242,12 +1242,34 @@ public sealed class MainWindowViewModel : ViewModelBase
             IsApiKeyUnreadable = _isApiKeyUnreadable,
             IsServerBypassed = IsUsingLocalDatabaseFallback
         });
+
+        // Best-effort: o arquivo local acima já é a gravação que importa pro
+        // Desktop continuar funcionando offline. Isto só espelha as mesmas
+        // URLs no servidor, pro cliente web enxergar sem precisar reconfigurar
+        // tudo de novo — uma falha aqui não pode incomodar quem só queria
+        // editar uma URL de importação.
+        _ = PushImportSourceUrlsAsync(importSourceUrls);
+    }
+
+    private async Task PushImportSourceUrlsAsync(
+        IReadOnlyDictionary<string, string> importSourceUrls)
+    {
+        try
+        {
+            await _quoteRepository.SaveImportSourceUrlsAsync(importSourceUrls);
+        }
+        catch (SqliteException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
     }
 
     private void ImportSourceConfigurationChanged(ImportSourceViewModel source)
     {
         _configuredImportSourceUrls[
-            ImportSourceConfigurationKey(source.Category, source.SourceKey)] =
+            ImportKeys.SourceUrlKey(source.Category, source.SourceKey)] =
             source.Url;
         SaveApplicationConfiguration();
     }
@@ -1281,7 +1303,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         IEnumerable<PcComponent> catalog,
         string sourceKey)
     {
-        var configurationKey = ImportSourceConfigurationKey(category, sourceKey);
+        var configurationKey = ImportKeys.SourceUrlKey(category, sourceKey);
         var url = _configuredImportSourceUrls.TryGetValue(
             configurationKey,
             out var configuredUrl)
@@ -1299,11 +1321,6 @@ public sealed class MainWindowViewModel : ViewModelBase
             RequestImportSourceAsync,
             ImportSourceConfigurationChanged);
     }
-
-    private static string ImportSourceConfigurationKey(
-        ComponentCategory category,
-        string sourceKey) =>
-        $"{sourceKey}:{category}";
 
     private void RequestImportAll()
     {

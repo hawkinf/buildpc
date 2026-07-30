@@ -277,6 +277,20 @@ app.MapPut(
     });
 
 app.MapGet(
+    "/settings/import-sources",
+    (PostgresBuildPcRepository repository) => repository.GetImportSourceUrls());
+
+app.MapPut(
+    "/settings/import-sources",
+    (
+        Dictionary<string, string> importSourceUrls,
+        PostgresBuildPcRepository repository) =>
+    {
+        repository.SaveImportSourceUrls(importSourceUrls);
+        return Results.NoContent();
+    });
+
+app.MapGet(
     "/quotes",
     (PostgresBuildPcRepository repository) => repository.GetQuotes());
 

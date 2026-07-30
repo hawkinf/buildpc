@@ -82,6 +82,21 @@ public interface IQuoteRepository
         BusinessSettings settings,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// URLs de importação por categoria, indexadas por
+    /// <c>"{sourceKey}:{category}"</c> — mesmo formato de chave que o
+    /// Desktop já usa localmente (<c>buildpc.config.json</c>). Gravadas numa
+    /// entrada própria, separada de <see cref="BusinessSettings"/>: os dois
+    /// são salvos independentemente, então editar uma nunca sobrescreve a
+    /// outra.
+    /// </summary>
+    Task<IReadOnlyDictionary<string, string>> GetImportSourceUrlsAsync(
+        CancellationToken cancellationToken = default);
+
+    Task SaveImportSourceUrlsAsync(
+        IReadOnlyDictionary<string, string> importSourceUrls,
+        CancellationToken cancellationToken = default);
+
     Task<SavedQuote> SaveQuoteAsync(
         SavedQuote? existing,
         QuoteDraft draft,

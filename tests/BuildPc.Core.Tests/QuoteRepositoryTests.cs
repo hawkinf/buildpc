@@ -315,6 +315,42 @@ public sealed class QuoteRepositoryTests
         }
     }
 
+    [Fact]
+    public void ImportSourceUrls_RoundTripThroughSqliteIndependentlyOfSettings()
+    {
+        var directory = Path.Combine(
+            Path.GetTempPath(),
+            $"buildpc-import-urls-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var repository = new QuoteRepository(Path.Combine(directory, "catalogo.db"));
+
+            Assert.Empty(repository.GetImportSourceUrls());
+
+            repository.SaveSettings(new BusinessSettings { CompanyName = "Empresa Teste" });
+            repository.SaveImportSourceUrls(new Dictionary<string, string>
+            {
+                ["kabum:Processor"] = "https://www.kabum.com.br/hardware/processadores",
+                ["kabum-hd:HardDrive"] = "https://www.kabum.com.br/hardware/disco-rigido-hd"
+            });
+
+            var loadedUrls = repository.GetImportSourceUrls();
+            Assert.Equal(2, loadedUrls.Count);
+            Assert.Equal(
+                "https://www.kabum.com.br/hardware/disco-rigido-hd",
+                loadedUrls["kabum-hd:HardDrive"]);
+
+            // Gravar as URLs de importação não pode apagar (nem ser apagado
+            // por) BusinessSettings — são entradas separadas na mesma tabela.
+            Assert.Equal("Empresa Teste", repository.GetSettings().CompanyName);
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
     private static SavedQuoteItem Item(int quantity, decimal unitPrice) =>
         new()
         {

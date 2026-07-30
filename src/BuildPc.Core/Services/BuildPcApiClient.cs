@@ -197,6 +197,25 @@ public sealed class BuildPcApiClient :
             cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyDictionary<string, string>> GetImportSourceUrlsAsync(
+        CancellationToken cancellationToken = default) =>
+        await SendAsync<Dictionary<string, string>>(
+            HttpMethod.Get,
+            "settings/import-sources",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+    public async Task SaveImportSourceUrlsAsync(
+        IReadOnlyDictionary<string, string> importSourceUrls,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(importSourceUrls);
+        await SendAsync(
+            HttpMethod.Put,
+            "settings/import-sources",
+            importSourceUrls,
+            cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<SavedQuote> SaveQuoteAsync(
         SavedQuote? existing,
         QuoteDraft draft,

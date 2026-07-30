@@ -60,7 +60,7 @@ else
                     type="url"
                     placeholder="URL da categoria no Kabum"
                     value="@_urls.GetValueOrDefault(category.Value)"
-                    @onchange="e => _urls[category.Value] = e.Value?.ToString() ?? string.Empty" />
+                    @onchange="e => OnUrlChanged(category, e)" />
 
                 @if (_confirmingCategory == category.Value)
                 {
@@ -146,6 +146,21 @@ else
         {
             var settings = await QuoteRepository.GetSettingsAsync();
             _categories = settings.EffectiveProductCategories();
+
+            // O servidor é a fonte mais atual (Desktop grava lá a cada edição
+            // — ver MainWindowViewModel.SaveApplicationConfiguration) — só
+            // cai para o padrão embutido quando a categoria nunca foi
+            // configurada em lugar nenhum.
+            var storedUrls = await QuoteRepository.GetImportSourceUrlsAsync();
+            foreach (var category in _categories)
+            {
+                var key = ConfigurationKeyFor(category.Value);
+                if (storedUrls.TryGetValue(key, out var storedUrl) &&
+                    !string.IsNullOrWhiteSpace(storedUrl))
+                {
+                    _urls[category.Value] = storedUrl;
+                }
+            }
         }
         catch (InvalidOperationException exception)
         {
@@ -166,6 +181,30 @@ else
     // aqui é o que faz GetLastImportsAsync bater entre os dois clientes.
     private static string SourceKeyFor(ComponentCategory category) =>
         category == ComponentCategory.HardDrive ? "kabum-hd" : "kabum";
+
+    private static string ConfigurationKeyFor(ComponentCategory category) =>
+        ImportKeys.SourceUrlKey(category, SourceKeyFor(category));
+
+    private async Task OnUrlChanged(ProductCategoryDefinition category, ChangeEventArgs e)
+    {
+        _urls[category.Value] = e.Value?.ToString() ?? string.Empty;
+
+        // Best-effort, mesmo espírito do Desktop: uma falha ao gravar no
+        // servidor não pode impedir o uso da URL na sessão atual, só significa
+        // que a edição não fica disponível pra próxima sessão/pro Desktop.
+        try
+        {
+            var storedUrls = await QuoteRepository.GetImportSourceUrlsAsync();
+            var updated = new Dictionary<string, string>(storedUrls, StringComparer.OrdinalIgnoreCase)
+            {
+                [ConfigurationKeyFor(category.Value)] = _urls[category.Value]
+            };
+            await QuoteRepository.SaveImportSourceUrlsAsync(updated);
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
 
     private async Task ImportAllAsync()
     {

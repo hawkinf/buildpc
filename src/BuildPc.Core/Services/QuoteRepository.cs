@@ -10,6 +10,7 @@ public sealed class QuoteRepository :
     IAssemblyTemplateRepository
 {
     private const string SettingsKey = "business";
+    private const string ImportSourceUrlsKey = "import_source_urls";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly string _connectionString;
 
@@ -74,6 +75,58 @@ public sealed class QuoteRepository :
         command.Parameters.AddWithValue(
             "$value",
             JsonSerializer.Serialize(settings, JsonOptions));
+        command.ExecuteNonQuery();
+    }
+
+    public Task<IReadOnlyDictionary<string, string>> GetImportSourceUrlsAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(GetImportSourceUrls());
+
+    internal IReadOnlyDictionary<string, string> GetImportSourceUrls()
+    {
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT value FROM business_settings WHERE key = $key;";
+        command.Parameters.AddWithValue("$key", ImportSourceUrlsKey);
+        var json = command.ExecuteScalar() as string;
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(json, JsonOptions) ??
+                   new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+        catch (JsonException)
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    public Task SaveImportSourceUrlsAsync(
+        IReadOnlyDictionary<string, string> importSourceUrls,
+        CancellationToken cancellationToken = default)
+    {
+        SaveImportSourceUrls(importSourceUrls);
+        return Task.CompletedTask;
+    }
+
+    internal void SaveImportSourceUrls(IReadOnlyDictionary<string, string> importSourceUrls)
+    {
+        ArgumentNullException.ThrowIfNull(importSourceUrls);
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT OR REPLACE INTO business_settings(key, value)
+            VALUES ($key, $value);
+            """;
+        command.Parameters.AddWithValue("$key", ImportSourceUrlsKey);
+        command.Parameters.AddWithValue(
+            "$value",
+            JsonSerializer.Serialize(importSourceUrls, JsonOptions));
         command.ExecuteNonQuery();
     }
 

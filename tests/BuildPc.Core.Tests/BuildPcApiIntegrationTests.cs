@@ -56,6 +56,16 @@ public sealed class BuildPcApiIntegrationTests : IClassFixture<BuildPcApiFactory
     }
 
     [Fact]
+    public async Task ImportSources_WithoutKey_ReturnsUnauthorized()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/settings/import-sources");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task MalformedJson_ReturnsBadRequestNotServerError()
     {
         // Cobre o ajuste do lote 1 da auditoria: JsonException caía no 500

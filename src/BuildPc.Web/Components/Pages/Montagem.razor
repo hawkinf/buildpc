@@ -283,7 +283,7 @@ else
         </button>
     </section>
 
-    <div class="build-picker-table-wrap">
+    <div class="build-picker-table-wrap @(_topCollapsed ? "top-collapsed" : null) @(_itemsCollapsed || _items.Count == 0 ? "items-collapsed" : null)">
     <table class="build-picker-table">
         <thead>
             <tr>

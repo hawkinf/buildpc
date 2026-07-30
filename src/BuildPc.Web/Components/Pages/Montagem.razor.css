@@ -150,13 +150,21 @@
     margin-bottom: 1rem;
 }
 
-.build-footer-row {
+.build-summary-row {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
+    justify-content: center;
+    align-items: stretch;
     gap: 1rem;
-    margin-bottom: 1rem;
+    width: 100%;
+    max-width: 56rem;
+}
+
+.build-summary-row .build-summary-header,
+.build-summary-row .build-terms-card {
+    width: auto;
+    max-width: none;
+    flex: 1 1 auto;
 }
 
 .build-terms-card {
@@ -166,7 +174,6 @@
     gap: 1.1rem;
     padding: 0.6rem 1.25rem;
     margin: 0;
-    margin-left: auto;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 10px;
@@ -204,8 +211,8 @@
     align-items: center;
     gap: 0.5rem;
     background: white;
-    padding: 0.5rem 0 0.6rem;
-    margin-bottom: 0.85rem;
+    padding: 0 0 0.5rem;
+    margin-bottom: 0.6rem;
     border-bottom: 1px solid #e2e8f0;
 }
 
@@ -521,7 +528,7 @@
         box-sizing: border-box;
     }
 
-    .build-footer-row {
+    .build-summary-row {
         flex-direction: column;
         align-items: stretch;
         gap: 0.75rem;
@@ -531,7 +538,6 @@
         flex-direction: column;
         gap: 0.75rem;
         padding: 1rem;
-        margin-left: 0;
         width: 100%;
         box-sizing: border-box;
     }

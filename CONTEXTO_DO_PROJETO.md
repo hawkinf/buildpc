@@ -930,6 +930,33 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07), fase 5/9 — primeira tela real: Consulta de Preços
+  (`Precos.razor`, `/precos`). `PriceTableRowBuilder` (novo,
+  `BuildPc.Core.Services` — mesmo motivo do `StaffPasswordValidator` na fase
+  3: lógica pura, sem nada específico do Blazor, então fica testável sem
+  puxar `BuildPc.Web` pro projeto de testes) filtra
+  (`ProductFilter.Matches`), aplica custo/venda
+  (`PricingCalculator.CalculateSalePrice` + `BusinessSettings.MarginFor`) e
+  ordena o catálogo — usado tanto pela página quanto pelo endpoint de PDF,
+  então tela e PDF nunca mostram tabelas diferentes. Busca por texto usa
+  debounce de 300ms (mesmo padrão de `CancellationTokenSource` do
+  `RevealCost` da fase 4, não o `DebounceTimer` do Desktop). Alternância
+  custo/venda: modo "Custo" envolve cada preço em `RevealCost` (consumidor
+  real do componente da fase 4); modo "Venda" mostra direto (preço de
+  cliente, não é dado sensível). Exportação em PDF é um link
+  (`<a href>`) pro endpoint minimal-API `GET /pdf/tabela-precos` — não tenta
+  transmitir o PDF pelo circuito SignalR (mesma decisão já prevista no plano
+  pra fase 6). O endpoint reconstrói a tabela a partir de query string
+  (categoria/busca/ordenação/modo de preço) usando o mesmo
+  `PriceTableRowBuilder`, grava num arquivo temporário
+  (`ProductPriceTablePdfService.ExportAsync` só sabe escrever em disco),
+  lê os bytes e apaga o arquivo antes de responder. 277/277 testes (9 novos,
+  `PriceTableRowBuilderTests` — filtro por categoria/texto, os 4 modos de
+  ordenação, custo vs. venda, nome de categoria configurado). Testado
+  manualmente via `curl` com cookie: `/precos` carrega (erro tratado
+  quando a API não responde), `/pdf/tabela-precos` exige login (302 sem
+  cookie) e falha só por causa da API de teste inalcançável (confirmado no
+  log — mesma `InvalidOperationException` de sempre, não bug de rota).
 - Cliente web (30/07), fase 4/9 — layout compartilhado e componente de
   revelar custo. `MainLayout.razor` ganhou cabeçalho com nav
   (Montagem/Consulta de Preços/Orçamentos, ainda sem página — fases 5-7) e

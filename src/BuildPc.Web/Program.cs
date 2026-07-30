@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using BuildPc.Core.Models;
 using BuildPc.Core.Services;
 using BuildPc.Web.Components;
 using Microsoft.AspNetCore.Authentication;
@@ -118,6 +119,71 @@ app.MapPost("/account/logout", async (HttpContext context) =>
     await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     return Results.LocalRedirect("/login");
 }).DisableAntiforgery();
+
+// Endpoint minimal-API dedicado (não parte do circuito Blazor Server): o
+// download de um PDF exige uma resposta HTTP de verdade, e reconstrói a
+// mesma tabela da tela a partir dos parâmetros da URL (PriceTableRowBuilder
+// é a mesma lógica usada por Precos.razor, então tela e PDF nunca divergem).
+app.MapGet(
+    "/pdf/tabela-precos",
+    async (
+        IComponentCatalogRepository catalogRepository,
+        IQuoteRepository quoteRepository,
+        string? category,
+        string? search,
+        string? sort,
+        string? priceMode) =>
+    {
+        var catalog = await catalogRepository.GetAllAsync();
+        var settings = await quoteRepository.GetSettingsAsync();
+        var categoryFilter = Enum.TryParse<ComponentCategory>(category, out var parsedCategory)
+            ? parsedCategory
+            : (ComponentCategory?)null;
+        var sortMode = Enum.TryParse<PriceTableSortMode>(sort, out var parsedSort)
+            ? parsedSort
+            : PriceTableSortMode.NameAscending;
+        var showSalePrice = !string.Equals(priceMode, "custo", StringComparison.OrdinalIgnoreCase);
+
+        var rows = PriceTableRowBuilder.Build(
+            catalog,
+            settings,
+            categoryFilter,
+            search,
+            sortMode,
+            showSalePrice);
+        var categoryName = categoryFilter is null
+            ? "Todos"
+            : settings.EffectiveProductCategories()
+                .FirstOrDefault(definition => definition.Value == categoryFilter.Value)?.Name ??
+              categoryFilter.Value.ToString();
+
+        var document = new ProductPriceTableDocument(
+            "Tabela de preços",
+            showSalePrice ? "Preço de venda" : "Custo",
+            categoryName,
+            search ?? string.Empty,
+            settings.CompanyName,
+            DateTimeOffset.Now,
+            rows);
+
+        var tempPath = Path.Combine(
+            Path.GetTempPath(),
+            $"buildpc-web-tabela-{Guid.NewGuid():N}.pdf");
+        try
+        {
+            await new ProductPriceTablePdfService().ExportAsync(document, tempPath);
+            var bytes = await File.ReadAllBytesAsync(tempPath);
+            return Results.File(bytes, "application/pdf", "tabela-de-precos.pdf");
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
+    })
+    .RequireAuthorization();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

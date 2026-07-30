@@ -1,0 +1,14 @@
+[Unit]
+Description=Alerta de falha do backup do BuildPC
+# Antes, um pg_dump quebrado (disco cheio, permissão, Postgres fora do ar)
+# só falhava silenciosamente no systemd — ninguém era avisado até uma
+# restauração real ser necessária.
+
+[Service]
+Type=oneshot
+# Prioridade "err" faz o alerta se destacar em qualquer monitoramento de
+# journal já existente no servidor, mesmo sem um webhook/e-mail configurado
+# aqui. Ajuste ExecStart para o mecanismo de aviso já usado no servidor
+# (por exemplo, um "msmtp" como o hawk-backup-watchdog já usa) se quiser
+# receber também por e-mail.
+ExecStart=/usr/bin/logger -p daemon.err -t buildpc-backup "Falha no backup do PostgreSQL do BuildPC (buildpc-backup.service). Verifique 'journalctl -u buildpc-backup.service' e o espaço em /var/backups/buildpc."

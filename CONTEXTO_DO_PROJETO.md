@@ -900,6 +900,22 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Auditoria completa (30/07), lote 4 — deploy/infraestrutura: novos
+  `deploy/deploy-api.sh` e `deploy/rollback-api.sh` formalizam em script o
+  que era ~8 passos manuais por SSH (publicar, copiar para
+  `releases/<nome>`, subir numa porta de teste, esperar `/health` responder,
+  só então trocar o symlink `current`, reiniciar, validar por HTTPS, anotar
+  `ROLLBACK.txt`). `deploy-api.sh <caminho-do-release>` aborta sem tocar em
+  produção se o release novo não responder `/health` na porta de teste;
+  `rollback-api.sh` lê o `ROLLBACK.txt` já gravado e reverte em um comando.
+  `backup-buildpc.sh` agora valida que o `.dump` não ficou vazio antes de
+  seguir (`test -s`), e `buildpc-backup.service` ganhou
+  `OnFailure=buildpc-backup-alert.service` (novo, registra no journal com
+  prioridade `err` — ajustável para o mesmo mecanismo de e-mail que o
+  `hawk-backup-watchdog` do servidor já usa) para uma falha de backup deixar
+  de passar silenciosamente até uma restauração real ser necessária. Nenhum
+  destes arquivos foi executado na VPS nesta sessão — só versionados; a
+  aplicação em produção é uma ação separada.
 - Auditoria completa (30/07), lote 3c — consolidação da edição de produto:
   existiam dois formulários completos para o mesmo produto (`ProductEditWindow`,
   modal aberto ao clicar numa linha em Gerenciar Produtos, e

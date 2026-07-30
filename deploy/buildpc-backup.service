@@ -2,6 +2,7 @@
 Description=Backup do PostgreSQL do BuildPC
 After=postgresql.service
 Requires=postgresql.service
+OnFailure=buildpc-backup-alert.service
 
 [Service]
 Type=oneshot

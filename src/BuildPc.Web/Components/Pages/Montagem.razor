@@ -38,21 +38,6 @@ else
             value="@_pickerSearch"
             @oninput="e => { _pickerSearch = e.Value?.ToString() ?? string.Empty; }" />
 
-        <select value="@_pickerComponentId" @onchange="e => _pickerComponentId = e.Value?.ToString()">
-            <option value="">Selecione um produto</option>
-            @foreach (var product in PickerOptions)
-            {
-                <option value="@product.Id">
-                    @(product.IsFavorite ? "★ " : "")@product.Name — @product.Price.ToString("C", CultureHelpers.BrazilianCulture)
-                </option>
-            }
-        </select>
-
-        @if (SelectedPickerProduct?.ImageUrl is { Length: > 0 } previewUrl)
-        {
-            <img class="build-picker-preview" src="@previewUrl" alt="" loading="lazy" />
-        }
-
         <input
             type="number"
             min="1"
@@ -64,6 +49,51 @@ else
             Adicionar
         </button>
     </section>
+
+    <div class="build-picker-table-wrap">
+    <table class="build-picker-table">
+        <thead>
+            <tr>
+                <th></th>
+                <th>
+                    <button type="button" class="build-picker-sort" @onclick="() => TogglePickerSort(byPrice: false)">
+                        Produto @(PickerSortIcon(byPrice: false))
+                    </button>
+                </th>
+                <th>
+                    <button type="button" class="build-picker-sort" @onclick="() => TogglePickerSort(byPrice: true)">
+                        Preço @(PickerSortIcon(byPrice: true))
+                    </button>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var product in PickerOptions)
+            {
+                <tr
+                    class="@(product.Id == _pickerComponentId ? "selected" : null)"
+                    @onclick="() => _pickerComponentId = product.Id">
+                    <td class="build-thumb-cell">
+                        @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
+                        {
+                            <img class="build-thumb" src="@product.ImageUrl" alt="" loading="lazy" />
+                        }
+                    </td>
+                    <td>
+                        <ProductHoverPreview
+                            Title="@product.Name"
+                            Description="@product.Description"
+                            ImageUrl="@product.ImageUrl"
+                            Price="@product.Price.ToString("C", CultureHelpers.BrazilianCulture)">
+                            @(product.IsFavorite ? "★ " : "")@product.Name
+                        </ProductHoverPreview>
+                    </td>
+                    <td>@product.Price.ToString("C", CultureHelpers.BrazilianCulture)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    </div>
 
     @if (_compatibilityIssues.Count > 0)
     {
@@ -297,6 +327,7 @@ else
     private string _pickerSearch = string.Empty;
     private string? _pickerComponentId;
     private int _pickerQuantity = 1;
+    private PriceTableSortMode _pickerSortMode = PriceTableSortMode.NameAscending;
 
     private string _clientName = string.Empty;
     private string _clientPhone = string.Empty;
@@ -319,17 +350,54 @@ else
     private string _templateName = string.Empty;
     private AssemblyTemplate? _templateToDelete;
 
-    private IEnumerable<PcComponent> PickerOptions => _catalog
-        .Where(component =>
-            component.Category == _pickerCategory &&
-            ProductFilter.Matches(component, _pickerSearch))
-        .OrderByDescending(component => component.IsFavorite)
-        .ThenBy(component => component.Name, StringComparer.CurrentCultureIgnoreCase);
+    private IEnumerable<PcComponent> PickerOptions
+    {
+        get
+        {
+            var matched = _catalog.Where(component =>
+                component.Category == _pickerCategory &&
+                ProductFilter.Matches(component, _pickerSearch));
 
-    private PcComponent? SelectedPickerProduct => string.IsNullOrEmpty(_pickerComponentId)
-        ? null
-        : _catalog.FirstOrDefault(component =>
-            string.Equals(component.Id, _pickerComponentId, StringComparison.OrdinalIgnoreCase));
+            // Favoritos sempre no topo, igual ao seletor de produto do
+            // Desktop — independente da ordenação escolhida.
+            return (_pickerSortMode switch
+            {
+                PriceTableSortMode.NameDescending => matched.OrderByDescending(
+                    component => component.IsFavorite)
+                    .ThenByDescending(component => component.Name, StringComparer.CurrentCultureIgnoreCase),
+                PriceTableSortMode.PriceAscending => matched.OrderByDescending(
+                    component => component.IsFavorite)
+                    .ThenBy(component => component.Price),
+                PriceTableSortMode.PriceDescending => matched.OrderByDescending(
+                    component => component.IsFavorite)
+                    .ThenByDescending(component => component.Price),
+                _ => matched.OrderByDescending(component => component.IsFavorite)
+                    .ThenBy(component => component.Name, StringComparer.CurrentCultureIgnoreCase)
+            });
+        }
+    }
+
+    private void TogglePickerSort(bool byPrice)
+    {
+        _pickerSortMode = (byPrice, _pickerSortMode) switch
+        {
+            (false, PriceTableSortMode.NameAscending) => PriceTableSortMode.NameDescending,
+            (false, _) => PriceTableSortMode.NameAscending,
+            (true, PriceTableSortMode.PriceAscending) => PriceTableSortMode.PriceDescending,
+            (true, _) => PriceTableSortMode.PriceAscending
+        };
+    }
+
+    private string PickerSortIcon(bool byPrice)
+    {
+        var ascending = byPrice
+            ? _pickerSortMode == PriceTableSortMode.PriceAscending
+            : _pickerSortMode == PriceTableSortMode.NameAscending;
+        var isActive = byPrice
+            ? _pickerSortMode is PriceTableSortMode.PriceAscending or PriceTableSortMode.PriceDescending
+            : _pickerSortMode is PriceTableSortMode.NameAscending or PriceTableSortMode.NameDescending;
+        return !isActive ? string.Empty : ascending ? "▲" : "▼";
+    }
 
     private bool HasItems => _items.Count > 0;
     private decimal TotalCost => _items.Sum(item => item.TotalCost);

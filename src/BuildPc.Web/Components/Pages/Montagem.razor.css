@@ -21,12 +21,6 @@
     padding: 0.5rem;
 }
 
-.build-picker-preview {
-    width: 2.5rem;
-    height: 2.5rem;
-    object-fit: contain;
-}
-
 .build-thumb-cell {
     width: 3rem;
 }
@@ -36,6 +30,54 @@
     height: 2.5rem;
     object-fit: contain;
     display: block;
+}
+
+.build-picker-table-wrap {
+    max-height: 20rem;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    margin-bottom: 1.25rem;
+}
+
+.build-picker-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.build-picker-table th,
+.build-picker-table td {
+    text-align: left;
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.build-picker-table thead th {
+    position: sticky;
+    top: 0;
+    background: white;
+}
+
+.build-picker-table tbody tr {
+    cursor: pointer;
+}
+
+.build-picker-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.build-picker-table tbody tr.selected {
+    background: #dbeafe;
+}
+
+.build-picker-sort {
+    background: none;
+    border: none;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
 }
 
 .build-compatibility {
@@ -165,8 +207,10 @@
         box-sizing: border-box;
     }
 
-    .build-picker-preview {
-        align-self: center;
+    .build-picker-table th,
+    .build-picker-table td {
+        padding: 0.35rem;
+        font-size: 0.85rem;
     }
 
     .build-table th,

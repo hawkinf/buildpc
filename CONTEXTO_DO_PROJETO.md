@@ -967,6 +967,23 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — seletor de produto da Montagem trocou o `<select>`
+  nativo (uma linha de texto, sem foto) por uma lista igual à tabela da
+  Consulta de Preços, a pedido do usuário ("tem que ser igual a consulta de
+  preços"). `<select><option>` nativo não tem como mostrar imagem nem popup
+  por item — não dava pra chegar em paridade visual sem trocar o controle.
+  Nova tabela (`build-picker-table`, `max-height: 20rem` com scroll interno
+  — categoria filtrada ainda pode ter uma paisagem de produtos): miniatura
+  por linha, nome envolto em `ProductHoverPreview` (mesmo popup da fase
+  anterior), ordenar por nome/preço (`PriceTableSortMode`, reaproveitado do
+  Core em vez de criar um enum novo — mesmo shape que a Consulta de Preços
+  já usa), favoritos sempre no topo independente da ordenação (igual ao
+  seletor do Desktop). Clicar numa linha seleciona (`_pickerComponentId`,
+  linha destacada via classe `.selected`) — fluxo de quantidade+Adicionar
+  continua igual, só a lista de escolha mudou. Removida a prévia de imagem
+  avulsa ao lado do seletor (ficou redundante — a miniatura já aparece em
+  cada linha da lista agora). 282/282 testes (sem novos — só reorganização
+  de UI sobre catálogo já carregado, nenhuma lógica de negócio nova).
 - Cliente web (30/07) — URLs de importação por categoria agora persistem no
   servidor, fechando a lacuna que ficou documentada (e explicada ao
   usuário) quando a tela de Importações foi adicionada: antes, cada edição

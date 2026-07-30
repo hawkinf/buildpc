@@ -967,6 +967,33 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — segunda rodada de ajuste no topo da Montagem,
+  reposicionando o que a rodada anterior tinha feito: agora só
+  Cliente/Telefone/Observações (`build-client-box`) + resumo de preço
+  (`build-summary-header`) ficam **fixos no topo durante a rolagem**
+  (`.build-fixed-top`, `position: sticky` no contêiner que envolve os
+  dois — antes era só o resumo isolado); Desconto/Validade/Pagamento/
+  Entrega **saíram do topo e foram para o final**, depois da tabela de
+  itens, mantendo `HasItems` como antes (fazem mais sentido como "detalhes
+  de fechamento" depois de montar tudo, não antes). Observações migrou
+  pra dentro do quadro do cliente, como terceiro campo ao lado de
+  Telefone: ficou mais larga (`flex: 2`) e bem mais baixa
+  (`height: 2.4rem`, era `5.5rem`) — cabe numa linha ao lado dos outros
+  dois campos em vez de ocupar uma seção inteira embaixo.
+
+  Alinhamento e tipografia: todo rótulo de campo (Cliente/Telefone/
+  Observações e Desconto/Validade/Pagamento/Entrega) passou a usar
+  `<span class="build-field-label">` — antes era texto solto direto no
+  `<label>`, sem como estilizar separado do input; agora usa a mesma
+  linguagem visual do resumo (maiúsculas pequenas, cinza, letter-spacing)
+  para as duas áreas ficarem visualmente coerentes. `build-client-box` e
+  `build-summary-header` ganharam `max-width: 56rem` centralizado
+  (`margin: 0 auto` via `align-items: center` do contêiner pai) em vez de
+  esticar a largura toda — pedido explícito de "centralizado". No
+  celular, `.build-fixed-top` volta a `position: static` (sticky
+  permanente ocuparia espaço demais numa tela pequena, mesma decisão já
+  tomada pro resumo isolado na rodada anterior). 282/282 testes (sem
+  novos — reorganização e estilo).
 - Cliente web (30/07) — reorganização do formulário da Montagem (pedido
   detalhado do usuário) e zebrado nas tabelas de produtos em todo o
   cliente web. Cliente/Telefone viraram a primeira coisa da página

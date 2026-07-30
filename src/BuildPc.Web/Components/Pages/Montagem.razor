@@ -24,122 +24,48 @@ else
         <p class="build-status">@_statusMessage</p>
     }
 
-    <section class="build-client build-client-box">
-        <label class="@(_isClientNameInvalid ? "invalid" : null)">
-            Cliente
-            <input
-                value="@_clientName"
-                @onchange="e => { _clientName = e.Value?.ToString() ?? string.Empty; _isClientNameInvalid = false; }" />
-        </label>
-        <label class="@(_isClientPhoneInvalid ? "invalid" : null)">
-            Telefone
-            <input
-                maxlength="15"
-                value="@_clientPhone"
-                @onchange="e => { _clientPhone = PhoneNumberFormatter.FormatBrazilian(e.Value?.ToString()); _isClientPhoneInvalid = false; }" />
-        </label>
-    </section>
-
-    <section class="build-summary-header">
-        <div class="build-summary-stat build-summary-cost">
-            <span class="build-summary-label">Custo total</span>
-            <RevealCost Value="TotalCost" />
-        </div>
-        <div class="build-summary-stat build-summary-price">
-            <span class="build-summary-label">Total de venda</span>
-            <span class="build-summary-value">
-                @if (HasDiscount)
-                {
-                    <s class="build-summary-strike">@TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)</s>
-                }
-                @FinalPrice.ToString("C", CultureHelpers.BrazilianCulture)
-            </span>
-        </div>
-        <div class="build-summary-stat build-summary-profit">
-            <span class="build-summary-label">Lucro</span>
-            <RevealCost Value="TotalProfit" Suffix="@($"({TotalProfitPercent.ToString("0.0", CultureHelpers.BrazilianCulture)}%)")" />
-        </div>
-    </section>
-
-    @if (HasItems)
-    {
-        <section class="build-terms">
-            <label>
-                Desconto
-                <span class="build-currency-input">
-                    <span class="build-currency-prefix">R$</span>
-                    <input
-                        type="text"
-                        inputmode="numeric"
-                        value="@_discountDisplay"
-                        @oninput="OnDiscountInput" />
-                </span>
-            </label>
-            <label>
-                Validade (dias, 0 = pronta entrega)
+    <section class="build-fixed-top">
+        <section class="build-client build-client-box">
+            <label class="@(_isClientNameInvalid ? "invalid" : null)">
+                <span class="build-field-label">Cliente</span>
                 <input
-                    type="number"
-                    min="0"
-                    max="365"
-                    value="@_validityDays"
-                    @onchange="e => _validityDays = Math.Clamp(int.TryParse(e.Value?.ToString(), out var d) ? d : 0, 0, 365)" />
+                    value="@_clientName"
+                    @onchange="e => { _clientName = e.Value?.ToString() ?? string.Empty; _isClientNameInvalid = false; }" />
             </label>
-            <label>
-                Condições de pagamento
-                <select value="@_paymentTerms" @onchange="e => _paymentTerms = e.Value?.ToString() ?? string.Empty">
-                    <option value="">Selecione</option>
-                    <option value="À vista">À vista</option>
-                    <option value="Dinheiro/Pix">Dinheiro/Pix</option>
-                    <option value="Parcelado no cartão (Visa/Master)">Parcelado no cartão (Visa/Master)</option>
-                </select>
-            </label>
-            <label>
-                Prazo de entrega
-                <span class="build-delivery-input">
-                    <input
-                        type="number"
-                        min="0"
-                        max="365"
-                        value="@_deliveryDays"
-                        @onchange="e => OnDeliveryDaysChanged(e)" />
-                    <select value="@_deliveryDayType" @onchange="e => OnDeliveryDayTypeChanged(e)">
-                        <option value="úteis">dias úteis</option>
-                        <option value="corridos">dias corridos</option>
-                    </select>
-                </span>
+            <label class="@(_isClientPhoneInvalid ? "invalid" : null)">
+                <span class="build-field-label">Telefone</span>
+                <input
+                    maxlength="15"
+                    value="@_clientPhone"
+                    @onchange="e => { _clientPhone = PhoneNumberFormatter.FormatBrazilian(e.Value?.ToString()); _isClientPhoneInvalid = false; }" />
             </label>
             <label class="build-notes">
-                Observações
+                <span class="build-field-label">Observações</span>
                 <textarea @onchange="e => _notes = e.Value?.ToString() ?? string.Empty">@_notes</textarea>
             </label>
         </section>
 
-        <section class="build-actions">
-            <button type="button" @onclick="SaveAsync">Gravar orçamento</button>
-            <button type="button" @onclick="RequestClear">Limpar</button>
-            @if (_savedQuote is not null && !_isDirty)
-            {
-                <a href="@($"/pdf/orcamento/{_savedQuote.Id}")" target="_blank">Exportar PDF</a>
-            }
-            else
-            {
-                <span class="build-export-hint">Grave o orçamento para exportar o PDF.</span>
-            }
+        <section class="build-summary-header">
+            <div class="build-summary-stat build-summary-cost">
+                <span class="build-summary-label">Custo total</span>
+                <RevealCost Value="TotalCost" />
+            </div>
+            <div class="build-summary-stat build-summary-price">
+                <span class="build-summary-label">Total de venda</span>
+                <span class="build-summary-value">
+                    @if (HasDiscount)
+                    {
+                        <s class="build-summary-strike">@TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)</s>
+                    }
+                    @FinalPrice.ToString("C", CultureHelpers.BrazilianCulture)
+                </span>
+            </div>
+            <div class="build-summary-stat build-summary-profit">
+                <span class="build-summary-label">Lucro</span>
+                <RevealCost Value="TotalProfit" Suffix="@($"({TotalProfitPercent.ToString("0.0", CultureHelpers.BrazilianCulture)}%)")" />
+            </div>
         </section>
-
-        @if (_isClearConfirmationVisible)
-        {
-            <p class="build-confirm">
-                Descartar a montagem atual?
-                @if (_savedQuote is not null)
-                {
-                    <span>O orçamento #@_savedQuote.Number.ToString("000000") gravado continua em Orçamentos.</span>
-                }
-                <button type="button" @onclick="Clear">Confirmar</button>
-                <button type="button" @onclick="() => _isClearConfirmationVisible = false">Cancelar</button>
-            </p>
-        }
-    }
+    </section>
 
     <section class="build-picker">
         <select value="@((int)_pickerCategory)" @onchange="OnPickerCategoryChanged">
@@ -289,6 +215,82 @@ else
             </tbody>
         </table>
         </div>
+    }
+
+    @if (HasItems)
+    {
+        <section class="build-terms">
+            <label>
+                <span class="build-field-label">Desconto</span>
+                <span class="build-currency-input">
+                    <span class="build-currency-prefix">R$</span>
+                    <input
+                        type="text"
+                        inputmode="numeric"
+                        value="@_discountDisplay"
+                        @oninput="OnDiscountInput" />
+                </span>
+            </label>
+            <label>
+                <span class="build-field-label">Validade (dias, 0 = pronta entrega)</span>
+                <input
+                    type="number"
+                    min="0"
+                    max="365"
+                    value="@_validityDays"
+                    @onchange="e => _validityDays = Math.Clamp(int.TryParse(e.Value?.ToString(), out var d) ? d : 0, 0, 365)" />
+            </label>
+            <label>
+                <span class="build-field-label">Condições de pagamento</span>
+                <select value="@_paymentTerms" @onchange="e => _paymentTerms = e.Value?.ToString() ?? string.Empty">
+                    <option value="">Selecione</option>
+                    <option value="À vista">À vista</option>
+                    <option value="Dinheiro/Pix">Dinheiro/Pix</option>
+                    <option value="Parcelado no cartão (Visa/Master)">Parcelado no cartão (Visa/Master)</option>
+                </select>
+            </label>
+            <label>
+                <span class="build-field-label">Prazo de entrega</span>
+                <span class="build-delivery-input">
+                    <input
+                        type="number"
+                        min="0"
+                        max="365"
+                        value="@_deliveryDays"
+                        @onchange="e => OnDeliveryDaysChanged(e)" />
+                    <select value="@_deliveryDayType" @onchange="e => OnDeliveryDayTypeChanged(e)">
+                        <option value="úteis">dias úteis</option>
+                        <option value="corridos">dias corridos</option>
+                    </select>
+                </span>
+            </label>
+        </section>
+
+        <section class="build-actions">
+            <button type="button" @onclick="SaveAsync">Gravar orçamento</button>
+            <button type="button" @onclick="RequestClear">Limpar</button>
+            @if (_savedQuote is not null && !_isDirty)
+            {
+                <a href="@($"/pdf/orcamento/{_savedQuote.Id}")" target="_blank">Exportar PDF</a>
+            }
+            else
+            {
+                <span class="build-export-hint">Grave o orçamento para exportar o PDF.</span>
+            }
+        </section>
+
+        @if (_isClearConfirmationVisible)
+        {
+            <p class="build-confirm">
+                Descartar a montagem atual?
+                @if (_savedQuote is not null)
+                {
+                    <span>O orçamento #@_savedQuote.Number.ToString("000000") gravado continua em Orçamentos.</span>
+                }
+                <button type="button" @onclick="Clear">Confirmar</button>
+                <button type="button" @onclick="() => _isClearConfirmationVisible = false">Cancelar</button>
+            </p>
+        }
     }
 
     <section class="build-templates">

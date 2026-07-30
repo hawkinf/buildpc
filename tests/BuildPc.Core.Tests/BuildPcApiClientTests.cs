@@ -82,6 +82,57 @@ public sealed class BuildPcApiClientTests
         await client.TestConnectionAsync();
     }
 
+    [Fact]
+    public async Task ReplaceImportedAsyncDeserializesTheServerResponse()
+    {
+        // Reproduz um crash real: ImportReplaceResult tinha dois construtores
+        // públicos (o principal e uma sobrecarga de conveniência nunca usada),
+        // e o System.Text.Json não conseguia decidir qual usar — toda
+        // importação pela API (não só um caso isolado) derrubava o programa
+        // com "Deserialization of types without... a singular parameterized
+        // constructor... is not supported" assim que a resposta chegava.
+        var handler = new StubHttpMessageHandler(request =>
+        {
+            Assert.Equal(
+                "https://buildpc.example/imports/replace",
+                request.RequestUri?.ToString());
+            return JsonResponse(
+                """
+                {
+                    "imported": 55,
+                    "removed": 50,
+                    "kept": 2,
+                    "importedAt": "2026-07-30T08:00:00Z",
+                    "priceChanges": [
+                        {
+                            "componentId": "cpu-1",
+                            "name": "Ryzen 5 5500",
+                            "previousPrice": 700.00,
+                            "currentPrice": 750.90
+                        }
+                    ],
+                    "disappeared": 1
+                }
+                """);
+        });
+        using var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://buildpc.example/")
+        };
+        using var client = new BuildPcApiClient(httpClient, "secret");
+
+        var result = await client.ReplaceImportedAsync(
+            ComponentCategory.Processor,
+            "kabum",
+            []);
+
+        Assert.Equal(55, result.Imported);
+        Assert.Equal(1, result.Disappeared);
+        var change = Assert.Single(result.PriceChanges);
+        Assert.Equal("cpu-1", change.ComponentId);
+        Assert.True(change.IsIncrease);
+    }
+
     private static HttpResponseMessage JsonResponse(
         string json,
         HttpStatusCode statusCode = HttpStatusCode.OK) =>

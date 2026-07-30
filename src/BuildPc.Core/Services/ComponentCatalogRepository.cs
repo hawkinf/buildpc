@@ -1073,16 +1073,6 @@ public sealed record ImportReplaceResult(
     /// </summary>
     int Disappeared)
 {
-    /// <summary>Sobrecarga para chamadas que não acompanham variações.</summary>
-    public ImportReplaceResult(
-        int imported,
-        int removed,
-        int kept,
-        DateTimeOffset importedAt)
-        : this(imported, removed, kept, importedAt, [], 0)
-    {
-    }
-
     public bool HasPriceChanges => PriceChanges.Count > 0;
 
     public int Increases => PriceChanges.Count(change => change.IsIncrease);

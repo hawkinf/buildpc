@@ -4,7 +4,7 @@ using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.Rendering;
 using SkiaSharp;
 
-namespace BuildPc.Desktop.Services;
+namespace BuildPc.Core.Services;
 
 public sealed record ProductPriceTableRow(
     string Title,
@@ -192,7 +192,7 @@ public sealed class ProductPriceTablePdfService
                     row.Cells[2],
                     item.Price.ToString(
                         "C",
-                        ViewModels.MainWindowViewModel.BrazilianCulture),
+                        CultureHelpers.BrazilianCulture),
                     ParagraphAlignment.Right,
                     bold: true);
                 imageIndex++;

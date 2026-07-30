@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using BuildPc.Core.Services;
 using BuildPc.Desktop.Services;
 using BuildPc.Desktop.ViewModels;
 

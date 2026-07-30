@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Windows.Input;
 using BuildPc.Core.Models;
 using BuildPc.Core.Services;
-using BuildPc.Desktop.Services;
 
 namespace BuildPc.Desktop.ViewModels;
 

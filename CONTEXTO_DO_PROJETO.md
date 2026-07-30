@@ -930,6 +930,33 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07), fase 1/9 — início do projeto `BuildPc.Web` (Blazor
+  Server, hospedado em `precos.hawk.com.br`, cobrindo Montagem/Consulta de
+  Preço/Orçamentos; plano completo em decisão de arquitetura registrada na
+  sessão). Primeiro passo: `QuotePdfService`, `ProductPriceTablePdfService`,
+  `ProductPriceTableSectionFactory`, `PdfFontConfiguration` e
+  `PhoneNumberFormatter` moveram de `BuildPc.Desktop/Services` para
+  `BuildPc.Core/Services` — são .NET puro (MigraDoc/PdfSharp/SkiaSharp, sem
+  Avalonia), e o cliente web precisa deles sem depender do Avalonia.
+  `PricingCalculator` (novo, `BuildPc.Core.Services`) extrai
+  `CalculateSalePrice`/`RoundUpToNinetyCents` (a regra de arredondamento
+  terminando em ",90") de `FlexibleListItemViewModel`, que agora delega —
+  cálculo de preço de venda tem uma implementação só, compartilhada.
+  `CultureHelpers.BrazilianCulture` (novo) é a fonte canônica da cultura
+  pt-BR; `MainWindowViewModel.BrazilianCulture` passou a delegar para lá.
+  `PdfFontConfiguration` ganhou um `IFontResolver` para Linux: resolve
+  "Arial" para a DejaVu Sans do pacote `fonts-dejavu-core` (**já presente**
+  na VPS de produção, confirmado via SSH — nenhuma instalação nova
+  necessária), ativado só quando `!OperatingSystem.IsWindows()`; o caminho
+  do Windows (fontes do sistema) continua igual. `ProductPriceTableRowFactory.cs`
+  ficou no Desktop de propósito (depende de `ProductListItemViewModel`, uma
+  ViewModel do Avalonia) — só ganhou `using BuildPc.Core.Services;` para
+  enxergar os tipos que mudaram de lugar. `BuildPc.Core.csproj` ganhou
+  `PDFsharp-MigraDoc`, `SkiaSharp` e `SkiaSharp.NativeAssets.Linux`;
+  `BuildPc.Desktop.csproj` perdeu a referência direta ao MigraDoc (vem
+  transitivamente via o Core). 261/261 testes; PDF de amostra gerado e
+  conferido visualmente (moeda, tabela, layout intactos) no Windows antes do
+  commit.
 - Auditoria completa (30/07), lote 6 — itens de baixa prioridade:
   `Models/Fixed/PcBuild.cs` (duplicata byte-a-byte de `Models/PcBuild.cs`,
   mantida viva só por uma regra `<Compile Remove>` em `Directory.Build.targets`)

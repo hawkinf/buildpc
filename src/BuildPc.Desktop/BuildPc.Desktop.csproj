@@ -9,7 +9,8 @@
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="12.1.0" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.0" />
-    <PackageReference Include="PDFsharp-MigraDoc" Version="6.2.4" />
+    <!-- PDFsharp-MigraDoc vem transitivamente via a referência ao BuildPc.Core,
+         que agora hospeda os serviços de geração de PDF. -->
   </ItemGroup>
 
   <ItemGroup>

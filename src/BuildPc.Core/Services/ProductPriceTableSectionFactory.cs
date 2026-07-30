@@ -1,6 +1,6 @@
 using BuildPc.Core.Models;
 
-namespace BuildPc.Desktop.Services;
+namespace BuildPc.Core.Services;
 
 public static class ProductPriceTableSectionFactory
 {

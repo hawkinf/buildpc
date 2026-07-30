@@ -1,10 +1,9 @@
 using BuildPc.Core.Models;
-using BuildPc.Desktop.ViewModels;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.Rendering;
 
-namespace BuildPc.Desktop.Services;
+namespace BuildPc.Core.Services;
 
 public sealed class QuotePdfService
 {
@@ -367,6 +366,6 @@ public sealed class QuotePdfService
     }
 
     private static string Money(decimal value) =>
-        value.ToString("C", MainWindowViewModel.BrazilianCulture);
+        value.ToString("C", CultureHelpers.BrazilianCulture);
 
 }

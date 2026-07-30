@@ -192,7 +192,7 @@ public sealed class PriceLookupViewModel : ViewModelBase
         foreach (var product in _products)
         {
             var price = _showSalePrice
-                ? FlexibleListItemViewModel.CalculateSalePrice(
+                ? PricingCalculator.CalculateSalePrice(
                     product.Component.Price,
                     _settings.MarginFor(product.Component.Category))
                 : product.Component.Price;

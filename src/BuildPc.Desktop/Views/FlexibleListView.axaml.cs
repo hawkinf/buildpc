@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using BuildPc.Core.Services;
 using BuildPc.Desktop.Services;
 using BuildPc.Desktop.ViewModels;
 

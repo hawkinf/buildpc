@@ -1,6 +1,7 @@
 using System.Windows.Input;
 using System.Globalization;
 using BuildPc.Core.Models;
+using BuildPc.Core.Services;
 
 namespace BuildPc.Desktop.ViewModels;
 
@@ -40,7 +41,7 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
         _unitPriceValue = component.Price;
         _marginPercent = marginPercent;
         _priceText = component.Price.ToString("N2", MainWindowViewModel.BrazilianCulture);
-        _sellingUnitPriceValue = CalculateSalePrice(component.Price, marginPercent);
+        _sellingUnitPriceValue = PricingCalculator.CalculateSalePrice(component.Price, marginPercent);
         _sellingPriceText = _sellingUnitPriceValue.ToString(
             "N2",
             MainWindowViewModel.BrazilianCulture);
@@ -224,7 +225,7 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
 
             _sellingUnitPriceValue = Math.Max(
                 MinimumSellingUnitPrice,
-                RoundUpToNinetyCents(price));
+                PricingCalculator.RoundUpToNinetyCents(price));
             _sellingPriceText = _sellingUnitPriceValue.ToString(
                 "N2",
                 MainWindowViewModel.BrazilianCulture);
@@ -252,7 +253,7 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
     }
 
     public decimal MinimumSellingUnitPrice =>
-        CalculateSalePrice(
+        PricingCalculator.CalculateSalePrice(
             UnitPriceValue,
             BusinessSettings.MinimumMarginPercent);
 
@@ -301,7 +302,7 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
 
     private void RecalculateSellingPrice()
     {
-        _sellingUnitPriceValue = CalculateSalePrice(
+        _sellingUnitPriceValue = PricingCalculator.CalculateSalePrice(
             UnitPriceValue,
             MarginPercent);
         _sellingPriceText = _sellingUnitPriceValue.ToString(
@@ -312,21 +313,4 @@ public sealed class FlexibleListItemViewModel : ViewModelBase
         OnPropertyChanged(nameof(SellingUnitPrice));
     }
 
-    public static decimal CalculateSalePrice(decimal cost, decimal margin) =>
-        RoundUpToNinetyCents(
-            cost * (1m + Math.Max(BusinessSettings.MinimumMarginPercent, margin) / 100m));
-
-    private static decimal RoundUpToNinetyCents(decimal value)
-    {
-        if (value <= 0)
-        {
-            return 0.90m;
-        }
-
-        var wholePart = decimal.Floor(value);
-        var priceEndingInNinety = wholePart + 0.90m;
-        return value <= priceEndingInNinety
-            ? priceEndingInNinety
-            : wholePart + 1.90m;
-    }
 }

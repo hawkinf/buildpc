@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Windows.Input;
 using BuildPc.Core.Models;
 using BuildPc.Core.Services;
-using BuildPc.Desktop.Services;
 
 namespace BuildPc.Desktop.ViewModels;
 
@@ -871,7 +870,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
     }
 
     private decimal SellingPriceFor(PcComponent component) =>
-        FlexibleListItemViewModel.CalculateSalePrice(
+        PricingCalculator.CalculateSalePrice(
             component.Price,
             _settings.MarginFor(component.Category));
 }

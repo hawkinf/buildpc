@@ -1,5 +1,5 @@
 using BuildPc.Core.Models;
-using BuildPc.Desktop.Services;
+using BuildPc.Core.Services;
 
 namespace BuildPc.Core.Tests;
 
@@ -253,7 +253,7 @@ public sealed class QuotePdfServiceTests
         var source = File.ReadAllText(Path.Combine(
             FindRepositoryRoot(),
             "src",
-            "BuildPc.Desktop",
+            "BuildPc.Core",
             "Services",
             "QuotePdfService.cs"));
 

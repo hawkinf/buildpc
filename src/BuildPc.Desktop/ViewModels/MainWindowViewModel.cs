@@ -68,7 +68,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _productPriceTableStatusMessage = string.Empty;
     private bool _isCatalogShowingSalePrice = true;
 
-    public static CultureInfo BrazilianCulture { get; } = CultureInfo.GetCultureInfo("pt-BR");
+    public static CultureInfo BrazilianCulture => CultureHelpers.BrazilianCulture;
 
     /// <summary>
     /// Carrega tudo o que depende de banco ou rede e devolve o ViewModel pronto.
@@ -852,7 +852,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 return "R$ —";
             }
 
-            return FlexibleListItemViewModel.CalculateSalePrice(
+            return PricingCalculator.CalculateSalePrice(
                     cost,
                     _businessSettings.MarginFor(SelectedProductCategory.Value))
                 .ToString("C", BrazilianCulture);
@@ -919,7 +919,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             return false;
         }
 
-        salePrice = FlexibleListItemViewModel.CalculateSalePrice(
+        salePrice = PricingCalculator.CalculateSalePrice(
             cost,
             _businessSettings.MarginFor(SelectedProductCategory.Value));
         return true;
@@ -2131,7 +2131,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             component =>
                 isCost
                     ? component.Price
-                    : FlexibleListItemViewModel.CalculateSalePrice(
+                    : PricingCalculator.CalculateSalePrice(
                         component.Price,
                         _businessSettings.MarginFor(component.Category)));
         return new ProductPriceTableDocument(
@@ -2211,7 +2211,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private decimal CatalogDisplayPrice(PcComponent component) =>
         _isCatalogShowingSalePrice
-            ? FlexibleListItemViewModel.CalculateSalePrice(
+            ? PricingCalculator.CalculateSalePrice(
                 component.Price,
                 _businessSettings.MarginFor(component.Category))
             : component.Price;

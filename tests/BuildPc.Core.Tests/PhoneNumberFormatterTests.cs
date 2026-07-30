@@ -1,3 +1,4 @@
+using BuildPc.Core.Services;
 using BuildPc.Desktop.Services;
 
 namespace BuildPc.Core.Tests;

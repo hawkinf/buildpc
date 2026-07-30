@@ -1,5 +1,5 @@
 using BuildPc.Core.Models;
-using BuildPc.Desktop.Services;
+using BuildPc.Core.Services;
 
 namespace BuildPc.Desktop.ViewModels;
 

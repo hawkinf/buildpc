@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using BuildPc.Core.Services;
 using BuildPc.Desktop.Services;
 using BuildPc.Desktop.ViewModels;
 

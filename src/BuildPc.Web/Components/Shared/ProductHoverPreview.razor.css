@@ -78,3 +78,23 @@
     font-size: 1rem;
     color: #925300;
 }
+
+@media (max-width: 640px) {
+    /* Ancorado à direita do item estoura a tela em telas estreitas — em vez
+       de seguir o item, centraliza na viewport (posição fixa). Hover em
+       touch é inconsistente entre navegadores; isto evita que o popup, nas
+       vezes que aparecer, fique cortado fora da tela. */
+    .product-hover-popup {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        margin-left: 0;
+        transform: translate(-50%, -50%) scale(0.96);
+        width: 88vw;
+        max-width: 22rem;
+    }
+
+    .product-hover-wrap:hover .product-hover-popup {
+        transform: translate(-50%, -50%) scale(1);
+    }
+}

@@ -967,6 +967,27 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — responsividade mobile em todo o `BuildPc.Web`.
+  Reset global `box-sizing: border-box` (`app.css`) evita que padding/
+  borda estourem a largura do container — causa comum de scroll
+  horizontal indesejado no celular. Em cada tela, breakpoint
+  `@media (max-width: 640px)`: barras de filtro/formulário empilham em
+  coluna única (`flex-direction: column`, campos `width: 100%`); tabelas
+  com muitas colunas (Consulta de Preços, itens da Montagem, lista de
+  Orçamentos) ganharam um wrapper `overflow-x: auto` em vez de forçar
+  colunas a espremer; `Orcamentos`' layout lista+detalhe lado a lado já
+  quebrava sozinho (`flex-wrap` + `min-width` em cada lado), só reforçado
+  pra ocupar 100% da largura quando empilhado. Cabeçalho (`MainLayout`)
+  ganhou `flex-wrap` na nav pra não cortar links em telas estreitas.
+  `ProductHoverPreview` (popup de hover) muda de "ancorado à direita do
+  item" pra "centralizado na tela" (`position: fixed`) abaixo de 640px —
+  ancorado à direita estouraria a tela em celular, e hover em touch é
+  pouco confiável entre navegadores de qualquer forma. Sem mudança de
+  código C#/Razor além do wrapper `<div>` em volta de três tabelas — só
+  CSS. 277/277 testes (nenhum novo — puramente visual, sem lógica pra
+  testar). Não verificado em dispositivo real nem por screenshot
+  (ferramenta de automação de navegador não disponível nesta sessão) —
+  vale conferir visualmente num celular de verdade.
 - Cliente web (30/07) — popup de hover com foto e características, pedido
   do usuário pra replicar o `ProductHoverPreview` do Desktop (`Controls/
   ProductHoverPreview.axaml`). Componente novo,

@@ -60,6 +60,10 @@
     color: #721c24;
 }
 
+.build-table-wrap {
+    overflow-x: auto;
+}
+
 .build-table {
     width: 100%;
     border-collapse: collapse;
@@ -146,4 +150,64 @@
     display: flex;
     gap: 0.5rem;
     margin-top: 0.75rem;
+}
+
+@media (max-width: 640px) {
+    .build-picker {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .build-picker select,
+    .build-picker input,
+    .build-picker button {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .build-picker-preview {
+        align-self: center;
+    }
+
+    .build-table th,
+    .build-table td {
+        padding: 0.4rem;
+        font-size: 0.85rem;
+    }
+
+    .build-table input[type="number"] {
+        width: 3.5rem;
+    }
+
+    .build-summary,
+    .build-terms,
+    .build-client {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .build-terms label,
+    .build-client label {
+        width: 100%;
+    }
+
+    .build-terms input,
+    .build-terms textarea,
+    .build-client input {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .build-actions {
+        flex-wrap: wrap;
+    }
+
+    .build-save-template {
+        flex-direction: column;
+    }
+
+    .build-save-template input {
+        width: 100%;
+        box-sizing: border-box;
+    }
 }

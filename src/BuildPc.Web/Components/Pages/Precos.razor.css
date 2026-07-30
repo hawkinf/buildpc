@@ -52,6 +52,10 @@
     padding: 0;
 }
 
+.price-table-wrap {
+    overflow-x: auto;
+}
+
 .price-table {
     width: 100%;
     border-collapse: collapse;
@@ -77,4 +81,38 @@
     height: 2.5rem;
     object-fit: contain;
     display: block;
+}
+
+@media (max-width: 640px) {
+    .price-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .price-toolbar select,
+    .price-toolbar input[type="search"],
+    .price-mode-toggle,
+    .price-pdf-link {
+        width: 100%;
+        box-sizing: border-box;
+        text-align: center;
+    }
+
+    .price-mode-toggle {
+        display: flex;
+    }
+
+    .price-mode-toggle button {
+        flex: 1;
+    }
+
+    .price-pdf-link {
+        margin-left: 0;
+    }
+
+    .price-table th,
+    .price-table td {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
 }

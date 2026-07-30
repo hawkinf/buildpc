@@ -967,6 +967,27 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- **Bug de deploy corrigido (30/07): `BuildPc.Api` na VPS ficou desatualizada
+  depois da feature de Validade/Prazo de entrega padrão.** Reportado pelo
+  usuário: configurações salvas no Desktop não apareciam na Web. Causa: a
+  API (serviço systemd `buildpc-api`, `/opt/buildpc-api`) é um terceiro
+  binário separado que também referencia `BuildPc.Core` — ao adicionar
+  `DefaultValidityDays`/`DefaultDeliveryDays`/`DefaultDeliveryDayType` ao
+  `BusinessSettings`, republiquei o Desktop e fiz deploy da Web, mas
+  **esqueci de reimplantar a API**. O último release ali datava de bem
+  antes (`import-urls-20260730-144929`), então o `BusinessSettings`
+  compilado na API ainda não tinha os campos novos — o
+  `PUT /settings`/`GET /settings` deserializa e reserializa usando o tipo
+  compilado NA API, então qualquer campo que a API não conhece é
+  descartado silenciosamente no round-trip, mesmo vindo de um cliente
+  (Desktop) já atualizado. Confirmado direto no Postgres
+  (`SELECT value FROM business_settings WHERE key='business'`): o JSON
+  gravado não tinha `defaultValidityDays` etc. Corrigido publicando e
+  implantando a API (`deploy/deploy-api.sh`, mesmo mecanismo de
+  healthcheck-antes-de-trocar-symlink do deploy da Web/porta 8129).
+  **Lição**: toda mudança em `BusinessSettings` (ou qualquer tipo do Core
+  exposto pela API) precisa reimplantar os **três** binários — Desktop,
+  Web **e API** — não só os dois que a sessão vinha lembrando de tocar.
 - **Feature nova (30/07), afeta Desktop e Web igualmente: Validade e Prazo
   de entrega padrão viram configuração compartilhada.** Pedido do usuário:
   esses dois campos não deviam começar do zero de forma independente em

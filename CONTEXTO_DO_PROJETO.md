@@ -967,6 +967,36 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- **Feature nova (30/07), afeta Desktop e Web igualmente: Validade e Prazo
+  de entrega padrão viram configuração compartilhada.** Pedido do usuário:
+  esses dois campos não deviam começar do zero de forma independente em
+  cada app — devem vir de uma configuração única. `BusinessSettings`
+  ganhou `DefaultValidityDays`/`DefaultDeliveryDays`/
+  `DefaultDeliveryDayType`, persistidos no mesmo blob JSON já usado por
+  margem/dados da empresa (SQLite e Postgres serializam `BusinessSettings`
+  inteiro por reflexão — nenhuma migração de banco necessária). Desktop
+  ganhou um novo card "Padrões do orçamento" em Configurações
+  (`PricingSettingsViewModel`/`PricingSettingsView.axaml`);
+  `FlexibleListViewModel.ApplyDefaultTerms()` aplica os padrões ao
+  construir a tela e ao limpar a montagem. Web (`Montagem.razor`) aplica os
+  mesmos padrões ao carregar a página e ao limpar, reaproveitando o mesmo
+  formato de `DeliveryTerms` ("N dias úteis/corridos") que já existia para
+  edição manual. De passagem, corrigidas 4 mensagens no Desktop
+  (`PricingSettingsViewModel`/`.axaml`) que ainda diziam "margem mínima de
+  15%" depois da mudança para 20% (sessão anterior no mesmo dia) —
+  cosmético, a validação em si já usava a constante certa.
+  `dist/x64/BuildPc.Desktop.exe` republicado.
+- Cliente web (30/07) — Desconto na Montagem passou a ser digitado em %
+  (0-100) em vez de R$ fixo. O valor em R$ é recalculado a partir do
+  percentual e do total atual (`TotalPrice * percentual / 100`) em vez de
+  travado no momento da digitação — fica coerente mesmo se itens forem
+  adicionados/removidos depois. O que é persistido
+  (`SavedQuote.DiscountAmount`, usado no PDF) continua em R$, sem mudança
+  de schema; ao carregar um orçamento salvo, o percentual é reconstruído a
+  partir do valor em R$ guardado e do total atual (aproximado, já que o
+  percentual original nunca foi persistido). Aplicar modelo com desconto de
+  kit (`KitDiscountPercent`) agora atribui o percentual direto, sem
+  conversão prévia para R$.
 - Cliente web (30/07) — a lista de seleção de produtos na Montagem
   (`.build-picker-table-wrap`) ganha mais altura visível automaticamente
   quando o topo fixo e/ou a tabela de itens adicionados está recolhido

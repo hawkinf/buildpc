@@ -12,6 +12,7 @@
       </ResourceDictionary.MergedDictionaries>
       <converters:IconResourceConverter x:Key="IconResourceConverter" />
       <converters:SubtractConverter x:Key="SubtractConverter" />
+      <converters:IssueSeverityBrushConverter x:Key="IssueSeverityBrushConverter" />
     </ResourceDictionary>
   </Application.Resources>
   <Application.Styles>

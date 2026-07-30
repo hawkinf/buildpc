@@ -131,10 +131,12 @@ resumo, os presets e as propriedades `IsAssemblyView`, `Slots`,
 `SelectedItems`, `Issues`, `ProgressText`, `ProgressValue`, `EstimatedPower`,
 `TotalCost` e `CompatibilityTitle`. A única Montagem é a `FlexibleListView`.
 
-`CompatibilityService`, `PcBuild` e `CompatibilityIssue` continuam em
-`BuildPc.Core` com seus testes, mas **nenhuma tela os utiliza hoje**. São a base
-pronta caso a verificação de compatibilidade volte a ser exibida na Montagem
-nova; não descreva a compatibilidade como recurso disponível ao usuário.
+`CompatibilityService`, `PcBuild` e `CompatibilityIssue` (em `BuildPc.Core`)
+foram conectados à `FlexibleListView` (auditoria de 30/07, lote 3b):
+`FlexibleListViewModel.RefreshCompatibility()` roda a cada mudança de item e
+expõe `CompatibilityIssues`/`HasCompatibilityIssues`, exibidos num painel
+próprio quando há erro/aviso de soquete, memória ou fonte. É recurso
+disponível ao usuário — pode ser descrito como tal.
 
 ### Consultar preço
 
@@ -898,6 +900,18 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Auditoria completa (30/07), lote 3b — duas funcionalidades novas: (1)
+  `CompatibilityService` (soquete CPU/placa-mãe, tipo de memória, cooler,
+  formato do gabinete, wattagem da fonte) já existia testado mas nenhuma
+  tela o usava; agora `FlexibleListViewModel` recalcula a cada mudança de
+  item e mostra os avisos (só Erro/Aviso, não a mensagem informativa "tudo
+  certo") num painel na Montagem. (2) `AssemblyTemplate` ganhou
+  `KitDiscountPercent` (0–100%, nova coluna `kit_discount_percent` em
+  `assembly_templates` no SQLite e no Postgres, migração automática nos dois
+  via `EnsureColumn`/`ADD COLUMN IF NOT EXISTS`): ao salvar um modelo o
+  usuário pode sugerir um desconto, e ao aplicar o modelo o campo de
+  desconto do orçamento é pré-preenchido a partir do preço recalculado —
+  mesmo mecanismo de `DiscountText` que já existia, só automatizado.
 - Auditoria completa (30/07), lote 3a — UI/UX: estado vazio em Orçamentos
   (usa `QuoteManagerViewModel.IsEmpty`, já existia mas não estava ligado no
   XAML), Consultar Preço e Gerenciar Produtos (`PriceLookupViewModel.

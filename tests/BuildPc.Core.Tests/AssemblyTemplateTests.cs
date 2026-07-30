@@ -43,6 +43,92 @@ public sealed class AssemblyTemplateTests
     }
 
     [Fact]
+    public void KitDiscountPercentRoundTripsThroughSqlite()
+    {
+        using var workspace = new Workspace();
+
+        var saved = workspace.Repository.SaveTemplate(
+            Template("Kit com desconto") with { KitDiscountPercent = 12.5m });
+
+        var loaded = Assert.Single(workspace.Repository.GetTemplates());
+        Assert.Equal(12.5m, loaded.KitDiscountPercent);
+        Assert.Equal(12.5m, saved.KitDiscountPercent);
+    }
+
+    [Fact]
+    public void KitDiscountPercentOutsideZeroToHundredIsRejected()
+    {
+        using var workspace = new Workspace();
+
+        Assert.Throws<ArgumentException>(() => workspace.Repository.SaveTemplate(
+            Template("Desconto inválido") with { KitDiscountPercent = -1m }));
+        Assert.Throws<ArgumentException>(() => workspace.Repository.SaveTemplate(
+            Template("Desconto inválido") with { KitDiscountPercent = 101m }));
+    }
+
+    [Fact]
+    public void ApplyTemplateWithKitDiscountPrefillsTheQuoteDiscount()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, 1000m);
+        var viewModel = new FlexibleListViewModel(
+            [processor],
+            [new(ComponentCategory.Processor, "Processador")],
+            new BusinessSettings { GlobalMarginPercent = 20m });
+
+        viewModel.ApplyTemplate(
+            new AssemblyTemplate
+            {
+                Name = "Kit com desconto",
+                KitDiscountPercent = 10m,
+                Items =
+                [
+                    new AssemblyTemplateItem
+                    {
+                        ComponentId = "cpu",
+                        Category = ComponentCategory.Processor,
+                        Quantity = 1
+                    }
+                ]
+            },
+            [processor]);
+
+        // 10% de desconto sobre o preço de venda recalculado (1000 x 1,20 =
+        // 1200, arredondado para 1200,90 pela regra de terminar em ",90").
+        Assert.Equal(120.09m, viewModel.DiscountValue);
+        Assert.True(viewModel.HasDiscount);
+    }
+
+    [Fact]
+    public void ApplyTemplateWithoutKitDiscountLeavesDiscountEmpty()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, 1000m);
+        var viewModel = new FlexibleListViewModel(
+            [processor],
+            [new(ComponentCategory.Processor, "Processador")]);
+        // Um desconto de uma montagem anterior não pode "vazar" para a próxima.
+        viewModel.DiscountText = "50,00";
+
+        viewModel.ApplyTemplate(
+            new AssemblyTemplate
+            {
+                Name = "Sem desconto",
+                Items =
+                [
+                    new AssemblyTemplateItem
+                    {
+                        ComponentId = "cpu",
+                        Category = ComponentCategory.Processor,
+                        Quantity = 1
+                    }
+                ]
+            },
+            [processor]);
+
+        Assert.Equal(0m, viewModel.DiscountValue);
+        Assert.False(viewModel.HasDiscount);
+    }
+
+    [Fact]
     public void SavingWithTheSameIdUpdatesInsteadOfDuplicating()
     {
         using var workspace = new Workspace();

@@ -22,6 +22,11 @@ public sealed class AssemblyTemplateItemViewModel(AssemblyTemplate template)
 
     public bool HasDescription { get; } =
         !string.IsNullOrWhiteSpace(template.Description);
+
+    public bool HasKitDiscount { get; } = template.KitDiscountPercent > 0m;
+
+    public string KitDiscountText { get; } =
+        $"Desconto sugerido: {template.KitDiscountPercent.ToString("N2", MainWindowViewModel.BrazilianCulture)}%";
 }
 
 /// <summary>
@@ -41,6 +46,7 @@ public sealed class AssemblyTemplateListViewModel : ViewModelBase
     private AssemblyTemplateItemViewModel? _selectedTemplate;
     private string _newTemplateName = string.Empty;
     private string _newTemplateDescription = string.Empty;
+    private string _newTemplateKitDiscountText = string.Empty;
     private string _statusMessage = string.Empty;
     private bool _isSuccess;
     private bool _isDeleteConfirmationVisible;
@@ -102,6 +108,16 @@ public sealed class AssemblyTemplateListViewModel : ViewModelBase
     {
         get => _newTemplateDescription;
         set => SetProperty(ref _newTemplateDescription, value ?? string.Empty);
+    }
+
+    /// <summary>
+    /// Desconto sugerido do kit, em percentual (0 a 100). Pré-preenche o
+    /// desconto do orçamento quando o modelo é aplicado.
+    /// </summary>
+    public string NewTemplateKitDiscountText
+    {
+        get => _newTemplateKitDiscountText;
+        set => SetProperty(ref _newTemplateKitDiscountText, value ?? string.Empty);
     }
 
     public bool CanSave => !string.IsNullOrWhiteSpace(NewTemplateName);
@@ -194,13 +210,27 @@ public sealed class AssemblyTemplateListViewModel : ViewModelBase
             return;
         }
 
+        var kitDiscountPercent = 0m;
+        if (!string.IsNullOrWhiteSpace(NewTemplateKitDiscountText) &&
+            (!decimal.TryParse(
+                 NewTemplateKitDiscountText,
+                 System.Globalization.NumberStyles.Number,
+                 MainWindowViewModel.BrazilianCulture,
+                 out kitDiscountPercent) ||
+             kitDiscountPercent is < 0m or > 100m))
+        {
+            Fail("O desconto do kit deve ser um número entre 0 e 100%.");
+            return;
+        }
+
         try
         {
             await _repository.SaveTemplateAsync(new AssemblyTemplate
             {
                 Name = NewTemplateName,
                 Description = NewTemplateDescription,
-                Items = items
+                Items = items,
+                KitDiscountPercent = kitDiscountPercent
             });
         }
         catch (ArgumentException exception)
@@ -222,6 +252,7 @@ public sealed class AssemblyTemplateListViewModel : ViewModelBase
         var name = NewTemplateName.Trim();
         NewTemplateName = string.Empty;
         NewTemplateDescription = string.Empty;
+        NewTemplateKitDiscountText = string.Empty;
         await RefreshAsync();
         IsSuccess = true;
         StatusMessage = $"Modelo “{name}” salvo com {items.Count} produtos.";

@@ -632,13 +632,15 @@ public sealed class PostgresBuildPcRepository :
         command.Transaction = transaction;
         command.CommandText =
             """
-            INSERT INTO assembly_templates(id, name, description, created_at, items_json)
-            VALUES (@id, @name, @description, @created_at, @items_json)
+            INSERT INTO assembly_templates(
+                id, name, description, created_at, items_json, kit_discount_percent)
+            VALUES (@id, @name, @description, @created_at, @items_json, @kit_discount_percent)
             ON CONFLICT (id) DO UPDATE SET
                 name = excluded.name,
                 description = excluded.description,
                 created_at = excluded.created_at,
-                items_json = excluded.items_json;
+                items_json = excluded.items_json,
+                kit_discount_percent = excluded.kit_discount_percent;
             """;
         command.Parameters.AddWithValue(
             "id",
@@ -651,6 +653,9 @@ public sealed class PostgresBuildPcRepository :
         command.Parameters.AddWithValue(
             "items_json",
             JsonSerializer.Serialize(template.Items, JsonOptions));
+        command.Parameters.AddWithValue(
+            "kit_discount_percent",
+            template.KitDiscountPercent);
         command.ExecuteNonQuery();
     }
 
@@ -762,7 +767,7 @@ public sealed class PostgresBuildPcRepository :
         using var command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT id, name, description, created_at, items_json
+            SELECT id, name, description, created_at, items_json, kit_discount_percent
             FROM assembly_templates
             ORDER BY lower(name);
             """;
@@ -783,7 +788,10 @@ public sealed class PostgresBuildPcRepository :
                         DateTimeStyles.RoundtripKind),
                     Items = JsonSerializer.Deserialize<List<AssemblyTemplateItem>>(
                                 reader.GetString(4),
-                                JsonOptions) ?? []
+                                JsonOptions) ?? [],
+                    KitDiscountPercent = reader.IsDBNull(5)
+                        ? 0m
+                        : reader.GetDecimal(5)
                 });
             }
             catch (JsonException)
@@ -811,6 +819,13 @@ public sealed class PostgresBuildPcRepository :
                 nameof(template));
         }
 
+        if (template.KitDiscountPercent is < 0m or > 100m)
+        {
+            throw new ArgumentException(
+                "O desconto do kit deve ficar entre 0 e 100%.",
+                nameof(template));
+        }
+
         var saved = template with
         {
             Id = template.Id == Guid.Empty ? Guid.NewGuid() : template.Id,
@@ -825,12 +840,14 @@ public sealed class PostgresBuildPcRepository :
         using var command = connection.CreateCommand();
         command.CommandText =
             """
-            INSERT INTO assembly_templates(id, name, description, created_at, items_json)
-            VALUES (@id, @name, @description, @created_at, @items_json)
+            INSERT INTO assembly_templates(
+                id, name, description, created_at, items_json, kit_discount_percent)
+            VALUES (@id, @name, @description, @created_at, @items_json, @kit_discount_percent)
             ON CONFLICT (id) DO UPDATE SET
                 name = excluded.name,
                 description = excluded.description,
-                items_json = excluded.items_json;
+                items_json = excluded.items_json,
+                kit_discount_percent = excluded.kit_discount_percent;
             """;
         command.Parameters.AddWithValue("id", saved.Id);
         command.Parameters.AddWithValue("name", saved.Name);
@@ -841,6 +858,9 @@ public sealed class PostgresBuildPcRepository :
         command.Parameters.AddWithValue(
             "items_json",
             JsonSerializer.Serialize(saved.Items, JsonOptions));
+        command.Parameters.AddWithValue(
+            "kit_discount_percent",
+            saved.KitDiscountPercent);
         command.ExecuteNonQuery();
         return saved;
     }
@@ -942,6 +962,8 @@ public sealed class PostgresBuildPcRepository :
                 created_at text NOT NULL,
                 items_json text NOT NULL
             );
+            ALTER TABLE assembly_templates
+                ADD COLUMN IF NOT EXISTS kit_discount_percent numeric NOT NULL DEFAULT 0;
             """);
     }
 

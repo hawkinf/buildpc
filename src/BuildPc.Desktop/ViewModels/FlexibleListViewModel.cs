@@ -2,12 +2,15 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Input;
 using BuildPc.Core.Models;
+using BuildPc.Core.Services;
 using BuildPc.Desktop.Services;
 
 namespace BuildPc.Desktop.ViewModels;
 
 public sealed class FlexibleListViewModel : ViewModelBase
 {
+    private static readonly CompatibilityService CompatibilityChecker = new();
+
     private readonly List<PcComponent> _catalog;
     private readonly Func<FlexibleListViewModel, Task<SavedQuote?>>? _saveQuote;
     private CategoryOptionViewModel _selectedCategory;
@@ -79,6 +82,16 @@ public sealed class FlexibleListViewModel : ViewModelBase
     public void AttachTemplates(AssemblyTemplateListViewModel templates) =>
         Templates = templates;
     public ObservableCollection<FlexibleListItemViewModel> Items { get; }
+
+    /// <summary>
+    /// Avisos de compatibilidade (soquete, tipo de memória, fonte) da
+    /// montagem atual. O serviço já existia, testado, mas nenhuma tela o
+    /// usava — a Montagem "flexível" nova nunca foi conectada a ele.
+    /// </summary>
+    public ObservableCollection<CompatibilityIssue> CompatibilityIssues { get; } = [];
+
+    public bool HasCompatibilityIssues => CompatibilityIssues.Count > 0;
+
     public ComponentSlotViewModel ProductPicker { get; }
     public ICommand AddCommand { get; }
     public ICommand RequestClearCommand { get; }
@@ -580,6 +593,15 @@ public sealed class FlexibleListViewModel : ViewModelBase
         RefreshMovability();
         SavedQuote = null;
         IsDirty = Items.Count > 0;
+
+        // O desconto do kit é um atalho: mesmo mecanismo de DiscountText que
+        // o orçamento já usa, só pré-preenchido a partir do percentual
+        // salvo no modelo. O usuário continua livre para ajustar ou zerar.
+        DiscountText = template.KitDiscountPercent > 0 && TotalPriceValue > 0
+            ? Math.Round(TotalPriceValue * template.KitDiscountPercent / 100m, 2)
+                .ToString("N2", MainWindowViewModel.BrazilianCulture)
+            : string.Empty;
+
         IsStatusSuccess = missing == 0;
         StatusMessage = missing == 0
             ? $"Modelo “{template.Name}” aplicado com {Items.Count} produtos."
@@ -679,6 +701,36 @@ public sealed class FlexibleListViewModel : ViewModelBase
         OnPropertyChanged(nameof(TotalProfitPercent));
         OnPropertyChanged(nameof(ItemsText));
         OnPropertyChanged(nameof(LinesText));
+        RefreshCompatibility();
+    }
+
+    private void RefreshCompatibility()
+    {
+        var build = new PcBuild();
+        var slot = 0;
+        foreach (var item in Items)
+        {
+            // slotId único por linha: duas linhas do mesmo produto (usuário
+            // clicou "Adicionar" duas vezes) não podem se sobrescrever no
+            // build, senão a potência estimada para a fonte fica errada.
+            build.Select(
+                item.Component,
+                item.Component.Category,
+                $"{item.Component.Id}#{slot++}",
+                item.Quantity);
+        }
+
+        CompatibilityIssues.Clear();
+        // Só interessa alertar quando há algo realmente errado — as
+        // mensagens informativas do serviço ("tudo certo", "continue
+        // montando") criariam ruído numa montagem feita aos poucos.
+        foreach (var issue in CompatibilityChecker.Evaluate(build)
+                     .Where(issue => issue.Severity != IssueSeverity.Information))
+        {
+            CompatibilityIssues.Add(issue);
+        }
+
+        OnPropertyChanged(nameof(HasCompatibilityIssues));
     }
 
     public void ApplySettings(BusinessSettings settings)

@@ -606,6 +606,39 @@ public sealed class FlexibleListViewModelTests
         Assert.Contains("#000101", viewModel.StatusMessage);
     }
 
+    [Fact]
+    public void Add_MismatchedSocketRaisesCompatibilityIssue()
+    {
+        var processor = Product("cpu", ComponentCategory.Processor, "Processador", 1000m)
+            with
+        { Socket = "AM5" };
+        var motherboard = Product("mb", ComponentCategory.Motherboard, "Placa-mãe", 800m)
+            with
+        { Socket = "LGA1700" };
+        var viewModel = new FlexibleListViewModel(
+            [processor, motherboard],
+            [
+                new(ComponentCategory.Processor, "Processador"),
+                new(ComponentCategory.Motherboard, "Placa-mãe")
+            ]);
+
+        Assert.Empty(viewModel.CompatibilityIssues);
+
+        viewModel.ProductPicker.Selected = processor;
+        viewModel.AddCommand.Execute(null);
+
+        viewModel.SelectedCategory = viewModel.Categories.Single(category =>
+            category.Value == ComponentCategory.Motherboard);
+        viewModel.ProductPicker.Selected = motherboard;
+        viewModel.AddCommand.Execute(null);
+
+        Assert.True(viewModel.HasCompatibilityIssues);
+        Assert.Contains(
+            viewModel.CompatibilityIssues,
+            issue => issue.Severity == IssueSeverity.Error &&
+                     issue.Message.Contains("Soquetes incompatíveis"));
+    }
+
     private static FlexibleListViewModel CreateViewModel(params PcComponent[] products) =>
         new(
             products,

@@ -27,5 +27,12 @@ public sealed record AssemblyTemplate
     public DateTimeOffset CreatedAt { get; init; }
     public IReadOnlyList<AssemblyTemplateItem> Items { get; init; } = [];
 
+    /// <summary>
+    /// Desconto sugerido para quem monta este kit, em percentual do total.
+    /// Aplicado sobre o preço atual do catálogo ao aplicar o modelo — mesmo
+    /// mecanismo de desconto que já existe no orçamento, só pré-preenchido.
+    /// </summary>
+    public decimal KitDiscountPercent { get; init; }
+
     public int TotalItems => Items.Sum(item => item.Quantity);
 }

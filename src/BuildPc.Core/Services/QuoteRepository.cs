@@ -268,7 +268,7 @@ public sealed class QuoteRepository :
         using var command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT id, name, description, created_at, items_json
+            SELECT id, name, description, created_at, items_json, kit_discount_percent
             FROM assembly_templates
             ORDER BY name COLLATE NOCASE;
             """;
@@ -289,7 +289,10 @@ public sealed class QuoteRepository :
                         DateTimeStyles.RoundtripKind),
                     Items = JsonSerializer.Deserialize<List<AssemblyTemplateItem>>(
                                 reader.GetString(4),
-                                JsonOptions) ?? []
+                                JsonOptions) ?? [],
+                    KitDiscountPercent = reader.IsDBNull(5)
+                        ? 0m
+                        : Convert.ToDecimal(reader.GetDouble(5))
                 });
             }
             catch (JsonException)
@@ -317,6 +320,13 @@ public sealed class QuoteRepository :
                 nameof(template));
         }
 
+        if (template.KitDiscountPercent is < 0m or > 100m)
+        {
+            throw new ArgumentException(
+                "O desconto do kit deve ficar entre 0 e 100%.",
+                nameof(template));
+        }
+
         var saved = template with
         {
             Id = template.Id == Guid.Empty ? Guid.NewGuid() : template.Id,
@@ -331,12 +341,15 @@ public sealed class QuoteRepository :
         using var command = connection.CreateCommand();
         command.CommandText =
             """
-            INSERT INTO assembly_templates(id, name, description, created_at, items_json)
-            VALUES ($id, $name, $description, $created_at, $items_json)
+            INSERT INTO assembly_templates(
+                id, name, description, created_at, items_json, kit_discount_percent)
+            VALUES (
+                $id, $name, $description, $created_at, $items_json, $kit_discount_percent)
             ON CONFLICT(id) DO UPDATE SET
                 name = excluded.name,
                 description = excluded.description,
-                items_json = excluded.items_json;
+                items_json = excluded.items_json,
+                kit_discount_percent = excluded.kit_discount_percent;
             """;
         command.Parameters.AddWithValue("$id", saved.Id.ToString("D"));
         command.Parameters.AddWithValue("$name", saved.Name);
@@ -347,6 +360,9 @@ public sealed class QuoteRepository :
         command.Parameters.AddWithValue(
             "$items_json",
             JsonSerializer.Serialize(saved.Items, JsonOptions));
+        command.Parameters.AddWithValue(
+            "$kit_discount_percent",
+            (double)saved.KitDiscountPercent);
         command.ExecuteNonQuery();
         return saved;
     }
@@ -407,6 +423,11 @@ public sealed class QuoteRepository :
         EnsureQuoteColumn(connection, "validity_days", "INTEGER NOT NULL DEFAULT 0");
         EnsureQuoteColumn(connection, "payment_terms", "TEXT NOT NULL DEFAULT ''");
         EnsureQuoteColumn(connection, "delivery_terms", "TEXT NOT NULL DEFAULT ''");
+        EnsureColumn(
+            connection,
+            "assembly_templates",
+            "kit_discount_percent",
+            "REAL NOT NULL DEFAULT 0");
     }
 
     /// <summary>
@@ -416,11 +437,22 @@ public sealed class QuoteRepository :
     private static void EnsureQuoteColumn(
         SqliteConnection connection,
         string columnName,
+        string definition) =>
+        EnsureColumn(connection, "quotes", columnName, definition);
+
+    /// <summary>
+    /// Acrescenta uma coluna a qualquer tabela se ela ainda não existir, para
+    /// bases criadas por versões anteriores continuarem abrindo.
+    /// </summary>
+    private static void EnsureColumn(
+        SqliteConnection connection,
+        string tableName,
+        string columnName,
         string definition)
     {
         using (var columns = connection.CreateCommand())
         {
-            columns.CommandText = "PRAGMA table_info(quotes);";
+            columns.CommandText = $"PRAGMA table_info({tableName});";
             using var reader = columns.ExecuteReader();
             while (reader.Read())
             {
@@ -436,7 +468,7 @@ public sealed class QuoteRepository :
 
         using var migration = connection.CreateCommand();
         migration.CommandText =
-            $"ALTER TABLE quotes ADD COLUMN {columnName} {definition};";
+            $"ALTER TABLE {tableName} ADD COLUMN {columnName} {definition};";
         migration.ExecuteNonQuery();
     }
 

@@ -273,6 +273,48 @@ public sealed class QuoteRepositoryTests
         }
     }
 
+    [Fact]
+    public void SaveQuote_RejectsItemBelowMinimumMargin()
+    {
+        var directory = Path.Combine(
+            Path.GetTempPath(),
+            $"buildpc-quote-margem-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var repository = new QuoteRepository(Path.Combine(directory, "catalogo.db"));
+
+            // A tela já impede digitar abaixo do piso, mas a persistência
+            // também precisa recusar — por exemplo, um cliente de API direto.
+            var belowFloor = new SavedQuoteItem
+            {
+                ComponentId = "cpu",
+                Category = ComponentCategory.Processor,
+                CategoryName = "Processador",
+                Name = "CPU Abaixo do Piso",
+                Description = "Descrição",
+                Quantity = 1,
+                UnitCost = 100m,
+                MarginPercent = 5m,
+                UnitPrice = 105m
+            };
+
+            Assert.Throws<ArgumentException>(() => repository.SaveQuote(
+                null,
+                new QuoteDraft
+                {
+                    ClientName = "Paulo",
+                    ClientPhone = "(11) 93333-0000",
+                    Items = [belowFloor],
+                    CompanySnapshot = new BusinessSettings()
+                }));
+        }
+        finally
+        {
+            Directory.Delete(directory, true);
+        }
+    }
+
     private static SavedQuoteItem Item(int quantity, decimal unitPrice) =>
         new()
         {

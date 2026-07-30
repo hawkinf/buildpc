@@ -898,6 +898,24 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Auditoria completa (30/07): `/connection` agora executa `SELECT 1` de
+  verdade no PostgreSQL (`PostgresBuildPcRepository.CanConnect`) — antes só
+  confirmava que o processo da API estava de pé, então o rodapé podia mostrar
+  ONLINE com o banco fora do ar. O middleware de auditoria foi movido para
+  antes do `UseExceptionHandler`, para gravar também tentativas rejeitadas
+  por exceção (400/409/500), não só sucesso e 401. `QuoteValidation.
+  EnsureMinimumMargin` e `ProductValidation.EnsureValid` (novos, em
+  `BuildPc.Core.Services`) passaram a recusar, na camada de persistência
+  (SQLite e Postgres), item de orçamento abaixo da margem mínima de 15% e
+  produto com preço/potência negativos ou categoria fora do enum — antes só
+  a tela impedia. Edição manual de produto agora grava `price_history`
+  (`source = "manual"`), igual a uma importação. `ReplaceImported` no
+  Postgres ganhou `pg_advisory_xact_lock` por categoria+origem, mesmo padrão
+  já usado na numeração de orçamento, para duas chamadas concorrentes não
+  perderem favorito/histórico. JSON malformado na API agora responde 400 em
+  vez de 500, e o limite de corpo do Kestrel foi alinhado aos 64 MB já
+  liberados no Nginx.
+
 - Telas roláveis receberam uma área segura inferior consistente; Configurações,
   Importações, Gerenciar Produtos, Gerenciar Categorias, Consulta de Preços,
   Montagem, Orçamentos e edição de produto não deixam o último conteúdo preso

@@ -42,6 +42,13 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
+// O Nginx da VPS libera corpos de até 64 MB (uma categoria grande importada
+// de uma vez em /imports/replace); sem isto, o padrão do Kestrel (~28,6 MB)
+// devolveria 413 antes mesmo de chegar ao endpoint, tornando o ajuste do
+// Nginx inútil na prática.
+builder.WebHost.ConfigureKestrel(options =>
+    options.Limits.MaxRequestBodySize = 64 * 1024 * 1024);
+
 builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
 builder.Services.AddSingleton<PostgresBuildPcRepository>();
 
@@ -77,6 +84,24 @@ if (TryGetSqliteImportPath(args, out var sqlitePath))
 // chave exigiria atualizar servidor e clientes no mesmo instante.
 var apiKeyValidator = ApiKeyValidator.FromConfiguration(builder.Configuration);
 
+// Registrado antes do tratador de exceções de propósito: assim, quando um
+// endpoint lança e a resposta vira 400/409/500 mais abaixo, o status final já
+// está definido quando o "await next" retorna aqui e a tentativa é auditada
+// do mesmo jeito que uma bem-sucedida. Antes, o registro ficava só depois do
+// "next()" do middleware de autenticação (mais interno), e uma exceção
+// pulava esse trecho inteiro — só o 401 explícito era de fato gravado.
+app.Use(async (context, next) =>
+{
+    await next(context);
+
+    var statusCode = context.Response.StatusCode;
+    if (statusCode == StatusCodes.Status401Unauthorized ||
+        AuditLog.ShouldAudit(context))
+    {
+        AuditLog.Record(app.Logger, context, statusCode);
+    }
+});
+
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
@@ -87,6 +112,11 @@ app.UseExceptionHandler(errorApp =>
         var statusCode = exception switch
         {
             ArgumentException => StatusCodes.Status400BadRequest,
+            // JSON inválido ou faltando uma propriedade "required": erro do
+            // cliente, não do servidor. Antes caía no 500 genérico do fim.
+            System.Text.Json.JsonException => StatusCodes.Status400BadRequest,
+            Microsoft.AspNetCore.Http.BadHttpRequestException =>
+                StatusCodes.Status400BadRequest,
             InvalidOperationException => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status500InternalServerError
         };
@@ -114,11 +144,6 @@ app.Use(async (context, next) =>
     var suppliedKey = context.Request.Headers["X-BuildPc-Key"].ToString();
     if (!apiKeyValidator.IsValid(suppliedKey))
     {
-        // Uma tentativa recusada é exatamente o que interessa auditar.
-        AuditLog.Record(
-            app.Logger,
-            context,
-            StatusCodes.Status401Unauthorized);
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
         await Results.Problem(
                 statusCode: StatusCodes.Status401Unauthorized,
@@ -129,11 +154,6 @@ app.Use(async (context, next) =>
     }
 
     await next(context);
-
-    if (AuditLog.ShouldAudit(context))
-    {
-        AuditLog.Record(app.Logger, context, context.Response.StatusCode);
-    }
 });
 
 app.MapGet("/health", () => Results.Ok(new
@@ -142,10 +162,25 @@ app.MapGet("/health", () => Results.Ok(new
     utc = DateTimeOffset.UtcNow
 }));
 
-app.MapGet("/connection", () => Results.Ok(new
+app.MapGet("/connection", (PostgresBuildPcRepository repository) =>
 {
-    status = "ok"
-}));
+    try
+    {
+        repository.CanConnect();
+    }
+    catch (Exception exception) when (exception is NpgsqlException or TimeoutException)
+    {
+        // A API está de pé, mas o banco não responde: não é seguro dizer
+        // ONLINE para o rodapé do Desktop, pois nenhuma operação real
+        // funcionaria.
+        return Results.Problem(
+            statusCode: StatusCodes.Status503ServiceUnavailable,
+            title: "Banco de dados indisponível.",
+            detail: "A API está no ar, mas não conseguiu falar com o PostgreSQL.");
+    }
+
+    return Results.Ok(new { status = "ok" });
+});
 
 app.MapGet(
     "/products",

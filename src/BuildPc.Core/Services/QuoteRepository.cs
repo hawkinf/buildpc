@@ -104,6 +104,8 @@ public sealed class QuoteRepository :
                 nameof(draft));
         }
 
+        QuoteValidation.EnsureMinimumMargin(draft.Items);
+
         using var connection = OpenConnection();
 
         // BEGIN IMMEDIATE toma a trava de escrita antes de ler MAX(number).

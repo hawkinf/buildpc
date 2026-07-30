@@ -13,6 +13,7 @@ public sealed class PostgresBuildPcRepository :
 {
     private const string SettingsKey = "business";
     private const long QuoteNumberLock = 724_913_581;
+    private const int ReplaceImportedLockNamespace = 358_112_477;
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web);
 
@@ -51,6 +52,7 @@ public sealed class PostgresBuildPcRepository :
     public void Add(PcComponent component)
     {
         ArgumentNullException.ThrowIfNull(component);
+        ProductValidation.EnsureValid(component);
         using var connection = OpenConnection();
         if (ProductExists(connection, null, component.Id))
         {
@@ -78,14 +80,21 @@ public sealed class PostgresBuildPcRepository :
     public bool Update(PcComponent component)
     {
         ArgumentNullException.ThrowIfNull(component);
+        ProductValidation.EnsureValid(component);
         using var connection = OpenConnection();
         using var transaction = connection.BeginTransaction();
-        if (!ProductExists(connection, transaction, component.Id))
+        var previous = ReadComponent(connection, transaction, component.Id);
+        if (previous is null)
         {
             return false;
         }
 
         InsertOrUpdate(connection, transaction, component, preserveKeepFlag: false);
+
+        // Mesmo motivo do SQLite: edição manual também é mudança de preço e
+        // precisa entrar no histórico, não só importações.
+        RecordPriceChange(connection, transaction, previous, component, "manual", DateTimeOffset.UtcNow);
+
         transaction.Commit();
         return true;
     }
@@ -240,6 +249,13 @@ public sealed class PostgresBuildPcRepository :
 
         using var connection = OpenConnection();
         using var transaction = connection.BeginTransaction();
+
+        // Sem isto, duas chamadas concorrentes para a mesma categoria/origem
+        // (ex.: duplo-clique, ou duas instalações do Desktop apontando para o
+        // mesmo servidor) podiam ler o mesmo "estado anterior" antes de
+        // qualquer commit, perdendo um favorito ou uma linha de histórico de
+        // preço. Mesmo padrão já usado para a numeração de orçamento.
+        LockReplaceImported(connection, transaction, category, source);
 
         // Estado anterior, lido antes da substituição: alimenta o histórico de
         // preços, o aviso de itens que saíram e a preservação dos favoritos.
@@ -457,6 +473,8 @@ public sealed class PostgresBuildPcRepository :
                 "O desconto não pode ser negativo.",
                 nameof(draft));
         }
+
+        QuoteValidation.EnsureMinimumMargin(draft.Items);
 
         using var connection = OpenConnection();
         using var transaction = connection.BeginTransaction();
@@ -1110,6 +1128,51 @@ public sealed class PostgresBuildPcRepository :
         return Convert.ToBoolean(command.ExecuteScalar(), CultureInfo.InvariantCulture);
     }
 
+    private static PcComponent? ReadComponent(
+        NpgsqlConnection connection,
+        NpgsqlTransaction? transaction,
+        string id)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            SELECT id, category, name, brand, description, price_cents, power_watts,
+                   socket, memory_type, form_factor, supported_sockets,
+                   supported_form_factors, import_source, keep_on_import,
+                   is_user_defined, image_url, is_favorite
+            FROM products
+            WHERE lower(id) = lower(@id);
+            """;
+        command.Parameters.AddWithValue("id", id);
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+        {
+            return null;
+        }
+
+        return new PcComponent
+        {
+            Id = reader.GetString(0),
+            Category = (ComponentCategory)reader.GetInt32(1),
+            Name = reader.GetString(2),
+            Brand = reader.GetString(3),
+            Description = reader.GetString(4),
+            Price = reader.GetInt64(5) / 100m,
+            PowerWatts = reader.GetInt32(6),
+            Socket = reader.IsDBNull(7) ? null : reader.GetString(7),
+            MemoryType = reader.IsDBNull(8) ? null : reader.GetString(8),
+            FormFactor = reader.IsDBNull(9) ? null : reader.GetString(9),
+            SupportedSockets = DeserializeSet(reader.GetString(10)),
+            SupportedFormFactors = DeserializeSet(reader.GetString(11)),
+            ImportSource = reader.IsDBNull(12) ? null : reader.GetString(12),
+            KeepOnImport = reader.GetBoolean(13),
+            IsUserDefined = reader.GetBoolean(14),
+            ImageUrl = reader.IsDBNull(15) ? null : reader.GetString(15),
+            IsFavorite = reader.GetBoolean(16)
+        };
+    }
+
     private static bool HasMetadata(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
@@ -1279,6 +1342,35 @@ public sealed class PostgresBuildPcRepository :
         command.ExecuteNonQuery();
     }
 
+    private static void LockReplaceImported(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        ComponentCategory category,
+        string source)
+    {
+        using var lockCommand = connection.CreateCommand();
+        lockCommand.Transaction = transaction;
+        lockCommand.CommandText = "SELECT pg_advisory_xact_lock(@key1, @key2);";
+        lockCommand.Parameters.AddWithValue("key1", ReplaceImportedLockNamespace);
+        lockCommand.Parameters.AddWithValue(
+            "key2",
+            unchecked((int)StableHash($"{(int)category}:{source.ToLowerInvariant()}")));
+        lockCommand.ExecuteNonQuery();
+    }
+
+    // String.GetHashCode() é aleatorizado por processo em .NET — não serve
+    // para uma trava que precisa do mesmo valor em toda instância da API.
+    private static uint StableHash(string value)
+    {
+        var hash = 2166136261u;
+        foreach (var character in value)
+        {
+            hash = (hash ^ character) * 16777619u;
+        }
+
+        return hash;
+    }
+
     private static int NextNumber(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction)
@@ -1365,6 +1457,20 @@ public sealed class PostgresBuildPcRepository :
         command.Transaction = transaction;
         command.CommandText = sql;
         command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Confirma que o PostgreSQL responde de verdade, não só que o processo da
+    /// API está de pé. Usado por /connection para o rodapé do Desktop não
+    /// mostrar ONLINE com o banco fora do ar.
+    /// </summary>
+    public bool CanConnect()
+    {
+        using var connection = OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1;";
+        command.ExecuteScalar();
+        return true;
     }
 
     private NpgsqlConnection OpenConnection() =>

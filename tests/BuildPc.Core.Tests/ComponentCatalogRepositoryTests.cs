@@ -553,6 +553,59 @@ public sealed class ComponentCatalogRepositoryTests
         return Convert.ToInt32(command.ExecuteScalar());
     }
 
+    [Fact]
+    public void Add_RejectsNegativePriceNegativeWattageAndInvalidCategory()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"buildpc-tests-{Guid.NewGuid():N}");
+        var filePath = Path.Combine(directory, "catalogo.db");
+        try
+        {
+            var repository = new ComponentCatalogRepository(filePath);
+
+            Assert.Throws<ArgumentException>(() => repository.Add(
+                CreateManualMemory("preco-negativo") with { Price = -1m }));
+            Assert.Throws<ArgumentException>(() => repository.Add(
+                CreateManualMemory("watts-negativo") with { PowerWatts = -1 }));
+            Assert.Throws<ArgumentException>(() => repository.Add(
+                CreateManualMemory("categoria-invalida") with { Category = (ComponentCategory)999 }));
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void Update_RecordsManualPriceChangeInHistory()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"buildpc-tests-{Guid.NewGuid():N}");
+        var filePath = Path.Combine(directory, "catalogo.db");
+        try
+        {
+            var repository = new ComponentCatalogRepository(filePath);
+            var component = CreateManualMemory("historico-manual");
+            repository.Add(component);
+
+            // Editar o preço à mão na tela precisa deixar rastro, do mesmo
+            // jeito que uma importação deixa — antes só a importação gravava.
+            Assert.True(repository.Update(component with { Price = 150m }));
+
+            var history = Assert.Single(repository.GetPriceHistory("historico-manual"));
+            Assert.Equal(100m, history.Price);
+            Assert.Equal("manual", history.Source);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
     private static PcComponent CreateProcessor(string id, string name, decimal price) =>
         new()
         {

@@ -54,6 +54,7 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
     internal void Add(PcComponent component)
     {
         ArgumentNullException.ThrowIfNull(component);
+        ProductValidation.EnsureValid(component);
 
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
@@ -84,9 +85,11 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
     internal bool Update(PcComponent component)
     {
         ArgumentNullException.ThrowIfNull(component);
+        ProductValidation.EnsureValid(component);
         using var connection = OpenConnection();
         using var transaction = connection.BeginTransaction();
-        if (!ProductExists(connection, transaction, component.Id))
+        var previous = ReadComponent(connection, transaction, component.Id);
+        if (previous is null)
         {
             return false;
         }
@@ -96,6 +99,12 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
             transaction,
             component,
             preserveKeepFlag: false);
+
+        // Edição manual também é uma mudança de preço legítima: sem isto, só
+        // importações alimentavam o histórico, e um custo corrigido à mão na
+        // tela perdia o rastro de qual era o valor anterior.
+        RecordPriceChange(connection, transaction, previous, component, "manual", DateTimeOffset.UtcNow);
+
         transaction.Commit();
         return true;
     }
@@ -825,6 +834,52 @@ public sealed class ComponentCatalogRepository : IComponentCatalogRepository
         command.CommandText = "SELECT COUNT(*) FROM products WHERE id = $id;";
         command.Parameters.AddWithValue("$id", id);
         return Convert.ToInt32(command.ExecuteScalar()) > 0;
+    }
+
+    private static PcComponent? ReadComponent(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        string id)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            SELECT id, category, name, brand, description, price_cents, power_watts,
+                   socket, memory_type, form_factor, supported_sockets,
+                   supported_form_factors, import_source, keep_on_import, is_user_defined,
+                   image_url, is_favorite
+            FROM products
+            WHERE id = $id;
+            """;
+        command.Parameters.AddWithValue("$id", id);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+        {
+            return null;
+        }
+
+        return new PcComponent
+        {
+            Id = reader.GetString(0),
+            Category = (ComponentCategory)reader.GetInt32(1),
+            Name = reader.GetString(2),
+            Brand = reader.GetString(3),
+            Description = reader.GetString(4),
+            Price = reader.GetInt64(5) / 100m,
+            PowerWatts = reader.GetInt32(6),
+            Socket = reader.IsDBNull(7) ? null : reader.GetString(7),
+            MemoryType = reader.IsDBNull(8) ? null : reader.GetString(8),
+            FormFactor = reader.IsDBNull(9) ? null : reader.GetString(9),
+            SupportedSockets = DeserializeSet(reader.GetString(10)),
+            SupportedFormFactors = DeserializeSet(reader.GetString(11)),
+            ImportSource = reader.IsDBNull(12) ? null : reader.GetString(12),
+            KeepOnImport = reader.GetBoolean(13),
+            IsUserDefined = reader.GetBoolean(14),
+            ImageUrl = reader.IsDBNull(15) ? null : reader.GetString(15),
+            IsFavorite = reader.GetBoolean(16)
+        };
     }
 
     private static bool HasMetadata(

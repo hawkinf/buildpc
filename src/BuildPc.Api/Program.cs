@@ -258,21 +258,6 @@ app.MapPost(
             request.Components)));
 
 app.MapGet(
-    "/imports/last",
-    (
-        int category,
-        string source,
-        PostgresBuildPcRepository repository) =>
-    {
-        var importedAt = repository.GetLastImport(
-            (ComponentCategory)category,
-            source);
-        return importedAt is null
-            ? Results.NoContent()
-            : Results.Ok(importedAt.Value);
-    });
-
-app.MapGet(
     "/imports/last-all",
     (PostgresBuildPcRepository repository) =>
         Results.Ok(repository.GetLastImports()));

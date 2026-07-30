@@ -161,6 +161,53 @@ public sealed class PostgresBuildPcRepositoryIntegrationTests(PostgresFixture fi
     }
 
     [Fact]
+    public void DeleteManyRemovesOnlyTheRequestedIdsInASingleBatch()
+    {
+        if (!Skip()) return;
+
+        var repository = new PostgresBuildPcRepository(fixture.DataSource);
+        repository.Add(Component("int-del-1", ComponentCategory.Mouse));
+        repository.Add(Component("int-del-2", ComponentCategory.Mouse));
+        repository.Add(Component("int-del-3", ComponentCategory.Mouse));
+
+        var deletedCount = repository.DeleteMany(["int-del-1", "int-del-3", "id-inexistente"]);
+
+        Assert.Equal(2, deletedCount);
+        var remainingIds = repository.GetAll().Select(item => item.Id).ToList();
+        Assert.Contains("int-del-2", remainingIds);
+        Assert.DoesNotContain("int-del-1", remainingIds);
+        Assert.DoesNotContain("int-del-3", remainingIds);
+    }
+
+    [Fact]
+    public void UpdateDescriptionsAppendsToEveryRequestedIdInASingleBatch()
+    {
+        if (!Skip()) return;
+
+        var repository = new PostgresBuildPcRepository(fixture.DataSource);
+        repository.Add(Component("int-desc-1", ComponentCategory.Keyboard) with
+        {
+            Description = "Original um"
+        });
+        repository.Add(Component("int-desc-2", ComponentCategory.Keyboard) with
+        {
+            Description = "Original dois"
+        });
+
+        var updatedCount = repository.UpdateDescriptions(
+            ["int-desc-1", "int-desc-2"],
+            "Complemento",
+            BulkDescriptionMode.Append);
+
+        Assert.Equal(2, updatedCount);
+        var descriptions = repository.GetAll()
+            .Where(item => item.Id.StartsWith("int-desc-", StringComparison.Ordinal))
+            .ToDictionary(item => item.Id, item => item.Description);
+        Assert.Equal("Original um Complemento", descriptions["int-desc-1"]);
+        Assert.Equal("Original dois Complemento", descriptions["int-desc-2"]);
+    }
+
+    [Fact]
     public void QuoteRoundTripsWithDiscountValidityAndTerms()
     {
         if (!Skip()) return;
@@ -201,6 +248,17 @@ public sealed class PostgresBuildPcRepositoryIntegrationTests(PostgresFixture fi
         Assert.Equal("Retirada em loja", loaded.DeliveryTerms);
         Assert.Equal("Loja Teste", loaded.CompanySnapshot.CompanyName);
     }
+
+    private static PcComponent Component(string id, ComponentCategory category) =>
+        new()
+        {
+            Id = id,
+            Category = category,
+            Name = $"Produto {id}",
+            Brand = "Teste",
+            Description = "Descrição",
+            Price = 50m
+        };
 
     /// <returns>
     /// <c>false</c> quando o Docker está indisponível: o chamador deve

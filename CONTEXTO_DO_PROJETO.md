@@ -903,6 +903,19 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Auditoria completa (30/07), lote 6 — itens de baixa prioridade:
+  `Models/Fixed/PcBuild.cs` (duplicata byte-a-byte de `Models/PcBuild.cs`,
+  mantida viva só por uma regra `<Compile Remove>` em `Directory.Build.targets`)
+  removida; `Directory.Build.targets` também removido, sem mais motivo para
+  existir. Endpoint morto `GET /imports/last` (categoria única) removido da
+  API junto com `PostgresBuildPcRepository.GetLastImport` — nenhum cliente
+  chamava, só `GET /imports/last-all` é usado pelo Desktop (a versão SQLite
+  do método foi mantida, tem teste direto). `DeleteMany` e
+  `UpdateDescriptions` no Postgres trocaram um `DELETE`/`UPDATE` por id em
+  loop por um único comando com `WHERE lower(id) = ANY(@ids)` — `DeleteMany`
+  usa `RETURNING id` para saber quais foram apagados de fato (preserva a
+  marca de exclusão do catálogo inicial, que só se aplica aos ~24 ids
+  padrão). Contagem de testes atualizada (229 → 258 no lote 5).
 - Auditoria completa (30/07), lote 5 — testes e CI: `PostgresBuildPcRepositoryIntegrationTests`
   (novo, via `Testcontainers.PostgreSql`) cobre `PostgresBuildPcRepository`
   contra um Postgres real dentro de um contêiner — round-trip de produto com

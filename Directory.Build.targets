@@ -1,5 +1,0 @@
-<Project>
-  <ItemGroup Condition="'$(MSBuildProjectName)' == 'BuildPc.Core'">
-    <Compile Remove="Models\PcBuild.cs" />
-  </ItemGroup>
-</Project>

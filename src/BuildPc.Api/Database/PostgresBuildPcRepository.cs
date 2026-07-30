@@ -126,33 +126,45 @@ public sealed class PostgresBuildPcRepository :
 
         using var connection = OpenConnection();
         using var transaction = connection.BeginTransaction();
-        var deleted = 0;
-        foreach (var id in ids)
-        {
-            using var command = connection.CreateCommand();
-            command.Transaction = transaction;
-            command.CommandText = "DELETE FROM products WHERE lower(id) = lower(@id);";
-            command.Parameters.AddWithValue("id", id);
-            if (command.ExecuteNonQuery() > 0)
-            {
-                deleted++;
 
-                // A marca de exclusão só impede que o catálogo inicial seja
-                // semeado outra vez. Gravá-la para produtos importados fazia
-                // app_metadata crescer sem limite.
-                if (ComponentCatalog.DefaultIds.Contains(id))
-                {
-                    SetMetadata(
-                        connection,
-                        transaction,
-                        DeletedProductKey(id),
-                        DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
-                }
+        // Um DELETE por id em loop significava milhares de round-trips numa
+        // exclusão em massa da tela de Gerenciar Produtos. RETURNING id
+        // devolve o que foi realmente apagado num único comando, mantendo a
+        // marca de exclusão do catálogo inicial (só interessa para os ~24
+        // ids padrão, então esse laço continua pequeno de propósito).
+        var deletedIds = new List<string>();
+        using (var command = connection.CreateCommand())
+        {
+            command.Transaction = transaction;
+            command.CommandText =
+                "DELETE FROM products WHERE lower(id) = ANY(@ids) RETURNING id;";
+            command.Parameters.AddWithValue(
+                "ids",
+                ids.Select(id => id.ToLowerInvariant()).ToArray());
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                deletedIds.Add(reader.GetString(0));
+            }
+        }
+
+        foreach (var id in deletedIds)
+        {
+            // A marca de exclusão só impede que o catálogo inicial seja
+            // semeado outra vez. Gravá-la para produtos importados fazia
+            // app_metadata crescer sem limite.
+            if (ComponentCatalog.DefaultIds.Contains(id))
+            {
+                SetMetadata(
+                    connection,
+                    transaction,
+                    DeletedProductKey(id),
+                    DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
             }
         }
 
         transaction.Commit();
-        return deleted;
+        return deletedIds.Count;
     }
 
     public Task<int> UpdateDescriptionsAsync(
@@ -177,51 +189,53 @@ public sealed class PostgresBuildPcRepository :
 
         using var connection = OpenConnection();
         using var transaction = connection.BeginTransaction();
-        var updated = 0;
-        foreach (var id in ids)
+        // Um UPDATE por id em loop significava milhares de round-trips numa
+        // edição em massa; sem efeito colateral condicional por linha (ao
+        // contrário de DeleteMany), dá para trocar direto por um único
+        // comando com WHERE lower(id) = ANY(@ids).
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = mode switch
         {
-            using var command = connection.CreateCommand();
-            command.Transaction = transaction;
-            command.CommandText = mode switch
-            {
-                BulkDescriptionMode.Prepend =>
-                    """
-                    UPDATE products
-                    SET description = @description || CASE
-                            WHEN length(trim(description)) = 0 THEN ''
-                            ELSE ' ' || description
-                        END,
-                        keep_on_import = CASE
-                            WHEN import_source IS NULL THEN keep_on_import ELSE true
-                        END
-                    WHERE lower(id) = lower(@id);
-                    """,
-                BulkDescriptionMode.Append =>
-                    """
-                    UPDATE products
-                    SET description = CASE
-                            WHEN length(trim(description)) = 0 THEN @description
-                            ELSE description || ' ' || @description
-                        END,
-                        keep_on_import = CASE
-                            WHEN import_source IS NULL THEN keep_on_import ELSE true
-                        END
-                    WHERE lower(id) = lower(@id);
-                    """,
-                _ =>
-                    """
-                    UPDATE products
-                    SET description = @description,
-                        keep_on_import = CASE
-                            WHEN import_source IS NULL THEN keep_on_import ELSE true
-                        END
-                    WHERE lower(id) = lower(@id);
-                    """
-            };
-            command.Parameters.AddWithValue("id", id);
-            command.Parameters.AddWithValue("description", description.Trim());
-            updated += command.ExecuteNonQuery();
-        }
+            BulkDescriptionMode.Prepend =>
+                """
+                UPDATE products
+                SET description = @description || CASE
+                        WHEN length(trim(description)) = 0 THEN ''
+                        ELSE ' ' || description
+                    END,
+                    keep_on_import = CASE
+                        WHEN import_source IS NULL THEN keep_on_import ELSE true
+                    END
+                WHERE lower(id) = ANY(@ids);
+                """,
+            BulkDescriptionMode.Append =>
+                """
+                UPDATE products
+                SET description = CASE
+                        WHEN length(trim(description)) = 0 THEN @description
+                        ELSE description || ' ' || @description
+                    END,
+                    keep_on_import = CASE
+                        WHEN import_source IS NULL THEN keep_on_import ELSE true
+                    END
+                WHERE lower(id) = ANY(@ids);
+                """,
+            _ =>
+                """
+                UPDATE products
+                SET description = @description,
+                    keep_on_import = CASE
+                        WHEN import_source IS NULL THEN keep_on_import ELSE true
+                    END
+                WHERE lower(id) = ANY(@ids);
+                """
+        };
+        command.Parameters.AddWithValue(
+            "ids",
+            ids.Select(id => id.ToLowerInvariant()).ToArray());
+        command.Parameters.AddWithValue("description", description.Trim());
+        var updated = command.ExecuteNonQuery();
 
         transaction.Commit();
         return updated;
@@ -334,23 +348,6 @@ public sealed class PostgresBuildPcRepository :
             importedAt,
             priceChanges,
             disappeared);
-    }
-
-    public DateTimeOffset? GetLastImport(ComponentCategory category, string source)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(source);
-        using var connection = OpenConnection();
-        using var command = connection.CreateCommand();
-        command.CommandText = "SELECT value FROM app_metadata WHERE key = @key;";
-        command.Parameters.AddWithValue("key", ImportMetadataKey(category, source));
-        var value = command.ExecuteScalar() as string;
-        return DateTimeOffset.TryParse(
-            value,
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.RoundtripKind,
-            out var importedAt)
-            ? importedAt
-            : null;
     }
 
     public Task<IReadOnlyDictionary<string, DateTimeOffset>> GetLastImportsAsync(

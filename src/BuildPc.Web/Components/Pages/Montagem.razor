@@ -197,7 +197,8 @@ else
             {
                 <tr
                     class="@(product.Id == _pickerComponentId ? "selected" : null)"
-                    @onclick="() => _pickerComponentId = product.Id">
+                    @onclick="() => _pickerComponentId = product.Id"
+                    @ondblclick="() => SelectAndAdd(product)">
                     <td class="build-thumb-cell">
                         @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
                         {
@@ -521,6 +522,12 @@ else
         _pickerCategory = (ComponentCategory)int.Parse(e.Value?.ToString() ?? "0");
         _pickerComponentId = null;
         _pickerSearch = string.Empty;
+    }
+
+    private void SelectAndAdd(PcComponent product)
+    {
+        _pickerComponentId = product.Id;
+        AddItem();
     }
 
     private void AddItem()

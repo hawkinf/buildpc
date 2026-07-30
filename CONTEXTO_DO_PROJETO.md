@@ -32,9 +32,12 @@ dotnet build BuildPc.sln --no-restore
 dotnet test BuildPc.sln --no-build
 ```
 
-No estado documentado, a solução compila sem avisos e possui 229 testes
-aprovados. O GitHub Actions repete build em Release e testes a cada push e
-pull request (`.github/workflows/build.yml`).
+No estado documentado, a solução compila sem avisos e possui 258 testes
+aprovados. O GitHub Actions roda build e testes em Windows e em Linux a cada
+push e pull request (`.github/workflows/build.yml`) — o job Linux tem Docker
+e executa de verdade os testes de integração do PostgreSQL
+(`PostgresBuildPcRepositoryIntegrationTests`, via Testcontainers), que no
+Windows local só se registram como inconclusivos por falta de Docker.
 
 ## O que o programa faz
 
@@ -900,6 +903,25 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Auditoria completa (30/07), lote 5 — testes e CI: `PostgresBuildPcRepositoryIntegrationTests`
+  (novo, via `Testcontainers.PostgreSql`) cobre `PostgresBuildPcRepository`
+  contra um Postgres real dentro de um contêiner — round-trip de produto com
+  todos os campos, `price_history` gravado em edição manual, favorito
+  preservado + variação de preço registrada em `ReplaceImported`, orçamento
+  com desconto/validade/condições. Sem Docker, os testes viram no-op (não
+  falham, só avisam) em vez de quebrar `dotnet test` — por isso o CI ganhou
+  um job Linux (`ubuntu-latest` já vem com Docker), que roda esses testes de
+  verdade e publica cobertura via `coverlet.collector`.
+  `BuildPcApiIntegrationTests` (novo, `WebApplicationFactory<Program>`, exigiu
+  expor `public partial class Program` no fim de `Program.cs`) exercita a API
+  pelo pipeline HTTP real: `/health` público, `/products` sem
+  chave/com chave errada devolve 401, JSON malformado devolve 400 (confirma
+  o ajuste do lote 1) — sem precisar de Postgres alcançável, porque a
+  validação de chave e o parser de JSON rodam antes do repositório ser
+  resolvido pelo DI. `QuotePdfServiceTests.SourceNeverReferencesCostOrProfitFields`
+  é uma proteção estrutural (PdfSharp não expõe extração de texto): falha se
+  `QuotePdfService.cs` algum dia referenciar campo de custo/lucro, antes de
+  um vazamento chegar a um PDF real.
 - Auditoria completa (30/07), lote 4 — deploy/infraestrutura: novos
   `deploy/deploy-api.sh` e `deploy/rollback-api.sh` formalizam em script o
   que era ~8 passos manuais por SSH (publicar, copiar para

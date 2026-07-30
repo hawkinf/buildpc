@@ -381,3 +381,7 @@ static bool TryGetSqliteBackupPaths(
     destinationPath = string.Empty;
     return false;
 }
+
+// Torna a classe Program (gerada pelas top-level statements) visível para
+// WebApplicationFactory<Program> nos testes de integração HTTP.
+public partial class Program;

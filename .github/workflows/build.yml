@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
 
     steps:
@@ -30,3 +30,38 @@ jobs:
 
       - name: Testar
         run: dotnet test BuildPc.sln --no-build --configuration Release --verbosity normal
+
+  build-linux:
+    # A API é publicada em produção como linux-x64 self-contained; sem este
+    # job, build e testes nunca rodavam no mesmo SO da VPS. O runner Ubuntu
+    # já vem com Docker, então os testes de PostgresBuildPcRepository contra
+    # um Postgres real (Testcontainers) executam de verdade aqui — no
+    # Windows eles se registram como inconclusivos por falta de Docker.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar o SDK do .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restaurar
+        run: dotnet restore BuildPc.sln
+
+      - name: Compilar
+        run: dotnet build BuildPc.sln --no-restore --configuration Release
+
+      - name: Testar com cobertura
+        run: >
+          dotnet test BuildPc.sln --no-build --configuration Release
+          --verbosity normal --collect:"XPlat Code Coverage"
+
+      - name: Publicar relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-testes
+          path: '**/TestResults/**/coverage.cobertura.xml'
+          retention-days: 14

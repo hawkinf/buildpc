@@ -238,6 +238,54 @@ public sealed class QuotePdfServiceTests
         Assert.False(withoutDiscount.HasDiscount);
     }
 
+    /// <summary>
+    /// Guarda estrutural: o PDF do cliente nunca pode mostrar custo ou
+    /// lucro (regra de negócio central do orçamento). Os testes acima só
+    /// confirmam que o PDF gerado é válido, não o que está escrito nele —
+    /// PdfSharp não expõe extração de texto, então a rede de proteção aqui é
+    /// no nível do código-fonte: se algum dia um campo de custo/lucro for
+    /// referenciado dentro de QuotePdfService, este teste falha antes que o
+    /// vazamento chegue a um PDF real.
+    /// </summary>
+    [Fact]
+    public void SourceNeverReferencesCostOrProfitFields()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            FindRepositoryRoot(),
+            "src",
+            "BuildPc.Desktop",
+            "Services",
+            "QuotePdfService.cs"));
+
+        Assert.DoesNotContain("UnitCost", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("TotalCost", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("Profit", source, StringComparison.Ordinal);
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        foreach (var startingPath in new[]
+                 {
+                     Directory.GetCurrentDirectory(),
+                     AppContext.BaseDirectory
+                 })
+        {
+            var directory = new DirectoryInfo(startingPath);
+            while (directory is not null)
+            {
+                if (File.Exists(Path.Combine(directory.FullName, "BuildPc.sln")))
+                {
+                    return directory.FullName;
+                }
+
+                directory = directory.Parent;
+            }
+        }
+
+        throw new DirectoryNotFoundException(
+            "Não foi possível localizar a raiz do repositório BuildPC.");
+    }
+
     private static SavedQuoteItem Item(
         string category,
         string name,

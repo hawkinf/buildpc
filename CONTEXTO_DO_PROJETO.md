@@ -684,6 +684,33 @@ Auditoria somente de leitura via `ssh contaslite`:
 | Disco | 73% usado (11 GB livres) |
 | Memória | 2,4 GB totais, folga pequena |
 
+**Ações aplicadas no servidor em 30/07/2026:**
+
+1. `deploy/deploy-api.sh` e `deploy/rollback-api.sh` copiados para
+   `/opt/buildpc-api/` (root:root, 755). `rollback-api.sh` foi ajustado antes
+   do envio para aceitar tanto `ANTERIOR=<caminho>` (formato do
+   `ROLLBACK.txt` já em produção, de um deploy manual anterior) quanto o
+   formato de caminho puro que `deploy-api.sh` grava — sem isso, o primeiro
+   rollback pelo script novo falharia contra o arquivo antigo.
+2. `deploy/backup-buildpc.sh` (com a validação `test -s` do dump) substituiu
+   `/usr/local/sbin/backup-buildpc`. `deploy/buildpc-backup.service` (com
+   `OnFailure=buildpc-backup-alert.service`) substituiu o `.service` ativo, e
+   `deploy/buildpc-backup-alert.service` (novo) foi instalado em
+   `/etc/systemd/system/`. `systemctl daemon-reload` +
+   `systemd-analyze verify` sem erros nas duas unidades (os avisos que
+   apareceram são de unidades alheias ao BuildPC — `superat-api.service`,
+   `snapd.service`, `rc-local.service` — pré-existentes no servidor).
+   Testado de verdade: `systemctl start buildpc-backup.service` gerou um
+   dump novo e válido (142 KB, mesma ordem de tamanho dos anteriores) sem
+   disparar o alerta; `systemctl start buildpc-backup-alert.service` isolado
+   confirmou que o alerta grava no journal (`journalctl -t buildpc-backup`)
+   com prioridade `err`.
+   `deploy-api.sh`/`rollback-api.sh` **não foram executados** — só
+   instalados; não havia release novo da API para publicar nesta ação.
+3. `/opt/buildpc-api/current`, `ROLLBACK.txt` e o binário em produção
+   (`fase4-20260729-195631`) não foram tocados. `/health` confirmado 200
+   depois de tudo.
+
 **Ações aplicadas no servidor em 29/07/2026:**
 
 1. `client_max_body_size` do bloco `/buildpc-api/` passou de `10m` para `64m`

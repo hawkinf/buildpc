@@ -24,11 +24,31 @@ else
         <p class="build-status">@_statusMessage</p>
     }
 
+    @if (HasItems)
+    {
+        <section class="build-summary build-summary-header">
+            <p>
+                Custo total: <RevealCost Value="TotalCost" />
+            </p>
+            <p>
+                Total de venda:
+                @if (HasDiscount)
+                {
+                    <s>@TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)</s>
+                }
+                <strong>@FinalPrice.ToString("C", CultureHelpers.BrazilianCulture)</strong>
+            </p>
+            <p>
+                Lucro: <RevealCost Value="TotalProfit" />
+            </p>
+        </section>
+    }
+
     <section class="build-picker">
         <select value="@((int)_pickerCategory)" @onchange="OnPickerCategoryChanged">
             @foreach (var category in _categories)
             {
-                <option value="@((int)category.Value)">@category.Name</option>
+                <option value="@((int)category.Value)">@category.Name (@PickerCountFor(category.Value))</option>
             }
         </select>
 
@@ -172,23 +192,6 @@ else
             </tbody>
         </table>
         </div>
-
-        <section class="build-summary">
-            <p>
-                Custo total: <RevealCost Value="TotalCost" />
-            </p>
-            <p>
-                Total de venda:
-                @if (HasDiscount)
-                {
-                    <s>@TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)</s>
-                }
-                <strong>@FinalPrice.ToString("C", CultureHelpers.BrazilianCulture)</strong>
-            </p>
-            <p>
-                Lucro: <RevealCost Value="TotalProfit" />
-            </p>
-        </section>
 
         <section class="build-terms">
             <label>
@@ -398,6 +401,14 @@ else
             : _pickerSortMode is PriceTableSortMode.NameAscending or PriceTableSortMode.NameDescending;
         return !isActive ? string.Empty : ascending ? "▲" : "▼";
     }
+
+    // Com busca ativa, mostra quantos itens da categoria batem com o filtro
+    // (não o total) — mesmo comportamento do PriceLookupViewModel do
+    // Desktop, onde a contagem por categoria reflete a busca digitada.
+    private int PickerCountFor(ComponentCategory category) =>
+        _catalog.Count(component =>
+            component.Category == category &&
+            ProductFilter.Matches(component, _pickerSearch));
 
     private bool HasItems => _items.Count > 0;
     private decimal TotalCost => _items.Sum(item => item.TotalCost);

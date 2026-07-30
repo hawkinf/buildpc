@@ -967,6 +967,23 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — dois ajustes pedidos pelo usuário via captura de
+  tela da Montagem: (1) resumo (custo total/total de venda/lucro) movido
+  pro topo da página, logo abaixo do título — antes só aparecia depois da
+  tabela de itens, obrigando rolar a tela toda pra ver o total durante a
+  montagem. Ganhou `position: sticky; top: 0` (`.build-summary-header`):
+  fica visível o tempo todo enquanto rola a lista de itens, mais perto do
+  comportamento do Desktop (barra de total sempre visível, sem rolagem
+  possível numa janela única). (2) seletor de categoria da Montagem
+  ganhou contagem entre parênteses (`PickerCountFor`) — antes não mostrava
+  nenhuma; e a de Consulta de Preços (`CountFor`, já existia) passou a
+  respeitar o texto de busca digitado, em vez de sempre mostrar o total da
+  categoria inteira — mesmo comportamento do `PriceLookupViewModel` do
+  Desktop, onde a contagem por categoria reflete a busca ativa. Mesma
+  lacuna existia nas duas telas; corrigida nas duas de uma vez por
+  consistência, embora só a Montagem tivesse sido citada. 282/282 testes
+  (sem novos — reorganização de UI e correção de contagem sobre catálogo
+  já carregado).
 - Cliente web (30/07) — seletor de produto da Montagem trocou o `<select>`
   nativo (uma linha de texto, sem foto) por uma lista igual à tabela da
   Consulta de Preços, a pedido do usuário ("tem que ser igual a consulta de

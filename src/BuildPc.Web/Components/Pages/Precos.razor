@@ -21,7 +21,7 @@ else
 {
     <div class="price-toolbar">
         <select value="@SelectedCategoryValue" @onchange="OnCategoryChanged">
-            <option value="">Todas as categorias (@_catalog.Count)</option>
+            <option value="">Todas as categorias (@TotalFilteredCount())</option>
             @foreach (var category in _categories)
             {
                 <option value="@category.Value">
@@ -175,8 +175,16 @@ else
         }
     }
 
+    // Com busca ativa, mostra quantos itens da categoria batem com o filtro
+    // (não o total) — mesmo comportamento do PriceLookupViewModel do
+    // Desktop, onde a contagem por categoria reflete a busca digitada.
     private int CountFor(ComponentCategory category) =>
-        _catalog.Count(component => component.Category == category);
+        _catalog.Count(component =>
+            component.Category == category &&
+            ProductFilter.Matches(component, _searchText));
+
+    private int TotalFilteredCount() =>
+        _catalog.Count(component => ProductFilter.Matches(component, _searchText));
 
     private void OnCategoryChanged(ChangeEventArgs e)
     {

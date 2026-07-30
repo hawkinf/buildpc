@@ -1,0 +1,27 @@
+[Unit]
+Description=BuildPC Web
+After=network-online.target buildpc-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=buildpc-web
+Group=buildpc-web
+WorkingDirectory=/opt/buildpc-web/current
+EnvironmentFile=/etc/buildpc-web.env
+ExecStart=/opt/buildpc-web/current/BuildPc.Web
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+
+[Install]
+WantedBy=multi-user.target

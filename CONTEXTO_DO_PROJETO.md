@@ -661,6 +661,29 @@ O serviço roda como usuário `buildpc` em `/opt/buildpc-api/current`, lê
 `/etc/buildpc-api.env` e reinicia em caso de falha. O backup usa `pg_dump`,
 grava em `/var/backups/buildpc` e mantém 14 dias.
 
+### Implantação do BuildPc.Web (cliente web, `precos.hawk.com.br`)
+
+Configuração esperada em `/etc/buildpc-web.env`:
+
+- `BuildPc__BaseUrl` / `BuildPc__ApiKey` — mesma chave usada pela API
+- `BuildPc__WebPassword` — senha única compartilhada da equipe
+- `ASPNETCORE_ENVIRONMENT=Production`
+
+Arquivos de implantação:
+
+- `deploy/buildpc-web.service`
+- `deploy/nginx-precos.conf`
+- `deploy/deploy-web.sh`
+- `deploy/rollback-web.sh`
+
+O serviço roda como usuário dedicado `buildpc-web` (não o `buildpc` da API —
+isolamento entre os dois processos) em `/opt/buildpc-web/current`. Site
+Nginx dedicado (domínio próprio, TLS via `certbot --nginx -d
+precos.hawk.com.br`), não um `location` dentro de `contaslite.hawk.com.br`
+como a API. Portas: produção `127.0.0.1:8126`, teste de deploy `8130`
+(distintas das `8125`/`8129` da API — a confirmar contra `ss -tlnp` na VPS
+antes do primeiro deploy real).
+
 O alias SSH usado anteriormente pelo usuário foi `contaslite`; ele depende do
 arquivo SSH local da máquina e deve ser confirmado antes de qualquer operação
 remota.
@@ -930,6 +953,34 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07), fase 8/9 — scripts de deploy do `BuildPc.Web`,
+  espelhando quase literalmente `deploy-api.sh`/`rollback-api.sh` (lote 4):
+  `deploy/deploy-web.sh` só troca o symlink `current` depois do release
+  novo responder `/health` numa porta de teste (`8130`); `deploy/
+  rollback-web.sh` usa o mesmo `ROLLBACK.txt` gravado pelo deploy.
+  `deploy/buildpc-web.service` roda como usuário dedicado `buildpc-web`
+  (não reaproveita o `buildpc` da API — mesmo princípio de isolamento),
+  `After=...buildpc-api.service` sem `Requires=` (Web deve subir mesmo se a
+  Api estiver momentaneamente fora — cada página já trata
+  `InvalidOperationException` da API isoladamente, fases 5-7). `deploy/
+  nginx-precos.conf` é um site **dedicado** (domínio próprio, diferente do
+  `location` que a API usa dentro de `contaslite.hawk.com.br`) — bloco HTTP
+  puro, pensado pra rodar `certbot --nginx -d precos.hawk.com.br` DEPOIS de
+  instalado (o certbot edita o próprio bloco pra adicionar TLS + redirect,
+  não criar um bloco HTTPS à mão antes). Inclui os cabeçalhos
+  `Upgrade`/`Connection $connection_upgrade` que o circuito SignalR do
+  Blazor Server exige (sem eles a UI trava no modal "Reconectando..." da
+  fase 4) — o mapa `$connection_upgrade` só pode viver no `http{}` do
+  `nginx.conf` principal, então o arquivo documenta conferir se já existe
+  (o plano original menciona um serviço de chat na VPS que já usa
+  WebSocket) em vez de arriscar duplicar a diretiva. Portas escolhidas
+  (produção `8126`, teste de deploy `8130`) evitam as já documentadas da
+  API (`8125`/`8129`) — **a confirmar contra `ss -tlnp` na VPS antes do
+  primeiro deploy real da fase 9**, não verificado ao vivo nesta fase.
+  `/etc/buildpc-web.env` esperado: `BuildPc__BaseUrl`, `BuildPc__ApiKey`
+  (mesma chave da API), `BuildPc__WebPassword` (senha da equipe, fase 3),
+  `ASPNETCORE_ENVIRONMENT=Production`. Nada de código mudou nesta fase —
+  277/277 testes, só arquivos de infraestrutura.
 - Cliente web (30/07), fase 7/9 — tela de Montagem (`Montagem.razor`,
   `/montagem`), a mais complexa, feita por último de propósito (reusa tudo
   das fases 4-6). Fluxo: seletor de categoria/produto (`ProductFilter.

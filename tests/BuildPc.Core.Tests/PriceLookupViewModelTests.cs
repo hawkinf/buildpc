@@ -14,7 +14,7 @@ public sealed class PriceLookupViewModelTests
         Assert.True(viewModel.IsSaleActive);
         Assert.Equal("PREÇO DE VENDA", viewModel.PriceColumnTitle);
         Assert.Equal(
-            120.90m,
+            124.90m,
             viewModel.Items.Single(product =>
                 product.Name == "SSD Zulu").DisplayPriceValue);
 

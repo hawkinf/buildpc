@@ -967,6 +967,31 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- **Mudança de regra de negócio (30/07), afeta Desktop e Web igualmente**:
+  arredondamento do preço de venda. `PricingCalculator.RoundUpToNinetyCents`
+  (Core — único lugar que implementa a regra, compartilhado por Desktop e
+  Web desde a fase 1 do cliente web) mudava pra cima até o próximo real
+  terminado em ",90" (a cada 1 real: 80,90; 81,90; 82,90...). Nova regra,
+  pedida pelo usuário com exemplos exatos: os alvos válidos passam a ficar
+  5 reais um do outro, alternando ",90" (4,90; 9,90; 14,90...
+  84,90; 89,90...) — fórmula
+  `Math.Ceiling((valor + 0,10) / 5) * 5 - 0,10`. Exemplo dado: 81,20 → antes
+  seria 81,90, agora 84,90. Continua sendo **sempre arredondamento pra
+  cima** (nunca reduz o preço abaixo do calculado, mesma garantia de
+  antes) — só o tamanho do degrau mudou de 1 para 5 reais. Afeta
+  automaticamente todo lugar que já usava essa função só por estar
+  centralizada no Core: importação (Desktop e Web), adicionar item na
+  Montagem (Desktop e Web), digitar preço manual, aplicar modelo com
+  desconto, `PriceTableRowBuilder` (Consulta de Preços) — nenhum código
+  novo nesses lugares, só a implementação compartilhada mudou. 8 testes do
+  Desktop (`FlexibleListViewModelTests`, `PriceLookupViewModelTests`,
+  `AssemblyTemplateTests`) tinham valores esperados fixos calculados sob a
+  regra antiga — recalculados um a um pra regra nova, não eram bugs, só
+  ficaram desatualizados. Novo `PricingCalculatorTests.cs` (11 casos,
+  incluindo os exemplos exatos do usuário) — a regra de arredondamento
+  nunca tinha teste dedicado antes de agora. 294/294 testes.
+  `dist/x64/BuildPc.Desktop.exe` republicado (o Desktop pega a mudança só
+  recompilando, mesma DLL do Core).
 - Cliente web (30/07) — três ajustes pequenos no `RevealCost`/Montagem.
   (1) Tocar de novo enquanto o valor está revelado agora esconde na hora
   (`Reveal()` virou toggle de verdade), em vez de só esperar o tempo normal

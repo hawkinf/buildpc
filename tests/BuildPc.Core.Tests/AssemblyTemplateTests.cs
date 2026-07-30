@@ -93,8 +93,9 @@ public sealed class AssemblyTemplateTests
             [processor]);
 
         // 10% de desconto sobre o preço de venda recalculado (1000 x 1,20 =
-        // 1200, arredondado para 1200,90 pela regra de terminar em ",90").
-        Assert.Equal(120.09m, viewModel.DiscountValue);
+        // 1200, arredondado para 1204,90 pela regra de terminar em ",90" a
+        // cada 5 reais).
+        Assert.Equal(120.49m, viewModel.DiscountValue);
         Assert.True(viewModel.HasDiscount);
     }
 

@@ -105,16 +105,16 @@ public sealed class FlexibleListViewModelTests
             ],
             settings);
 
-        Assert.Equal(1350.90m, viewModel.ProductPicker.Options.Single().Price);
+        Assert.Equal(1354.90m, viewModel.ProductPicker.Options.Single().Price);
         viewModel.ProductPicker.Selected = processor;
         viewModel.AddCommand.Execute(null);
         viewModel.SelectedCategory = viewModel.Categories[1];
-        Assert.Equal(480.90m, viewModel.ProductPicker.Options.Single().Price);
+        Assert.Equal(484.90m, viewModel.ProductPicker.Options.Single().Price);
         viewModel.ProductPicker.Selected = memory;
         viewModel.AddCommand.Execute(null);
 
-        Assert.Equal(1831.80m, viewModel.TotalPriceValue);
-        Assert.Equal(431.80m, viewModel.TotalProfitValue);
+        Assert.Equal(1839.80m, viewModel.TotalPriceValue);
+        Assert.Equal(439.80m, viewModel.TotalProfitValue);
         Assert.Equal(35m, viewModel.Items[0].MarginPercent);
         Assert.Equal(20m, viewModel.Items[1].MarginPercent);
     }
@@ -147,7 +147,7 @@ public sealed class FlexibleListViewModelTests
 
         viewModel.ApplySettings(new BusinessSettings { GlobalMarginPercent = 30m });
 
-        Assert.Equal(1300.90m, viewModel.ProductPicker.Options.Single().Price);
+        Assert.Equal(1304.90m, viewModel.ProductPicker.Options.Single().Price);
     }
 
     [Fact]
@@ -199,10 +199,10 @@ public sealed class FlexibleListViewModelTests
         item.SellingPriceText = "1.350,00";
 
         Assert.Equal(1000m, item.UnitPriceValue);
-        Assert.Equal(1350.90m, item.SellingUnitPriceValue);
-        Assert.Equal("1.350,90", item.SellingPriceText);
-        Assert.Equal(350.90m, viewModel.TotalProfitValue);
-        Assert.Equal(35.09m, item.MarginPercent);
+        Assert.Equal(1354.90m, item.SellingUnitPriceValue);
+        Assert.Equal("1.354,90", item.SellingPriceText);
+        Assert.Equal(354.90m, viewModel.TotalProfitValue);
+        Assert.Equal(35.49m, item.MarginPercent);
     }
 
     [Fact]
@@ -216,8 +216,8 @@ public sealed class FlexibleListViewModelTests
 
         item.SellingPriceText = "1350,5";
 
-        Assert.Equal("1.350,90", item.SellingPriceText);
-        Assert.Equal(1350.90m, item.SellingUnitPriceValue);
+        Assert.Equal("1.354,90", item.SellingPriceText);
+        Assert.Equal(1354.90m, item.SellingUnitPriceValue);
     }
 
     [Fact]
@@ -231,8 +231,8 @@ public sealed class FlexibleListViewModelTests
 
         item.SellingPriceText = "1350,99";
 
-        Assert.Equal("1.351,90", item.SellingPriceText);
-        Assert.Equal(1351.90m, item.SellingUnitPriceValue);
+        Assert.Equal("1.354,90", item.SellingPriceText);
+        Assert.Equal(1354.90m, item.SellingUnitPriceValue);
     }
 
     [Fact]
@@ -249,11 +249,11 @@ public sealed class FlexibleListViewModelTests
 
         item.SellingPriceText = "1.050,00";
 
-        Assert.Equal(1150.90m, item.SellingUnitPriceValue);
-        Assert.Equal("1.150,90", item.SellingPriceText);
-        Assert.Equal(15.09m, item.MarginPercent);
-        Assert.Equal(15.09m, viewModel.TotalProfitPercentValue);
-        Assert.Equal("15,09%", viewModel.TotalProfitPercent);
+        Assert.Equal(1154.90m, item.SellingUnitPriceValue);
+        Assert.Equal("1.154,90", item.SellingPriceText);
+        Assert.Equal(15.49m, item.MarginPercent);
+        Assert.Equal(15.49m, viewModel.TotalProfitPercentValue);
+        Assert.Equal("15,49%", viewModel.TotalProfitPercent);
     }
 
     [Fact]

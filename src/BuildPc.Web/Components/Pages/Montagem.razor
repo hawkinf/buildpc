@@ -126,12 +126,15 @@ else
                         </td>
                         <td><RevealCost Value="item.UnitCost" /></td>
                         <td>
-                            <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value="@item.UnitPrice"
-                                @onchange="e => OnUnitPriceChanged(item, e)" />
+                            <span class="build-currency-input">
+                                <span class="build-currency-prefix">R$</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value="@item.UnitPrice"
+                                    @onchange="e => OnUnitPriceChanged(item, e)" />
+                            </span>
                         </td>
                         <td>@item.TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)</td>
                         <td class="build-item-actions">

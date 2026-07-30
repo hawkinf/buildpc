@@ -276,13 +276,6 @@
     letter-spacing: 0.2em;
 }
 
-.build-summary-header ::deep .reveal-cost-hint {
-    font-size: 0.7rem;
-    font-weight: 400;
-    text-transform: none;
-    letter-spacing: normal;
-}
-
 .build-terms label,
 .build-client label {
     display: flex;

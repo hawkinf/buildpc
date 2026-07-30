@@ -1,6 +1,6 @@
 @implements IDisposable
 
-<button type="button" class="reveal-cost" @onclick="Reveal">
+<button type="button" class="reveal-cost" title="Toque para ver" @onclick="Reveal">
     @if (_revealed)
     {
         <span>@FormattedValue</span>
@@ -8,7 +8,6 @@
     else
     {
         <span class="reveal-cost-masked" aria-hidden="true">•••••</span>
-        <span class="reveal-cost-hint">toque para ver</span>
     }
 </button>
 
@@ -39,6 +38,10 @@
     {
         if (_revealed)
         {
+            // Tocar de novo enquanto está revelado esconde na hora, em vez
+            // de esperar o tempo normal esgotar.
+            _cts?.Cancel();
+            _revealed = false;
             return;
         }
 

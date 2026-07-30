@@ -967,6 +967,23 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — três ajustes pequenos no `RevealCost`/Montagem.
+  (1) Tocar de novo enquanto o valor está revelado agora esconde na hora
+  (`Reveal()` virou toggle de verdade), em vez de só esperar o tempo normal
+  (5s) esgotar — antes um segundo toque não fazia nada
+  (`if (_revealed) return;`). (2) Removida a legenda "toque para ver"
+  (estava desalinhando linhas na tabela de itens/resumo, cada célula com
+  altura diferente dependendo do estado) — **confirmado com o usuário antes
+  de mexer** (`AskUserQuestion`, pela ambiguidade real entre "remover só o
+  texto" e "remover a proteção inteira"): mantido o mascaramento com
+  pontinhos e o clique pra revelar, só a legenda saiu, virou `title`
+  (tooltip nativo do navegador ao passar o mouse) em vez de texto sempre
+  visível. (3) Campo "Preço unit." da tabela de itens (o preço de
+  **venda**, editável — não o custo, que continua só na coluna "Custo"
+  mascarada) ganhou o mesmo prefixo "R$" visual (`build-currency-input`)
+  já usado no Desconto. CSS órfão removido (`.reveal-cost-hint`, nos dois
+  arquivos que a referenciavam). 282/282 testes (sem novos — ajuste de
+  comportamento simples e estilo).
 - Cliente web (30/07) — terceira rodada de ajuste na Montagem: bloco fixo
   do topo compactado (paddings/gaps/fontes reduzidos ~20-30% —
   `build-fixed-top`, `build-client-box`, `build-summary-header`), corrigida

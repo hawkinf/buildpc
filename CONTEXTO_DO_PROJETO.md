@@ -930,6 +930,41 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07), fase 3/9 — autenticação por cookie no `BuildPc.Web`.
+  `StaffPasswordValidator` (novo, `BuildPc.Core.Services` — não é específico
+  do Blazor, então testável sem referenciar `BuildPc.Web` no projeto de
+  testes; referenciar os dois causaria `CS0433` porque `BuildPc.Api` e
+  `BuildPc.Web` são top-level statements sem namespace e cada um gera seu
+  próprio tipo `Program` implícito no namespace global — ambíguo se ambos
+  forem referenciados no mesmo projeto) usa `PasswordHasher<T>`
+  (`Microsoft.Extensions.Identity.Core`, novo pacote do Core): o hash da
+  senha configurada é calculado uma vez na inicialização,
+  `VerifyHashedPassword` compara cada tentativa de login contra ele.
+  `BuildPc:WebPassword` segue a mesma convenção de variável de ambiente
+  (`BuildPc__WebPassword`) das demais chaves. Cookie de autenticação
+  (`CookieAuthenticationDefaults`) com expiração de 10h e renovação
+  deslizante; `ForwardedHeadersOptions` confia só no proxy loopback (Nginx
+  na mesma VPS) para o cookie ganhar o atributo `Secure` em produção sem
+  quebrar o `dotnet run` local por HTTP. `[Authorize]` global via
+  `@attribute` em `_Imports.razor`, com `[AllowAnonymous]` explícito em
+  `Login.razor`/`NotFound.razor`/`Error.razor`. `Routes.razor` trocou
+  `<RouteView>` por `<AuthorizeRouteView>` com `<NotAuthorized>` → um
+  componente `RedirectToLogin` (padrão oficial do template Blazor + Identity
+  — necessário porque, dentro de um circuito Server já aberto, a navegação
+  do próprio Blazor não passa de novo pelo middleware de autorização do
+  ASP.NET Core). O formulário de login é uma página SSR estática (sem
+  `@rendermode`) que faz POST comum para `/account/login` — teve que ser um
+  endpoint minimal-API separado da própria página `/login` (não
+  `POST /login` direto: colidia com o endpoint da página Razor,
+  `AmbiguousMatchException` em tempo de execução) porque `SignInAsync`
+  grava o cookie no cabeçalho da resposta HTTP, e uma resposta de circuito
+  Blazor Server interativo já foi iniciada — não dá pra escrever cabeçalho
+  depois. `/account/login` e `/account/logout` usam `.DisableAntiforgery()`
+  (mesmo padrão do template oficial de Identity: não há sessão prévia no
+  login, e o logout precisa funcionar mesmo com token expirado). Testado
+  manualmente via `curl` com cookie jar: redireciona sem cookie, aceita/
+  rejeita senha, autoriza com cookie válido, `/account/logout` revoga.
+  268/268 testes (7 novos, `StaffPasswordValidatorTests`).
 - Cliente web (30/07), fase 2/9 — esqueleto do projeto `BuildPc.Web`
   (`dotnet new blazor --interactivity Server --empty --all-interactive`,
   adicionado à solução). `Program.cs` registra `BuildPcApiClient` via DI

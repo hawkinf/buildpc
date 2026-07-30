@@ -1,0 +1,28 @@
+@page "/login"
+@attribute [AllowAnonymous]
+
+<PageTitle>Entrar - BuildPC</PageTitle>
+
+<div class="login-page">
+    <form method="post" action="/account/login">
+        <h1>BuildPC</h1>
+        @if (HasError)
+        {
+            <p class="login-error">Senha incorreta.</p>
+        }
+        <label for="password">Senha da equipe</label>
+        <input type="password" id="password" name="password" autofocus required />
+        <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+        <button type="submit">Entrar</button>
+    </form>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? Error { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    private bool HasError => !string.IsNullOrEmpty(Error);
+}

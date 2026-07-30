@@ -36,3 +36,27 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+.login-page {
+    display: flex;
+    justify-content: center;
+    padding-top: 4rem;
+}
+
+.login-page form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 20rem;
+}
+
+.login-page input,
+.login-page button {
+    padding: 0.5rem;
+    font-size: 1rem;
+}
+
+.login-error {
+    color: #e50000;
+    margin: 0;
+}

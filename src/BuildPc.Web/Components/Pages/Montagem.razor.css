@@ -1,0 +1,132 @@
+.build-error,
+.build-confirm {
+    color: #e50000;
+}
+
+.build-status {
+    color: #1f2933;
+    font-weight: 600;
+}
+
+.build-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.build-picker select,
+.build-picker input {
+    padding: 0.5rem;
+}
+
+.build-compatibility {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+
+.build-compatibility li {
+    padding: 0.4rem 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 0.25rem;
+}
+
+.build-compatibility li.severity-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.build-compatibility li.severity-error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.build-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+}
+
+.build-table th,
+.build-table td {
+    text-align: left;
+    padding: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.build-table input[type="number"] {
+    width: 5rem;
+}
+
+.build-item-category {
+    display: block;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.build-item-actions button {
+    cursor: pointer;
+}
+
+.build-summary,
+.build-terms,
+.build-client {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.build-terms label,
+.build-client label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+}
+
+.build-notes {
+    flex: 1 1 100%;
+}
+
+.build-client label.invalid input {
+    border-color: #e50000;
+}
+
+.build-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.build-export-hint {
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.build-templates {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.build-templates ul {
+    list-style: none;
+    padding: 0;
+}
+
+.build-templates li {
+    padding: 0.4rem 0;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.build-save-template {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}

@@ -1,0 +1,729 @@
+@page "/montagem"
+@rendermode InteractiveServer
+@using BuildPc.Core.Models
+@inject IComponentCatalogRepository CatalogRepository
+@inject IQuoteRepository QuoteRepository
+@inject IAssemblyTemplateRepository TemplateRepository
+
+<PageTitle>Montagem - BuildPC</PageTitle>
+
+<h1>Montagem</h1>
+
+@if (_loadError is not null)
+{
+    <p class="build-error">Falha ao carregar: @_loadError</p>
+}
+else if (_isLoading)
+{
+    <p>Carregando catálogo...</p>
+}
+else
+{
+    @if (_statusMessage is not null)
+    {
+        <p class="build-status">@_statusMessage</p>
+    }
+
+    <section class="build-picker">
+        <select value="@((int)_pickerCategory)" @onchange="OnPickerCategoryChanged">
+            @foreach (var category in _categories)
+            {
+                <option value="@((int)category.Value)">@category.Name</option>
+            }
+        </select>
+
+        <input
+            type="search"
+            placeholder="Buscar produto..."
+            value="@_pickerSearch"
+            @oninput="e => { _pickerSearch = e.Value?.ToString() ?? string.Empty; }" />
+
+        <select value="@_pickerComponentId" @onchange="e => _pickerComponentId = e.Value?.ToString()">
+            <option value="">Selecione um produto</option>
+            @foreach (var product in PickerOptions)
+            {
+                <option value="@product.Id">
+                    @(product.IsFavorite ? "★ " : "")@product.Name — @product.Price.ToString("C", CultureHelpers.BrazilianCulture)
+                </option>
+            }
+        </select>
+
+        <input
+            type="number"
+            min="1"
+            max="9999"
+            value="@_pickerQuantity"
+            @onchange="e => _pickerQuantity = QuantityRange.Clamp(int.TryParse(e.Value?.ToString(), out var q) ? q : 1)" />
+
+        <button type="button" disabled="@string.IsNullOrEmpty(_pickerComponentId)" @onclick="AddItem">
+            Adicionar
+        </button>
+    </section>
+
+    @if (_compatibilityIssues.Count > 0)
+    {
+        <ul class="build-compatibility">
+            @foreach (var issue in _compatibilityIssues)
+            {
+                <li class="@("severity-" + issue.Severity.ToString().ToLowerInvariant())">@issue.Message</li>
+            }
+        </ul>
+    }
+
+    @if (_items.Count == 0)
+    {
+        <p>Nenhum item adicionado ainda.</p>
+    }
+    else
+    {
+        <table class="build-table">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Qtd.</th>
+                    <th>Custo</th>
+                    <th>Preço unit.</th>
+                    <th>Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _items)
+                {
+                    <tr>
+                        <td>
+                            <strong>@item.Name</strong>
+                            <span class="build-item-category">@item.CategoryName</span>
+                        </td>
+                        <td>
+                            <input
+                                type="number"
+                                min="1"
+                                max="9999"
+                                value="@item.Quantity"
+                                @onchange="e => OnQuantityChanged(item, e)" />
+                        </td>
+                        <td><RevealCost Value="item.UnitCost" /></td>
+                        <td>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value="@item.UnitPrice"
+                                @onchange="e => OnUnitPriceChanged(item, e)" />
+                        </td>
+                        <td>@item.TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)</td>
+                        <td class="build-item-actions">
+                            <button type="button" @onclick="() => MoveUp(item)">▲</button>
+                            <button type="button" @onclick="() => MoveDown(item)">▼</button>
+                            <button type="button" @onclick="() => RemoveItem(item)">Remover</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <section class="build-summary">
+            <p>
+                Custo total: <RevealCost Value="TotalCost" />
+            </p>
+            <p>
+                Total de venda:
+                @if (HasDiscount)
+                {
+                    <s>@TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)</s>
+                }
+                <strong>@FinalPrice.ToString("C", CultureHelpers.BrazilianCulture)</strong>
+            </p>
+            <p>
+                Lucro: <RevealCost Value="TotalProfit" />
+            </p>
+        </section>
+
+        <section class="build-terms">
+            <label>
+                Desconto (R$)
+                <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value="@_discountAmount"
+                    @onchange="e => _discountAmount = ParseDecimalOrZero(e.Value?.ToString())" />
+            </label>
+            <label>
+                Validade (dias, 0 = sem prazo)
+                <input
+                    type="number"
+                    min="0"
+                    max="365"
+                    value="@_validityDays"
+                    @onchange="e => _validityDays = Math.Clamp(int.TryParse(e.Value?.ToString(), out var d) ? d : 0, 0, 365)" />
+            </label>
+            <label>
+                Condições de pagamento
+                <input value="@_paymentTerms" @onchange="e => _paymentTerms = e.Value?.ToString() ?? string.Empty" />
+            </label>
+            <label>
+                Condições de entrega
+                <input value="@_deliveryTerms" @onchange="e => _deliveryTerms = e.Value?.ToString() ?? string.Empty" />
+            </label>
+            <label class="build-notes">
+                Observações
+                <textarea @onchange="e => _notes = e.Value?.ToString() ?? string.Empty">@_notes</textarea>
+            </label>
+        </section>
+
+        <section class="build-client">
+            <label class="@(_isClientNameInvalid ? "invalid" : null)">
+                Cliente
+                <input
+                    value="@_clientName"
+                    @onchange="e => { _clientName = e.Value?.ToString() ?? string.Empty; _isClientNameInvalid = false; }" />
+            </label>
+            <label class="@(_isClientPhoneInvalid ? "invalid" : null)">
+                Telefone
+                <input
+                    maxlength="15"
+                    value="@_clientPhone"
+                    @onchange="e => { _clientPhone = PhoneNumberFormatter.FormatBrazilian(e.Value?.ToString()); _isClientPhoneInvalid = false; }" />
+            </label>
+        </section>
+
+        <section class="build-actions">
+            <button type="button" @onclick="SaveAsync">Gravar orçamento</button>
+            <button type="button" @onclick="RequestClear">Limpar</button>
+            @if (_savedQuote is not null && !_isDirty)
+            {
+                <a href="@($"/pdf/orcamento/{_savedQuote.Id}")" target="_blank">Exportar PDF</a>
+            }
+            else
+            {
+                <span class="build-export-hint">Grave o orçamento para exportar o PDF.</span>
+            }
+        </section>
+
+        @if (_isClearConfirmationVisible)
+        {
+            <p class="build-confirm">
+                Descartar a montagem atual?
+                @if (_savedQuote is not null)
+                {
+                    <span>O orçamento #@_savedQuote.Number.ToString("000000") gravado continua em Orçamentos.</span>
+                }
+                <button type="button" @onclick="Clear">Confirmar</button>
+                <button type="button" @onclick="() => _isClearConfirmationVisible = false">Cancelar</button>
+            </p>
+        }
+    }
+
+    <section class="build-templates">
+        <h2>Modelos de montagem</h2>
+        @if (_templates.Count == 0)
+        {
+            <p>Nenhum modelo salvo.</p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var template in _templates)
+                {
+                    <li>
+                        <strong>@template.Name</strong> (@template.TotalItems itens)
+                        <button type="button" @onclick="() => ApplyTemplateAsync(template)">Aplicar</button>
+                        @if (_templateToDelete?.Id == template.Id)
+                        {
+                            <span>Excluir modelo?</span>
+                            <button type="button" @onclick="ConfirmDeleteTemplateAsync">Confirmar</button>
+                            <button type="button" @onclick="() => _templateToDelete = null">Cancelar</button>
+                        }
+                        else
+                        {
+                            <button type="button" @onclick="() => _templateToDelete = template">Excluir</button>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+
+        @if (_items.Count > 0)
+        {
+            <div class="build-save-template">
+                <input placeholder="Nome do modelo" value="@_templateName" @onchange="e => _templateName = e.Value?.ToString() ?? string.Empty" />
+                <button type="button" disabled="@string.IsNullOrWhiteSpace(_templateName)" @onclick="SaveTemplateAsync">
+                    Salvar montagem atual como modelo
+                </button>
+            </div>
+        }
+    </section>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "editar")]
+    public Guid? EditarId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "duplicar")]
+    public Guid? DuplicarId { get; set; }
+
+    private static readonly CompatibilityService Compatibility = new();
+
+    private IReadOnlyList<PcComponent> _catalog = [];
+    private BusinessSettings _settings = new();
+    private IReadOnlyList<ProductCategoryDefinition> _categories = [];
+    private IReadOnlyList<AssemblyTemplate> _templates = [];
+    private readonly List<BuildLineItem> _items = [];
+    private IReadOnlyList<CompatibilityIssue> _compatibilityIssues = [];
+
+    private ComponentCategory _pickerCategory;
+    private string _pickerSearch = string.Empty;
+    private string? _pickerComponentId;
+    private int _pickerQuantity = 1;
+
+    private string _clientName = string.Empty;
+    private string _clientPhone = string.Empty;
+    private bool _isClientNameInvalid;
+    private bool _isClientPhoneInvalid;
+
+    private decimal _discountAmount;
+    private int _validityDays;
+    private string _paymentTerms = string.Empty;
+    private string _deliveryTerms = string.Empty;
+    private string _notes = string.Empty;
+
+    private SavedQuote? _savedQuote;
+    private bool _isDirty;
+    private bool _isClearConfirmationVisible;
+    private bool _isLoading = true;
+    private string? _loadError;
+    private string? _statusMessage;
+
+    private string _templateName = string.Empty;
+    private AssemblyTemplate? _templateToDelete;
+
+    private IEnumerable<PcComponent> PickerOptions => _catalog
+        .Where(component =>
+            component.Category == _pickerCategory &&
+            ProductFilter.Matches(component, _pickerSearch))
+        .OrderByDescending(component => component.IsFavorite)
+        .ThenBy(component => component.Name, StringComparer.CurrentCultureIgnoreCase);
+
+    private bool HasItems => _items.Count > 0;
+    private decimal TotalCost => _items.Sum(item => item.TotalCost);
+    private decimal TotalPrice => _items.Sum(item => item.TotalPrice);
+    private decimal TotalProfit => TotalPrice - TotalCost;
+    private bool HasDiscount => _discountAmount > 0m;
+    private decimal FinalPrice => Math.Max(0m, TotalPrice - _discountAmount);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _catalog = await CatalogRepository.GetAllAsync();
+            _settings = await QuoteRepository.GetSettingsAsync();
+            _categories = _settings.EffectiveProductCategories();
+            _pickerCategory = _categories.Count > 0 ? _categories[0].Value : ComponentCategory.Processor;
+            _templates = await TemplateRepository.GetTemplatesAsync();
+
+            if (EditarId is { } editId)
+            {
+                var quotes = await QuoteRepository.GetQuotesAsync();
+                var quote = quotes.FirstOrDefault(q => q.Id == editId);
+                if (quote is not null)
+                {
+                    LoadQuote(quote);
+                }
+                else
+                {
+                    _statusMessage = "O orçamento indicado não foi encontrado.";
+                }
+            }
+            else if (DuplicarId is { } duplicateId)
+            {
+                var quotes = await QuoteRepository.GetQuotesAsync();
+                var quote = quotes.FirstOrDefault(q => q.Id == duplicateId);
+                if (quote is not null)
+                {
+                    LoadQuote(quote);
+                    _savedQuote = null;
+                    _clientName = string.Empty;
+                    _clientPhone = string.Empty;
+                    _isDirty = true;
+                }
+                else
+                {
+                    _statusMessage = "O orçamento indicado não foi encontrado.";
+                }
+            }
+        }
+        catch (InvalidOperationException exception)
+        {
+            _loadError = exception.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OnPickerCategoryChanged(ChangeEventArgs e)
+    {
+        _pickerCategory = (ComponentCategory)int.Parse(e.Value?.ToString() ?? "0");
+        _pickerComponentId = null;
+        _pickerSearch = string.Empty;
+    }
+
+    private void AddItem()
+    {
+        if (string.IsNullOrEmpty(_pickerComponentId))
+        {
+            return;
+        }
+
+        var component = _catalog.FirstOrDefault(c =>
+            string.Equals(c.Id, _pickerComponentId, StringComparison.OrdinalIgnoreCase));
+        if (component is null)
+        {
+            return;
+        }
+
+        var categoryName = _categories
+            .FirstOrDefault(category => category.Value == component.Category)?.Name ??
+            component.Category.ToString();
+        var margin = _settings.MarginFor(component.Category);
+        var unitPrice = PricingCalculator.CalculateSalePrice(component.Price, margin);
+
+        _items.Add(new BuildLineItem
+        {
+            ComponentId = component.Id,
+            Category = component.Category,
+            CategoryName = categoryName,
+            Name = component.Name,
+            Description = component.Description,
+            ImageUrl = component.ImageUrl,
+            Quantity = _pickerQuantity,
+            UnitCost = component.Price,
+            MarginPercent = margin,
+            UnitPrice = unitPrice
+        });
+
+        _pickerComponentId = null;
+        _pickerQuantity = 1;
+        MarkDirty();
+    }
+
+    private void RemoveItem(BuildLineItem item)
+    {
+        _items.Remove(item);
+        MarkDirty();
+    }
+
+    private void MoveUp(BuildLineItem item)
+    {
+        var index = _items.IndexOf(item);
+        if (index > 0)
+        {
+            (_items[index - 1], _items[index]) = (_items[index], _items[index - 1]);
+            MarkDirty();
+        }
+    }
+
+    private void MoveDown(BuildLineItem item)
+    {
+        var index = _items.IndexOf(item);
+        if (index >= 0 && index < _items.Count - 1)
+        {
+            (_items[index + 1], _items[index]) = (_items[index], _items[index + 1]);
+            MarkDirty();
+        }
+    }
+
+    private void OnQuantityChanged(BuildLineItem item, ChangeEventArgs e)
+    {
+        item.Quantity = QuantityRange.Clamp(
+            int.TryParse(e.Value?.ToString(), out var quantity) ? quantity : item.Quantity);
+        MarkDirty();
+    }
+
+    private void OnUnitPriceChanged(BuildLineItem item, ChangeEventArgs e)
+    {
+        var parsed = decimal.TryParse(
+            e.Value?.ToString(),
+            System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out var value)
+            ? value
+            : item.UnitPrice;
+        var rounded = PricingCalculator.RoundUpToNinetyCents(parsed);
+        var minimum = PricingCalculator.CalculateSalePrice(
+            item.UnitCost,
+            BusinessSettings.MinimumMarginPercent);
+        item.UnitPrice = Math.Max(rounded, minimum);
+        item.MarginPercent = item.UnitCost > 0
+            ? Math.Round((item.UnitPrice / item.UnitCost - 1) * 100, 4)
+            : 0;
+        MarkDirty();
+    }
+
+    private static decimal ParseDecimalOrZero(string? text) =>
+        decimal.TryParse(
+            text,
+            System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out var value) && value > 0
+            ? value
+            : 0m;
+
+    private void MarkDirty()
+    {
+        _isDirty = true;
+        RefreshCompatibility();
+    }
+
+    private void RefreshCompatibility()
+    {
+        var build = new PcBuild();
+        var slot = 0;
+        foreach (var item in _items)
+        {
+            var component = _catalog.FirstOrDefault(c =>
+                string.Equals(c.Id, item.ComponentId, StringComparison.OrdinalIgnoreCase)) ??
+                new PcComponent
+                {
+                    Id = item.ComponentId,
+                    Category = item.Category,
+                    Name = item.Name,
+                    Brand = string.Empty,
+                    Description = item.Description,
+                    Price = item.UnitCost
+                };
+            build.Select(component, item.Category, $"{item.ComponentId}#{slot++}", item.Quantity);
+        }
+
+        _compatibilityIssues = Compatibility.Evaluate(build)
+            .Where(issue => issue.Severity != IssueSeverity.Information)
+            .ToList();
+    }
+
+    private void LoadQuote(SavedQuote quote)
+    {
+        _items.Clear();
+        foreach (var savedItem in quote.Items)
+        {
+            _items.Add(new BuildLineItem
+            {
+                ComponentId = savedItem.ComponentId,
+                Category = savedItem.Category,
+                CategoryName = savedItem.CategoryName,
+                Name = savedItem.Name,
+                Description = savedItem.Description,
+                ImageUrl = savedItem.ImageUrl,
+                Quantity = savedItem.Quantity,
+                UnitCost = savedItem.UnitCost,
+                MarginPercent = savedItem.MarginPercent,
+                UnitPrice = savedItem.UnitPrice
+            });
+        }
+
+        _clientName = quote.ClientName;
+        _clientPhone = quote.ClientPhone;
+        _notes = quote.Notes;
+        _discountAmount = quote.DiscountAmount;
+        _validityDays = quote.ValidityDays;
+        _paymentTerms = quote.PaymentTerms;
+        _deliveryTerms = quote.DeliveryTerms;
+        _savedQuote = quote;
+        _isDirty = false;
+        RefreshCompatibility();
+    }
+
+    private async Task SaveAsync()
+    {
+        _isClientNameInvalid = string.IsNullOrWhiteSpace(_clientName);
+        _isClientPhoneInvalid = string.IsNullOrWhiteSpace(_clientPhone);
+        if (!HasItems)
+        {
+            _statusMessage = "Adicione ao menos um produto antes de gravar.";
+            return;
+        }
+        if (_isClientNameInvalid || _isClientPhoneInvalid)
+        {
+            _statusMessage = "Informe o nome e o telefone do cliente.";
+            return;
+        }
+
+        var draft = new QuoteDraft
+        {
+            ClientName = _clientName,
+            ClientPhone = _clientPhone,
+            Notes = _notes,
+            Items = _items.Select(item => new SavedQuoteItem
+            {
+                ComponentId = item.ComponentId,
+                Category = item.Category,
+                CategoryName = item.CategoryName,
+                Name = item.Name,
+                Description = item.Description,
+                ImageUrl = item.ImageUrl,
+                Quantity = item.Quantity,
+                UnitCost = item.UnitCost,
+                MarginPercent = item.MarginPercent,
+                UnitPrice = item.UnitPrice
+            }).ToList(),
+            CompanySnapshot = CompanySnapshot.From(_settings),
+            DiscountAmount = _discountAmount,
+            ValidityDays = _validityDays,
+            PaymentTerms = _paymentTerms,
+            DeliveryTerms = _deliveryTerms
+        };
+
+        try
+        {
+            _savedQuote = await QuoteRepository.SaveQuoteAsync(_savedQuote, draft);
+            _isDirty = false;
+            _statusMessage = $"Orçamento #{_savedQuote.Number:000000} gravado.";
+        }
+        catch (ArgumentException exception)
+        {
+            _statusMessage = exception.Message;
+        }
+        catch (InvalidOperationException exception)
+        {
+            _statusMessage = $"Não foi possível gravar o orçamento: {exception.Message}";
+        }
+    }
+
+    private void RequestClear()
+    {
+        if (HasItems || !string.IsNullOrWhiteSpace(_clientName))
+        {
+            _isClearConfirmationVisible = true;
+        }
+    }
+
+    private void Clear()
+    {
+        _items.Clear();
+        _clientName = string.Empty;
+        _clientPhone = string.Empty;
+        _notes = string.Empty;
+        _discountAmount = 0m;
+        _validityDays = 0;
+        _paymentTerms = string.Empty;
+        _deliveryTerms = string.Empty;
+        _savedQuote = null;
+        _isDirty = false;
+        _isClearConfirmationVisible = false;
+        _statusMessage = null;
+        _compatibilityIssues = [];
+    }
+
+    private async Task SaveTemplateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_templateName) || !HasItems)
+        {
+            return;
+        }
+
+        var template = new AssemblyTemplate
+        {
+            Id = Guid.NewGuid(),
+            Name = _templateName,
+            Description = string.Empty,
+            CreatedAt = DateTimeOffset.Now,
+            Items = _items.Select(item => new AssemblyTemplateItem
+            {
+                ComponentId = item.ComponentId,
+                Category = item.Category,
+                Quantity = item.Quantity
+            }).ToList()
+        };
+
+        try
+        {
+            await TemplateRepository.SaveTemplateAsync(template);
+            _templates = await TemplateRepository.GetTemplatesAsync();
+            _templateName = string.Empty;
+            _statusMessage = "Modelo salvo.";
+        }
+        catch (InvalidOperationException exception)
+        {
+            _statusMessage = $"Não foi possível salvar o modelo: {exception.Message}";
+        }
+    }
+
+    private async Task ApplyTemplateAsync(AssemblyTemplate template)
+    {
+        // Sempre contra o catálogo atual: preços/margens nunca ficam
+        // congelados do momento em que o modelo foi salvo.
+        _catalog = await CatalogRepository.GetAllAsync();
+        var byId = _catalog.ToDictionary(c => c.Id, StringComparer.OrdinalIgnoreCase);
+
+        _items.Clear();
+        var missing = 0;
+        foreach (var templateItem in template.Items)
+        {
+            if (!byId.TryGetValue(templateItem.ComponentId, out var component))
+            {
+                missing++;
+                continue;
+            }
+
+            var categoryName = _categories
+                .FirstOrDefault(category => category.Value == component.Category)?.Name ??
+                component.Category.ToString();
+            var margin = _settings.MarginFor(component.Category);
+            _items.Add(new BuildLineItem
+            {
+                ComponentId = component.Id,
+                Category = component.Category,
+                CategoryName = categoryName,
+                Name = component.Name,
+                Description = component.Description,
+                ImageUrl = component.ImageUrl,
+                Quantity = templateItem.Quantity,
+                UnitCost = component.Price,
+                MarginPercent = margin,
+                UnitPrice = PricingCalculator.CalculateSalePrice(component.Price, margin)
+            });
+        }
+
+        _savedQuote = null;
+        _isDirty = true;
+        if (template.KitDiscountPercent > 0)
+        {
+            _discountAmount = Math.Round(TotalPrice * template.KitDiscountPercent / 100m, 2);
+        }
+
+        _statusMessage = missing > 0
+            ? $"Modelo aplicado. {missing} item(ns) não existem mais no catálogo e foram ignorados."
+            : "Modelo aplicado.";
+        RefreshCompatibility();
+    }
+
+    private async Task ConfirmDeleteTemplateAsync()
+    {
+        if (_templateToDelete is not { } template)
+        {
+            return;
+        }
+
+        await TemplateRepository.DeleteTemplateAsync(template.Id);
+        _templates = await TemplateRepository.GetTemplatesAsync();
+        _templateToDelete = null;
+    }
+
+    private sealed class BuildLineItem
+    {
+        public required string ComponentId { get; set; }
+        public required ComponentCategory Category { get; set; }
+        public required string CategoryName { get; set; }
+        public required string Name { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
+        public int Quantity { get; set; } = 1;
+        public decimal UnitCost { get; set; }
+        public decimal MarginPercent { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal TotalPrice => UnitPrice * Quantity;
+        public decimal TotalCost => UnitCost * Quantity;
+    }
+}

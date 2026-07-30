@@ -930,6 +930,43 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07), fase 7/9 — tela de Montagem (`Montagem.razor`,
+  `/montagem`), a mais complexa, feita por último de propósito (reusa tudo
+  das fases 4-6). Fluxo: seletor de categoria/produto (`ProductFilter.
+  Matches`, favoritos primeiro), quantidade (`QuantityRange.Clamp`),
+  adicionar/remover/reordenar itens, preço unitário editável (arredonda
+  pra ",90" via `PricingCalculator.RoundUpToNinetyCents` e nunca desce da
+  margem mínima de 15% — mesmo piso que a Fase 1 já tinha, agora aplicado
+  na digitação), desconto/validade (0-365 dias)/condições de pagamento e
+  entrega, avisos de compatibilidade (`CompatibilityService.Evaluate`
+  sobre um `PcBuild` reconstruído a cada mudança, só Warning/Error
+  aparecem — puramente informativo, nunca bloqueia salvar/exportar, igual
+  ao Desktop), nome/telefone do cliente (`PhoneNumberFormatter.
+  FormatBrazilian` a cada edição), gravar orçamento
+  (`IQuoteRepository.SaveQuoteAsync`), exportar PDF (mesmo endpoint
+  `/pdf/orcamento/{id}` da fase 6 — só habilitado depois de gravar sem
+  alterações pendentes, mesmo gate `CanExport` do Desktop), revelar custo
+  por item e nos totais (`RevealCost` da fase 4, um por valor sensível).
+  Modelos de montagem: listar/aplicar (sempre contra o catálogo atual —
+  preço/margem nunca ficam congelados; item cujo id sumiu do catálogo é
+  ignorado silenciosamente com aviso de quantos foram pulados, igual ao
+  Desktop)/salvar/excluir. "Abrir na Montagem" e "Duplicar" (links criados
+  na fase 6) resolvidos via `[SupplyParameterFromQuery]` (`editar`/
+  `duplicar`) — a página busca o orçamento de novo em `GetQuotesAsync()`
+  (não há estado compartilhado entre circuitos Blazor Server distintos) e,
+  no caso de duplicar, zera `Id`/cliente mas mantém itens/desconto/
+  validade/condições (mesmo comportamento do `LoadQuoteAsCopy` do
+  Desktop). Erros de margem mínima do Core (`QuoteValidation.
+  EnsureMinimumMargin`, reforço server-side independente do clamp da
+  interface) capturados como `ArgumentException` e mostrados como
+  mensagem de status. `/` (antes o placeholder de conectividade da fase 2)
+  agora redireciona pra `/montagem` — ponto em aberto do plano, resolvido
+  agora que as três telas existem. 277/277 testes (sem novos — a página
+  só orquestra serviços do Core já cobertos: `ProductFilter`,
+  `PricingCalculator`, `CompatibilityService`, `QuoteValidation`,
+  `PhoneNumberFormatter`). Testado manualmente via `curl` com cookie:
+  `/montagem` carrega com erro tratado quando a API não responde, exige
+  login, `/` redireciona.
 - Cliente web (30/07), fase 6/9 — tela de Orçamentos (`Orcamentos.razor`,
   `/orcamentos`). Lista + detalhe (mesmo padrão mestre-detalhe do
   `QuoteManagerViewModel` do Desktop): filtro por período

@@ -1,39 +1,10 @@
 @page "/"
-@rendermode InteractiveServer
-@using BuildPc.Core.Services
-@inject IComponentCatalogRepository CatalogRepository
-
-<PageTitle>BuildPC</PageTitle>
-
-<h1>BuildPC Web</h1>
-
-@if (_error is not null)
-{
-    <p>Falha ao falar com a API: @_error</p>
-}
-else if (_productCount is null)
-{
-    <p>Consultando o catálogo...</p>
-}
-else
-{
-    <p>Conectado à API. @_productCount produto(s) no catálogo.</p>
-}
+@inject NavigationManager NavigationManager
 
 @code {
-    private int? _productCount;
-    private string? _error;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            var products = await CatalogRepository.GetAllAsync();
-            _productCount = products.Count;
-        }
-        catch (InvalidOperationException exception)
-        {
-            _error = exception.Message;
-        }
-    }
+    // Montagem é a tela mais usada no dia a dia — decisão de rota deixada em
+    // aberto no plano até as três telas existirem, resolvida agora que a
+    // fase 7 fechou o conjunto (Montagem/Consulta de Preços/Orçamentos).
+    protected override void OnInitialized() =>
+        NavigationManager.NavigateTo("/montagem", forceLoad: true);
 }

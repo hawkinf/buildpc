@@ -967,6 +967,21 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — terceira rodada de ajuste na Montagem: bloco fixo
+  do topo compactado (paddings/gaps/fontes reduzidos ~20-30% —
+  `build-fixed-top`, `build-client-box`, `build-summary-header`), corrigida
+  uma sobreposição visual no cabeçalho fixo da lista de produtos do
+  seletor (`.build-picker-table thead th` não tinha `z-index` — sem isso,
+  em alguns navegadores a linha rolando por baixo do cabeçalho `position:
+  sticky` conseguia aparecer por cima dele; `z-index: 5` +
+  `box-shadow: 0 1px 0` pra separação visual clara resolvem os dois
+  problemas), e a ordem da tela invertida: agora a tabela de itens já
+  adicionados vem **antes** do seletor de produto (categoria/busca/
+  quantidade/Adicionar + lista de resultados) — antes era o contrário
+  (seletor primeiro, itens depois). Os avisos de compatibilidade
+  acompanharam a tabela de itens (fazem sentido junto do que já foi
+  montado, não do seletor). 282/282 testes (sem novos — reorganização e
+  estilo).
 - Cliente web (30/07) — segunda rodada de ajuste no topo da Montagem,
   reposicionando o que a rodada anterior tinha feito: agora só
   Cliente/Telefone/Observações (`build-client-box`) + resumo de preço

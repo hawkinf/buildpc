@@ -56,7 +56,9 @@
 .build-picker-table thead th {
     position: sticky;
     top: 0;
+    z-index: 5;
     background: white;
+    box-shadow: 0 1px 0 #cbd5e1;
 }
 
 .build-picker-table tbody tr {
@@ -156,10 +158,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.85rem;
+    gap: 0.5rem;
     background: white;
-    padding: 0.85rem 0 1rem;
-    margin-bottom: 1.25rem;
+    padding: 0.5rem 0 0.6rem;
+    margin-bottom: 0.85rem;
     border-bottom: 1px solid #e2e8f0;
 }
 
@@ -176,11 +178,11 @@
     flex-wrap: wrap;
     justify-content: center;
     align-items: flex-start;
-    gap: 1.5rem;
+    gap: 1rem;
     width: 100%;
     max-width: 56rem;
     box-sizing: border-box;
-    padding: 1rem 1.5rem;
+    padding: 0.5rem 1.25rem;
     margin: 0;
     border: 1px solid #cbd5e1;
     border-radius: 10px;
@@ -194,7 +196,7 @@
 .build-client-box label input {
     width: 100%;
     box-sizing: border-box;
-    padding: 0.45rem 0.5rem;
+    padding: 0.3rem 0.5rem;
     border: 1px solid #cbd5e1;
     border-radius: 4px;
 }
@@ -203,11 +205,11 @@
     display: flex;
     justify-content: center;
     align-items: stretch;
-    gap: 2.5rem;
+    gap: 1.75rem;
     width: 100%;
     max-width: 56rem;
     box-sizing: border-box;
-    padding: 1.1rem 1.5rem;
+    padding: 0.6rem 1.25rem;
     margin: 0;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -219,17 +221,17 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.15rem;
     text-align: center;
 }
 
 .build-summary-stat:not(:last-child) {
-    padding-right: 2.5rem;
+    padding-right: 1.75rem;
     border-right: 1px solid #e2e8f0;
 }
 
 .build-summary-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -237,13 +239,13 @@
 }
 
 .build-summary-value {
-    font-size: 1.6rem;
+    font-size: 1.35rem;
     font-weight: 800;
 }
 
 .build-summary-strike {
     display: block;
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 400;
     color: #94a3b8;
 }
@@ -254,7 +256,7 @@
 
 .build-summary-price .build-summary-value {
     color: #1d4ed8;
-    font-size: 2rem;
+    font-size: 1.7rem;
 }
 
 .build-summary-profit ::deep .reveal-cost {
@@ -264,13 +266,13 @@
 .build-summary-header ::deep .reveal-cost {
     border: none;
     padding: 0;
-    font-size: 1.6rem;
+    font-size: 1.35rem;
     font-weight: 800;
     background: none;
 }
 
 .build-summary-header ::deep .reveal-cost-masked {
-    font-size: 1.6rem;
+    font-size: 1.35rem;
     letter-spacing: 0.2em;
 }
 
@@ -295,10 +297,10 @@
 
 .build-notes textarea {
     width: 100%;
-    height: 2.4rem;
+    height: 1.9rem;
     box-sizing: border-box;
     resize: vertical;
-    padding: 0.45rem 0.5rem;
+    padding: 0.3rem 0.5rem;
     border: 1px solid #cbd5e1;
     border-radius: 4px;
     font: inherit;

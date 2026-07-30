@@ -209,11 +209,11 @@ else
                             Title="@product.Name"
                             Description="@product.Description"
                             ImageUrl="@product.ImageUrl"
-                            Price="@product.Price.ToString("C", CultureHelpers.BrazilianCulture)">
+                            Price="@SalePriceFor(product).ToString("C", CultureHelpers.BrazilianCulture)">
                             @(product.IsFavorite ? "★ " : "")@product.Name
                         </ProductHoverPreview>
                     </td>
-                    <td>@product.Price.ToString("C", CultureHelpers.BrazilianCulture)</td>
+                    <td>@SalePriceFor(product).ToString("C", CultureHelpers.BrazilianCulture)</td>
                 </tr>
             }
         </tbody>
@@ -411,15 +411,18 @@ else
                     .ThenByDescending(component => component.Name, StringComparer.CurrentCultureIgnoreCase),
                 PriceTableSortMode.PriceAscending => matched.OrderByDescending(
                     component => component.IsFavorite)
-                    .ThenBy(component => component.Price),
+                    .ThenBy(SalePriceFor),
                 PriceTableSortMode.PriceDescending => matched.OrderByDescending(
                     component => component.IsFavorite)
-                    .ThenByDescending(component => component.Price),
+                    .ThenByDescending(SalePriceFor),
                 _ => matched.OrderByDescending(component => component.IsFavorite)
                     .ThenBy(component => component.Name, StringComparer.CurrentCultureIgnoreCase)
             });
         }
     }
+
+    private decimal SalePriceFor(PcComponent component) =>
+        PricingCalculator.CalculateSalePrice(component.Price, _settings.MarginFor(component.Category));
 
     private void TogglePickerSort(bool byPrice)
     {

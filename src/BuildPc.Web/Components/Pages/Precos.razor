@@ -61,6 +61,7 @@ else
     <table class="price-table">
         <thead>
             <tr>
+                <th></th>
                 <th>
                     <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: false)">
                         Produto @(SortIcon(byPrice: false))
@@ -78,6 +79,12 @@ else
             @foreach (var row in _rows)
             {
                 <tr>
+                    <td class="price-thumb-cell">
+                        @if (!string.IsNullOrWhiteSpace(row.ImageUrl))
+                        {
+                            <img class="price-thumb" src="@row.ImageUrl" alt="" loading="lazy" />
+                        }
+                    </td>
                     <td>@row.Title</td>
                     <td>@row.CategoryName</td>
                     <td>

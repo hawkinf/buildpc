@@ -61,6 +61,14 @@
     padding-left: 1.25rem;
 }
 
+.quote-item-thumb {
+    width: 1.75rem;
+    height: 1.75rem;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 0.4rem;
+}
+
 .quote-actions {
     display: flex;
     flex-wrap: wrap;

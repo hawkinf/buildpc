@@ -48,6 +48,11 @@ else
             }
         </select>
 
+        @if (SelectedPickerProduct?.ImageUrl is { Length: > 0 } previewUrl)
+        {
+            <img class="build-picker-preview" src="@previewUrl" alt="" loading="lazy" />
+        }
+
         <input
             type="number"
             min="1"
@@ -79,6 +84,7 @@ else
         <table class="build-table">
             <thead>
                 <tr>
+                    <th></th>
                     <th>Produto</th>
                     <th>Qtd.</th>
                     <th>Custo</th>
@@ -91,6 +97,12 @@ else
                 @foreach (var item in _items)
                 {
                     <tr>
+                        <td class="build-thumb-cell">
+                            @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                            {
+                                <img class="build-thumb" src="@item.ImageUrl" alt="" loading="lazy" />
+                            }
+                        </td>
                         <td>
                             <strong>@item.Name</strong>
                             <span class="build-item-category">@item.CategoryName</span>
@@ -305,6 +317,11 @@ else
             ProductFilter.Matches(component, _pickerSearch))
         .OrderByDescending(component => component.IsFavorite)
         .ThenBy(component => component.Name, StringComparer.CurrentCultureIgnoreCase);
+
+    private PcComponent? SelectedPickerProduct => string.IsNullOrEmpty(_pickerComponentId)
+        ? null
+        : _catalog.FirstOrDefault(component =>
+            string.Equals(component.Id, _pickerComponentId, StringComparison.OrdinalIgnoreCase));
 
     private bool HasItems => _items.Count > 0;
     private decimal TotalCost => _items.Sum(item => item.TotalCost);

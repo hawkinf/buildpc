@@ -67,3 +67,14 @@
 .price-error {
     color: #e50000;
 }
+
+.price-thumb-cell {
+    width: 3rem;
+}
+
+.price-thumb {
+    width: 2.5rem;
+    height: 2.5rem;
+    object-fit: contain;
+    display: block;
+}

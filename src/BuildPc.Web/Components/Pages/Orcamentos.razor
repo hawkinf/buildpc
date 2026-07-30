@@ -80,6 +80,10 @@ else
                     @foreach (var item in selected.Items)
                     {
                         <li>
+                            @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                            {
+                                <img class="quote-item-thumb" src="@item.ImageUrl" alt="" loading="lazy" />
+                            }
                             @item.Quantity x @item.Name —
                             @item.TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)
                         </li>

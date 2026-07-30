@@ -967,6 +967,28 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- **Bug corrigido (30/07): lista de produtos da Montagem mostrava preço de
+  custo, não de venda.** O seletor de produtos (`PickerOptions` em
+  `Montagem.razor`) ordenava e exibia `component.Price` — o preço de custo
+  importado do catálogo — direto na tabela e no popup de hover, sem passar
+  por `PricingCalculator.CalculateSalePrice`. O resto da tela (item já
+  adicionado, total do orçamento) sempre usou o preço de venda calculado
+  corretamente; só a lista de seleção antes de adicionar é que vazava
+  custo. Reportado pelo usuário com print mostrando preços terminados em
+  ",99" (padrão de importação, não a regra ",90"/degrau de 5 reais).
+  Corrigido com um `SalePriceFor(component)` que aplica
+  `_settings.MarginFor(component.Category)` — usado tanto na ordenação por
+  preço quanto na célula da tabela e no `ProductHoverPreview`. 294/294
+  testes (mudança é só de exibição/ordenação, sem lógica nova testável).
+- Cliente web (30/07) — reorganização dos campos Validade/Desconto/
+  Pagamento/Prazo de entrega na Montagem: reordenados (Validade, Desconto,
+  Pagamento, Prazo de entrega), rótulos encurtados ("Validade",
+  "Pagamento"), Validade e Prazo de entrega estreitados pra largura de 2
+  dígitos, Pagamento com campo menor, e Desconto passou a ficar mascarado
+  (••••) por padrão — toque revela o campo `R$` editável, perde o foco
+  volta a mascarar. Altura/borda de todos os controles da linha
+  normalizadas pra alinhar (`.build-field-narrow` nova classe); no mobile os
+  campos voltam a 100% da largura (empilhados).
 - **Mudança de regra de negócio (30/07), afeta Desktop e Web igualmente**:
   arredondamento do preço de venda. `PricingCalculator.RoundUpToNinetyCents`
   (Core — único lugar que implementa a regra, compartilhado por Desktop e

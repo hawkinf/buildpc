@@ -34,6 +34,12 @@ set -a
 source "$env_file"
 set +a
 export ASPNETCORE_URLS="http://127.0.0.1:$test_port"
+# Este teste roda como root (não como o usuário de serviço buildpc-web) e é
+# descartável — sem isto, ele escreveria uma chave de Data Protection no
+# mesmo diretório persistente da produção, dona de root, que o serviço real
+# depois não consegue ler (UnauthorizedAccessException no primeiro login
+# após qualquer deploy).
+export BuildPc__DataProtectionKeyPath=""
 "$release_path/BuildPc.Web" &
 test_pid=$!
 trap 'kill "$test_pid" 2>/dev/null || true' EXIT

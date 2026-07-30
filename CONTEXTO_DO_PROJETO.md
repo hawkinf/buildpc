@@ -661,28 +661,42 @@ O serviço roda como usuário `buildpc` em `/opt/buildpc-api/current`, lê
 `/etc/buildpc-api.env` e reinicia em caso de falha. O backup usa `pg_dump`,
 grava em `/var/backups/buildpc` e mantém 14 dias.
 
-### Implantação do BuildPc.Web (cliente web, `precos.hawk.com.br`)
+### Implantação do BuildPc.Web (cliente web, `precos.hawk.com.br`) — EM PRODUÇÃO
 
-Configuração esperada em `/etc/buildpc-web.env`:
+Configuração real em `/etc/buildpc-web.env` (confirmada em produção,
+30/07/2026):
 
-- `BuildPc__BaseUrl` / `BuildPc__ApiKey` — mesma chave usada pela API
-- `BuildPc__WebPassword` — senha única compartilhada da equipe
 - `ASPNETCORE_ENVIRONMENT=Production`
+- `ASPNETCORE_URLS=http://127.0.0.1:8126` — **obrigatório**; sem isso o
+  Kestrel sobe na porta padrão 5000 e o Nginx (que espera 8126) devolve 502
+- `BuildPc__BaseUrl=http://127.0.0.1:8125/` — direto pro Kestrel interno da
+  API (não pelo `https://contaslite.hawk.com.br/buildpc-api/` público),
+  já que os dois serviços vivem na mesma VPS
+- `BuildPc__ApiKey` — mesma chave usada pela API
+- `BuildPc__WebPassword` — senha única compartilhada da equipe
+- `BuildPc__DataProtectionKeyPath=/var/lib/buildpc-web/keys` — sem isso o
+  cookie de login não sobrevive a um restart do serviço (ver histórico da
+  fase 9 abaixo)
+- `DOTNET_EnableDiagnostics=0`
 
 Arquivos de implantação:
 
 - `deploy/buildpc-web.service`
 - `deploy/nginx-precos.conf`
+- `deploy/nginx-websocket-map.conf` (instalar em
+  `/etc/nginx/conf.d/02-websocket-map.conf`, uma vez só no servidor)
 - `deploy/deploy-web.sh`
 - `deploy/rollback-web.sh`
 
 O serviço roda como usuário dedicado `buildpc-web` (não o `buildpc` da API —
-isolamento entre os dois processos) em `/opt/buildpc-web/current`. Site
-Nginx dedicado (domínio próprio, TLS via `certbot --nginx -d
-precos.hawk.com.br`), não um `location` dentro de `contaslite.hawk.com.br`
-como a API. Portas: produção `127.0.0.1:8126`, teste de deploy `8130`
-(distintas das `8125`/`8129` da API — a confirmar contra `ss -tlnp` na VPS
-antes do primeiro deploy real).
+isolamento entre os dois processos) em `/opt/buildpc-web/current`.
+`ReadWritePaths=/var/lib/buildpc-web` no `.service` é necessário porque
+`ProtectSystem=strict` deixa o resto do sistema de arquivos só leitura, e o
+Data Protection precisa gravar lá (usuário sem home). Site Nginx dedicado
+(domínio próprio, TLS via `certbot --nginx -d precos.hawk.com.br`), não um
+`location` dentro de `contaslite.hawk.com.br` como a API. Portas
+confirmadas sem colisão: produção `127.0.0.1:8126`, teste de deploy `8130`
+(a API usa `8125`/`8129`).
 
 O alias SSH usado anteriormente pelo usuário foi `contaslite`; ele depende do
 arquivo SSH local da máquina e deve ser confirmado antes de qualquer operação
@@ -953,6 +967,74 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07), fase 9/9 — **em produção**: `https://precos.hawk.com.br`
+  está no ar, autenticado, servindo as três telas contra o catálogo/
+  orçamentos reais (1420 produtos, 2 orçamentos — confere com a auditoria do
+  lote 4). Usuário de sistema `buildpc-web` criado; `/etc/buildpc-web.env`
+  (`BuildPc__BaseUrl=http://127.0.0.1:8125/` — direto pro Kestrel interno da
+  API, sem passar pelo Nginx/TLS público, já que os dois processos vivem na
+  mesma VPS; `BuildPc__ApiKey` igual ao da API; `BuildPc__WebPassword`
+  definida pelo usuário). Certificado TLS emitido via
+  `certbot --nginx -d precos.hawk.com.br -n --agree-tos --redirect`
+  (reaproveitou a conta ACME já registrada nesta VPS — sem `--email`,
+  mesmo padrão dos outros `*.hawk.com.br`); DNS já estava propagado
+  (proxied pelo Cloudflare, confirmado que o desafio HTTP-01 passa
+  normalmente, igual aos subdomínios irmãos). Site Nginx dedicado inclui
+  `snippets/hawk-security.conf` (cabeçalhos de segurança padrão desta VPS).
+
+  **Dois bugs reais só apareceram no primeiro deploy de verdade** (nenhum
+  dos dois é coberto pelos testes automatizados — são puramente de
+  configuração de produção):
+  1. `/etc/buildpc-web.env` faltava `ASPNETCORE_URLS` — o serviço systemd
+     caía no padrão do Kestrel (`localhost:5000`) em vez da porta 8126 que
+     o Nginx espera. A fase de teste do `deploy-web.sh` não pegou isso
+     porque ela mesma sobrescreve `ASPNETCORE_URLS` explicitamente antes de
+     subir o binário de teste — só o serviço systemd real (via
+     `EnvironmentFile=`) dependia do valor do arquivo.
+  2. O usuário de sistema `buildpc-web` não tem diretório home
+     (endurecimento intencional do systemd), então o Data Protection do
+     ASP.NET Core caía para uma chave **efêmera** — cada reinício do
+     serviço invalidaria o cookie de login de todo mundo. Corrigido de
+     verdade no código: `Program.cs` agora lê
+     `BuildPc:DataProtectionKeyPath` (só quando configurado — em dev local
+     sem essa variável, usa o comportamento padrão) e chama
+     `AddDataProtection().PersistKeysToFileSystem(...)`. Em produção aponta
+     pra `/var/lib/buildpc-web/keys`, que precisou de
+     `ReadWritePaths=/var/lib/buildpc-web` no `buildpc-web.service` (o
+     `ProtectSystem=strict` deixa o resto do sistema de arquivos só
+     leitura). Armadilha adicional descoberta na prática: a fase de teste
+     do `deploy-web.sh` roda como root (não como `buildpc-web`) e, sem
+     tratamento, escreveria uma chave *dona de root* nesse mesmo diretório
+     persistente — o serviço real então não conseguia ler
+     (`UnauthorizedAccessException` no primeiro login após qualquer
+     deploy). `deploy-web.sh` corrigido pra exportar
+     `BuildPc__DataProtectionKeyPath=""` só durante o teste descartável,
+     deixando o processo de teste cair no repositório padrão (que pra
+     root vira `/root/.aspnet/DataProtection-Keys`, sem tocar no
+     diretório de produção). **Confirmado corrigido**: sessão sobrevive a
+     `systemctl restart buildpc-web` (testado ao vivo).
+
+  Verificação em produção (todas ao vivo, via `curl` com cookie real):
+  login rejeita senha errada, aceita a certa, `/` redireciona pra
+  `/montagem`, as três telas respondem 200 com dados reais (sem
+  "Falha ao carregar"), logout revoga o cookie. PDF de orçamento (dado
+  real): 200, ~37 KB, `%PDF` válido, rápido. PDF da tabela de preços
+  **sem filtro de categoria** (1420 produtos, baixa imagem de cada um):
+  200, mas ~1-2 min e 22 MB/110 páginas — lento por natureza (não é bug;
+  filtrar por categoria antes de exportar é o caminho normal). Memória do
+  serviço ficou em ~310-330 MB sob teste de concorrência leve (9
+  requisições simultâneas simulando abas); memória "available" do sistema
+  caiu de ~1,1 GB pra ~870 MB sob essa carga — **VPS com pouca folga**
+  (2,4 GB totais, API+Web+Postgres+Nginx+outro serviço FastAPI na porta
+  8100 já dividindo o que sobra), vale monitorar se o uso real crescer.
+  Ensaio de rollback feito de verdade: `rollback-web.sh` reverteu pro
+  release anterior (que ainda tinha os dois bugs acima, já que foi
+  publicado antes das correções — confirmou que o rollback em si funciona,
+  mecânica idêntica ao `rollback-api.sh`), depois `deploy-web.sh` reaplicou
+  o release corrigido. Portas confirmadas sem colisão via `ss -tlnp` antes
+  de instalar (8125/8129 da API livres, nada em 8126/8130). Serviço
+  habilitado no boot (`systemctl enable`). Plano completo (9/9 fases)
+  fechado.
 - Cliente web (30/07), fase 8/9 — scripts de deploy do `BuildPc.Web`,
   espelhando quase literalmente `deploy-api.sh`/`rollback-api.sh` (lote 4):
   `deploy/deploy-web.sh` só troca o symlink `current` depois do release

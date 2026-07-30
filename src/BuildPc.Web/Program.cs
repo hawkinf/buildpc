@@ -4,6 +4,7 @@ using BuildPc.Core.Services;
 using BuildPc.Web.Components;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +30,18 @@ builder.Services.AddSingleton<IAssemblyTemplateRepository>(
 
 builder.Services.AddSingleton(sp =>
     StaffPasswordValidator.FromConfiguration(sp.GetRequiredService<IConfiguration>()));
+
+// O usuário de sistema que roda o serviço em produção não tem diretório
+// home (endurecimento do systemd) — sem um caminho explícito, o Data
+// Protection cai para uma chave efêmera e todo reinício do serviço
+// invalidaria o cookie de login de todo mundo. Sem BuildPc:DataProtectionKeyPath
+// configurado (dev local), usa o comportamento padrão do ASP.NET Core.
+var dataProtectionKeyPath = builder.Configuration["BuildPc:DataProtectionKeyPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeyPath))
+{
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeyPath));
+}
 
 // O Nginx (mesma VPS, 127.0.0.1) faz o TLS e repassa por HTTP simples; sem
 // isto, o Kestrel enxergaria toda requisição como HTTP e o cookie de sessão

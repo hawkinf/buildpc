@@ -967,6 +967,14 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (31/07) — em Consulta de Preços (só nesse módulo, tela já
+  protegida por senha), clicar no toggle "Custo" mostra o valor direto em
+  vez de mascarar cada linha de novo com `RevealCost`. Pedido do usuário:
+  o toggle em si já é o gesto deliberado de "quero ver custo" — exigir um
+  toque extra por linha era fricção redundante. Não mexe no mascaramento
+  de custo/lucro/desconto da Montagem, que continua igual (lógica
+  diferente: a tela pode estar aberta perto do cliente durante o
+  atendimento).
 - **Bug corrigido (31/07): banner "Ocorreu um erro inesperado" aparecia
   sempre visível no rodapé das páginas públicas, sem nenhum erro real
   acontecer.** Reportado pelo usuário como "erro de carregamento lá no

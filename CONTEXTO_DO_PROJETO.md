@@ -967,6 +967,16 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (31/07) — dois ajustes na página inicial/login, reportados
+  pelo usuário depois de testar a versão anterior. (1) Os botões "Ver
+  preços" (barra superior e hero) iam pra `/login` antes de chegar na
+  tabela pública — pedido explícito: a senha só deve aparecer pra quem
+  busca a área da equipe, então os dois botões agora vão direto pra
+  `/consulta`; o único caminho até a senha continua sendo o link discreto
+  "Já é da equipe? Entrar" no rodapé. (2) A tela de login era um cartão
+  simples sem graça, destoando da página inicial recém-redesenhada — ganhou
+  o mesmo tratamento visual (manchas de gradiente desfocadas no fundo,
+  ícone de cadeado em badge, link com seta de volta pra home).
 - Cliente web (31/07) — página inicial ganhou visual de verdade a pedido
   do usuário ("quero uma pagina bonita, atrativa, com elementos
   graficos"). A versão anterior (30/07) era só um cartão centralizado com

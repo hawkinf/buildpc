@@ -153,6 +153,7 @@ app.MapPost("/account/logout", async (HttpContext context) =>
 app.MapGet(
     "/pdf/tabela-precos",
     async (
+        HttpContext context,
         IComponentCatalogRepository catalogRepository,
         IQuoteRepository quoteRepository,
         string? category,
@@ -168,7 +169,12 @@ app.MapGet(
         var sortMode = Enum.TryParse<PriceTableSortMode>(sort, out var parsedSort)
             ? parsedSort
             : PriceTableSortMode.NameAscending;
-        var showSalePrice = !string.Equals(priceMode, "custo", StringComparison.OrdinalIgnoreCase);
+        // Sem login, o PDF nunca pode sair em modo custo, não importa o que
+        // a URL peça -- a tela pública nem oferece a opção, mas a checagem
+        // tem que estar aqui também, porque a URL pode ser montada à mão.
+        var isStaff = context.User.Identity?.IsAuthenticated == true;
+        var showSalePrice = !isStaff ||
+            !string.Equals(priceMode, "custo", StringComparison.OrdinalIgnoreCase);
 
         var rows = PriceTableRowBuilder.Build(
             catalog,
@@ -209,7 +215,10 @@ app.MapGet(
             }
         }
     })
-    .RequireAuthorization();
+    // Público de propósito: a tela de consulta sem senha também exporta
+    // PDF -- a checagem de custo/venda acima é que garante que só quem
+    // está logado consegue o modo custo.
+    .AllowAnonymous();
 
 // Mesmo raciocínio do endpoint acima: GetQuotesAsync não tem uma versão
 // "por id" na API, então filtra a lista completa em memória — a lista de

@@ -20,17 +20,31 @@ else if (_isLoading)
 }
 else
 {
-    <div class="price-toolbar">
-        <select value="@SelectedCategoryValue" @onchange="OnCategoryChanged">
-            <option value="">Todas as categorias (@TotalFilteredCount())</option>
+    <div class="price-categories">
+        <span class="price-categories-label">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13" /><path d="M3 6h.01M3 12h.01M3 18h.01" /></svg>
+            Categorias
+        </span>
+        <div class="price-categories-row">
+            <button
+                type="button"
+                class="@(_selectedCategory is null ? "active" : null)"
+                @onclick="() => SelectCategory(null)">
+                Todos (@TotalFilteredCount())
+            </button>
             @foreach (var category in _categories)
             {
-                <option value="@category.Value">
+                <button
+                    type="button"
+                    class="@(_selectedCategory == category.Value ? "active" : null)"
+                    @onclick="() => SelectCategory(category.Value)">
                     @category.Name (@CountFor(category.Value))
-                </option>
+                </button>
             }
-        </select>
+        </div>
+    </div>
 
+    <div class="price-toolbar">
         <input
             type="search"
             placeholder="Buscar por nome, marca, descrição..."
@@ -165,8 +179,6 @@ else
     private string? _loadError;
     private CancellationTokenSource? _searchDebounce;
 
-    private string SelectedCategoryValue => _selectedCategory?.ToString() ?? string.Empty;
-
     private string CountText => _rows.Count switch
     {
         0 => "Nenhum produto encontrado.",
@@ -225,12 +237,9 @@ else
     private int TotalFilteredCount() =>
         _catalog.Count(component => ProductFilter.Matches(component, _searchText));
 
-    private void OnCategoryChanged(ChangeEventArgs e)
+    private void SelectCategory(ComponentCategory? category)
     {
-        var value = e.Value?.ToString();
-        _selectedCategory = string.IsNullOrEmpty(value)
-            ? null
-            : Enum.Parse<ComponentCategory>(value);
+        _selectedCategory = category;
         RefreshRows();
     }
 

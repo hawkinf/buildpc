@@ -1,3 +1,46 @@
+.price-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.price-categories-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+}
+
+.price-categories-row {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+}
+
+.price-categories-row button {
+    flex: 0 0 auto;
+    padding: 0.45rem 0.9rem;
+    border: 1.5px solid #1d4ed8;
+    border-radius: 999px;
+    background: white;
+    color: #1d4ed8;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.price-categories-row button.active {
+    background: #1d4ed8;
+    color: white;
+}
+
 .price-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -6,7 +49,6 @@
     margin-bottom: 1rem;
 }
 
-.price-toolbar select,
 .price-toolbar input[type="search"] {
     padding: 0.5rem;
     font-size: 1rem;
@@ -118,7 +160,9 @@
 }
 
 .price-card-prices {
-    font-size: 0.9rem;
+    font-size: 1.1rem;
+    margin-top: auto;
+    padding-top: 0.25rem;
 }
 
 .price-sort-button {
@@ -171,7 +215,6 @@
         align-items: stretch;
     }
 
-    .price-toolbar select,
     .price-toolbar input[type="search"],
     .price-pdf-link {
         width: 100%;

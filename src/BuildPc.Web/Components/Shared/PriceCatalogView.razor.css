@@ -224,6 +224,7 @@
 .price-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .price-table th,
@@ -243,6 +244,20 @@
 
 .price-thumb-cell {
     width: 3rem;
+}
+
+/* table-layout: fixed exige largura explícita nas colunas que não devem
+   crescer -- sem isso, a descrição do produto (às vezes bem longa) empurra
+   o preço pra fora da tela, e a rolagem horizontal (.price-table-wrap) fica
+   escondida sem indicação nenhuma pro usuário. */
+.price-name-cell {
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.price-price-cell {
+    width: 13rem;
+    white-space: nowrap;
 }
 
 .price-thumb {

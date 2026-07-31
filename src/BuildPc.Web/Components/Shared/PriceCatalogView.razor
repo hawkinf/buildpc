@@ -155,13 +155,13 @@ else
         <table class="price-table">
             <thead>
                 <tr>
-                    <th></th>
-                    <th>
+                    <th class="price-thumb-cell"></th>
+                    <th class="price-name-cell">
                         <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: false)">
                             Produto @(SortIcon(byPrice: false))
                         </button>
                     </th>
-                    <th>
+                    <th class="price-price-cell">
                         <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: true)">
                             Preço de venda @(SortIcon(byPrice: true))
                         </button>
@@ -178,7 +178,7 @@ else
                                 <img class="price-thumb" src="@row.ImageUrl" alt="" loading="lazy" />
                             }
                         </td>
-                        <td>
+                        <td class="price-name-cell">
                             <ProductHoverPreview
                                 Title="@row.Title"
                                 Description="@row.Description"
@@ -187,7 +187,7 @@ else
                                 @row.Title
                             </ProductHoverPreview>
                         </td>
-                        <td>
+                        <td class="price-price-cell">
                             <span class="price-pair">
                                 @if (ShowCost)
                                 {

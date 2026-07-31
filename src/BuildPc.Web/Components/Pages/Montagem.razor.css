@@ -10,15 +10,160 @@
 
 .build-picker {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.6rem;
     margin-bottom: 1rem;
 }
 
-.build-picker select,
-.build-picker input {
+.build-picker-categories {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+}
+
+.build-picker-categories button {
+    flex: 0 0 auto;
+    padding: 0.4rem 0.8rem;
+    border: 1.5px solid #1d4ed8;
+    border-radius: 999px;
+    background: white;
+    color: #1d4ed8;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.build-picker-categories button.active {
+    background: #1d4ed8;
+    color: white;
+}
+
+.build-picker-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.build-picker-controls input {
     padding: 0.5rem;
+}
+
+.build-picker-view-toggle {
+    display: flex;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.build-picker-view-toggle button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0.55rem;
+    border: none;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.build-picker-view-toggle button:first-child {
+    border-right: 1px solid #cbd5e1;
+}
+
+.build-picker-view-toggle button.active {
+    background: #1d4ed8;
+    color: white;
+}
+
+.build-picker-grid-sort {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.build-picker-grid-wrap {
+    max-height: 20rem;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    margin-bottom: 1.25rem;
+    padding: 0.75rem;
+    transition: max-height 0.2s ease;
+}
+
+.build-picker-grid-wrap.top-collapsed {
+    max-height: 32rem;
+}
+
+.build-picker-grid-wrap.items-collapsed {
+    max-height: 34rem;
+}
+
+.build-picker-grid-wrap.top-collapsed.items-collapsed {
+    max-height: 46rem;
+}
+
+.build-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: 0.75rem;
+}
+
+.build-picker-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.4rem;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.build-picker-card:hover {
+    background: #eef2f7;
+}
+
+.build-picker-card.selected {
+    background: #dbeafe;
+    border-color: #1d4ed8;
+}
+
+.build-picker-card-thumb {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.build-picker-card-thumb img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.build-picker-card-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #1f2933;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.build-picker-card-price {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1d4ed8;
 }
 
 .build-thumb-cell {
@@ -530,16 +675,24 @@
 }
 
 @media (max-width: 640px) {
-    .build-picker {
+    .build-picker-controls {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .build-picker select,
-    .build-picker input,
-    .build-picker button {
+    .build-picker-controls input,
+    .build-picker-controls button {
         width: 100%;
         box-sizing: border-box;
+    }
+
+    .build-picker-view-toggle {
+        align-self: center;
+    }
+
+    .build-picker-grid {
+        grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+        gap: 0.5rem;
     }
 
     .build-picker-table th,

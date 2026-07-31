@@ -265,76 +265,141 @@ else
     }
 
     <section class="build-picker">
-        <select value="@((int)_pickerCategory)" @onchange="OnPickerCategoryChanged">
+        <div class="build-picker-categories">
             @foreach (var category in _categories)
             {
-                <option value="@((int)category.Value)">@category.Name (@PickerCountFor(category.Value))</option>
+                <button
+                    type="button"
+                    class="@(_pickerCategory == category.Value ? "active" : null)"
+                    @onclick="() => SelectPickerCategory(category.Value)">
+                    @category.Name (@PickerCountFor(category.Value))
+                </button>
             }
-        </select>
+        </div>
 
-        <input
-            type="search"
-            placeholder="Buscar produto..."
-            value="@_pickerSearch"
-            @oninput="e => { _pickerSearch = e.Value?.ToString() ?? string.Empty; }" />
+        <div class="build-picker-controls">
+            <input
+                type="search"
+                placeholder="Buscar produto..."
+                value="@_pickerSearch"
+                @oninput="e => { _pickerSearch = e.Value?.ToString() ?? string.Empty; }" />
 
-        <input
-            type="number"
-            min="1"
-            max="9999"
-            value="@_pickerQuantity"
-            @onchange="e => _pickerQuantity = QuantityRange.Clamp(int.TryParse(e.Value?.ToString(), out var q) ? q : 1)" />
+            <input
+                type="number"
+                min="1"
+                max="9999"
+                value="@_pickerQuantity"
+                @onchange="e => _pickerQuantity = QuantityRange.Clamp(int.TryParse(e.Value?.ToString(), out var q) ? q : 1)" />
 
-        <button type="button" disabled="@string.IsNullOrEmpty(_pickerComponentId)" @onclick="AddItem">
-            Adicionar
-        </button>
+            <button type="button" disabled="@string.IsNullOrEmpty(_pickerComponentId)" @onclick="AddItem">
+                Adicionar
+            </button>
+
+            <div class="build-picker-view-toggle">
+                <button
+                    type="button"
+                    class="@(!_pickerGridView ? "active" : null)"
+                    title="Ver em lista"
+                    @onclick="() => _pickerGridView = false">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13" /><path d="M3 6h.01M3 12h.01M3 18h.01" /></svg>
+                </button>
+                <button
+                    type="button"
+                    class="@(_pickerGridView ? "active" : null)"
+                    title="Ver em quadros"
+                    @onclick="() => _pickerGridView = true">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="8" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /><rect x="13" y="13" width="8" height="8" rx="1.5" /></svg>
+                </button>
+            </div>
+        </div>
     </section>
 
-    <div class="build-picker-table-wrap @(_topCollapsed ? "top-collapsed" : null) @(_itemsCollapsed || _items.Count == 0 ? "items-collapsed" : null)">
-    <table class="build-picker-table">
-        <thead>
-            <tr>
-                <th></th>
-                <th>
-                    <button type="button" class="build-picker-sort" @onclick="() => TogglePickerSort(byPrice: false)">
-                        Produto @(PickerSortIcon(byPrice: false))
-                    </button>
-                </th>
-                <th>
-                    <button type="button" class="build-picker-sort" @onclick="() => TogglePickerSort(byPrice: true)">
-                        Preço @(PickerSortIcon(byPrice: true))
-                    </button>
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var product in PickerOptions)
-            {
-                <tr
-                    class="@(product.Id == _pickerComponentId ? "selected" : null)"
-                    @onclick="() => _pickerComponentId = product.Id"
-                    @ondblclick="() => SelectAndAdd(product)">
-                    <td class="build-thumb-cell">
-                        @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
-                        {
-                            <img class="build-thumb" src="@product.ImageUrl" alt="" loading="lazy" />
-                        }
-                    </td>
-                    <td>
+    @if (_pickerGridView)
+    {
+        <div class="build-picker-grid-sort">
+            <button type="button" class="build-picker-sort" @onclick="() => TogglePickerSort(byPrice: false)">
+                Nome @(PickerSortIcon(byPrice: false))
+            </button>
+            <button type="button" class="build-picker-sort" @onclick="() => TogglePickerSort(byPrice: true)">
+                Preço @(PickerSortIcon(byPrice: true))
+            </button>
+        </div>
+
+        <div class="build-picker-grid-wrap @(_topCollapsed ? "top-collapsed" : null) @(_itemsCollapsed || _items.Count == 0 ? "items-collapsed" : null)">
+            <div class="build-picker-grid">
+                @foreach (var product in PickerOptions)
+                {
+                    <div
+                        class="build-picker-card @(product.Id == _pickerComponentId ? "selected" : null)"
+                        @onclick="() => _pickerComponentId = product.Id"
+                        @ondblclick="() => SelectAndAdd(product)">
+                        <div class="build-picker-card-thumb">
+                            @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
+                            {
+                                <img src="@product.ImageUrl" alt="" loading="lazy" />
+                            }
+                        </div>
                         <ProductHoverPreview
                             Title="@product.Name"
                             Description="@product.Description"
                             ImageUrl="@product.ImageUrl"
                             Price="@SalePriceFor(product).ToString("C", CultureHelpers.BrazilianCulture)">
-                            @(product.IsFavorite ? "★ " : "")@product.Name
+                            <span class="build-picker-card-name">@(product.IsFavorite ? "★ " : "")@product.Name</span>
                         </ProductHoverPreview>
-                    </td>
-                    <td>@SalePriceFor(product).ToString("C", CultureHelpers.BrazilianCulture)</td>
+                        <span class="build-picker-card-price">@SalePriceFor(product).ToString("C", CultureHelpers.BrazilianCulture)</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="build-picker-table-wrap @(_topCollapsed ? "top-collapsed" : null) @(_itemsCollapsed || _items.Count == 0 ? "items-collapsed" : null)">
+        <table class="build-picker-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>
+                        <button type="button" class="build-picker-sort" @onclick="() => TogglePickerSort(byPrice: false)">
+                            Produto @(PickerSortIcon(byPrice: false))
+                        </button>
+                    </th>
+                    <th>
+                        <button type="button" class="build-picker-sort" @onclick="() => TogglePickerSort(byPrice: true)">
+                            Preço @(PickerSortIcon(byPrice: true))
+                        </button>
+                    </th>
                 </tr>
-            }
-        </tbody>
-    </table>
-    </div>
+            </thead>
+            <tbody>
+                @foreach (var product in PickerOptions)
+                {
+                    <tr
+                        class="@(product.Id == _pickerComponentId ? "selected" : null)"
+                        @onclick="() => _pickerComponentId = product.Id"
+                        @ondblclick="() => SelectAndAdd(product)">
+                        <td class="build-thumb-cell">
+                            @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
+                            {
+                                <img class="build-thumb" src="@product.ImageUrl" alt="" loading="lazy" />
+                            }
+                        </td>
+                        <td>
+                            <ProductHoverPreview
+                                Title="@product.Name"
+                                Description="@product.Description"
+                                ImageUrl="@product.ImageUrl"
+                                Price="@SalePriceFor(product).ToString("C", CultureHelpers.BrazilianCulture)">
+                                @(product.IsFavorite ? "★ " : "")@product.Name
+                            </ProductHoverPreview>
+                        </td>
+                        <td>@SalePriceFor(product).ToString("C", CultureHelpers.BrazilianCulture)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        </div>
+    }
 
     <section class="build-templates">
         <h2>Modelos de montagem</h2>
@@ -398,6 +463,7 @@ else
     private string? _pickerComponentId;
     private int _pickerQuantity = 1;
     private PriceTableSortMode _pickerSortMode = PriceTableSortMode.NameAscending;
+    private bool _pickerGridView;
 
     private string _clientName = string.Empty;
     private string _clientPhone = string.Empty;
@@ -548,9 +614,9 @@ else
         }
     }
 
-    private void OnPickerCategoryChanged(ChangeEventArgs e)
+    private void SelectPickerCategory(ComponentCategory category)
     {
-        _pickerCategory = (ComponentCategory)int.Parse(e.Value?.ToString() ?? "0");
+        _pickerCategory = category;
         _pickerComponentId = null;
         _pickerSearch = string.Empty;
     }

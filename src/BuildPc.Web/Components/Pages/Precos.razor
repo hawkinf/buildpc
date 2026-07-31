@@ -21,27 +21,61 @@ else if (_isLoading)
 else
 {
     <div class="price-categories">
-        <span class="price-categories-label">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13" /><path d="M3 6h.01M3 12h.01M3 18h.01" /></svg>
-            Categorias
-        </span>
-        <div class="price-categories-row">
-            <button
-                type="button"
-                class="@(_selectedCategory is null ? "active" : null)"
-                @onclick="() => SelectCategory(null)">
-                Todos (@TotalFilteredCount())
-            </button>
-            @foreach (var category in _categories)
-            {
+        <div class="price-categories-header">
+            <span class="price-categories-label">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13" /><path d="M3 6h.01M3 12h.01M3 18h.01" /></svg>
+                Categorias
+            </span>
+            <div class="price-view-toggle">
                 <button
                     type="button"
-                    class="@(_selectedCategory == category.Value ? "active" : null)"
-                    @onclick="() => SelectCategory(category.Value)">
-                    @category.Name (@CountFor(category.Value))
+                    class="@(!_useCategoryDropdown ? "active" : null)"
+                    title="Ver como botões"
+                    @onclick="() => SetCategoryDropdown(false)">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="8" height="6" rx="3" /><rect x="12" y="9" width="10" height="6" rx="3" /></svg>
                 </button>
-            }
+                <button
+                    type="button"
+                    class="@(_useCategoryDropdown ? "active" : null)"
+                    title="Ver como menu"
+                    @onclick="() => SetCategoryDropdown(true)">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+                </button>
+            </div>
         </div>
+
+        @if (_useCategoryDropdown)
+        {
+            <select value="@SelectedCategoryValue" @onchange="OnCategoryDropdownChanged">
+                <option value="">Todos (@TotalCount())</option>
+                @foreach (var category in _categories)
+                {
+                    <option value="@category.Value">
+                        @category.Name (@CountFor(category.Value))
+                    </option>
+                }
+            </select>
+        }
+        else
+        {
+            <div class="price-categories-row">
+                <button
+                    type="button"
+                    class="@(_selectedCategory is null ? "active" : null)"
+                    @onclick="() => SelectCategory(null)">
+                    Todos (@TotalCount())
+                </button>
+                @foreach (var category in _categories)
+                {
+                    <button
+                        type="button"
+                        class="@(_selectedCategory == category.Value ? "active" : null)"
+                        @onclick="() => SelectCategory(category.Value)">
+                        @category.Name (@CountFor(category.Value))
+                    </button>
+                }
+            </div>
+        }
     </div>
 
     <div class="price-toolbar">
@@ -82,6 +116,15 @@ else
 
     @if (_isGridView)
     {
+        <div class="price-grid-sort">
+            <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: false)">
+                Nome @(SortIcon(byPrice: false))
+            </button>
+            <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: true)">
+                Preço @(SortIcon(byPrice: true))
+            </button>
+        </div>
+
         <div class="price-grid">
             @foreach (var row in _rows)
             {
@@ -103,7 +146,6 @@ else
                         @if (_showCost)
                         {
                             <span class="price-cost">@row.CostPrice.ToString("C", CultureHelpers.BrazilianCulture)</span>
-                            <span class="price-dash">-</span>
                         }
                         <span class="price-sale">@row.Price.ToString("C", CultureHelpers.BrazilianCulture)</span>
                     </div>
@@ -150,12 +192,14 @@ else
                             </ProductHoverPreview>
                         </td>
                         <td>
-                            @if (_showCost)
-                            {
-                                <span class="price-cost">@row.CostPrice.ToString("C", CultureHelpers.BrazilianCulture)</span>
-                                <span class="price-dash">-</span>
-                            }
-                            <span class="price-sale">@row.Price.ToString("C", CultureHelpers.BrazilianCulture)</span>
+                            <span class="price-pair">
+                                @if (_showCost)
+                                {
+                                    <span class="price-cost">@row.CostPrice.ToString("C", CultureHelpers.BrazilianCulture)</span>
+                                    <span class="price-dash">-</span>
+                                }
+                                <span class="price-sale">@row.Price.ToString("C", CultureHelpers.BrazilianCulture)</span>
+                            </span>
                         </td>
                     </tr>
                 }
@@ -175,9 +219,12 @@ else
     private PriceTableSortMode _sortMode = PriceTableSortMode.NameAscending;
     private bool _showCost;
     private bool _isGridView;
+    private bool _useCategoryDropdown;
     private bool _isLoading = true;
     private string? _loadError;
     private CancellationTokenSource? _searchDebounce;
+
+    private string SelectedCategoryValue => _selectedCategory?.ToString() ?? string.Empty;
 
     private string CountText => _rows.Count switch
     {
@@ -226,22 +273,30 @@ else
         }
     }
 
-    // Com busca ativa, mostra quantos itens da categoria batem com o filtro
-    // (não o total) — mesmo comportamento do PriceLookupViewModel do
-    // Desktop, onde a contagem por categoria reflete a busca digitada.
+    // Contagem sempre pelo total da categoria, sem levar a busca em conta --
+    // pedido do usuário: filtrar por texto não pode "zerar" as pills de
+    // categorias que não batem com a busca, o número tem que ficar estável.
     private int CountFor(ComponentCategory category) =>
-        _catalog.Count(component =>
-            component.Category == category &&
-            ProductFilter.Matches(component, _searchText));
+        _catalog.Count(component => component.Category == category);
 
-    private int TotalFilteredCount() =>
-        _catalog.Count(component => ProductFilter.Matches(component, _searchText));
+    private int TotalCount() => _catalog.Count;
 
     private void SelectCategory(ComponentCategory? category)
     {
         _selectedCategory = category;
+        // Trocar de categoria começa uma busca nova -- um filtro de texto
+        // antigo escondendo produtos da categoria recém-selecionada confunde.
+        _searchText = string.Empty;
         RefreshRows();
     }
+
+    private void OnCategoryDropdownChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        SelectCategory(string.IsNullOrEmpty(value) ? null : Enum.Parse<ComponentCategory>(value));
+    }
+
+    private void SetCategoryDropdown(bool useDropdown) => _useCategoryDropdown = useDropdown;
 
     private void OnSearchInput(ChangeEventArgs e)
     {

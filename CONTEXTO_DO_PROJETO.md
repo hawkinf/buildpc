@@ -967,6 +967,31 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- **Mudança de arquitetura (30/07): site deixa de ser 100% privado e vira
+  público + área da equipe atrás de senha.** Pedido explícito do usuário
+  reagindo à tela de login "feia". Antes: `_Imports.razor` tinha
+  `@attribute [Authorize]` global, então TUDO exigia a senha da equipe.
+  Agora: o padrão virou público, e cada tela sensível (Montagem, Consulta
+  de Preços com alternância custo/venda, Orçamentos, Importações) declara
+  `@attribute [Authorize]` explicitamente. Fluxo novo: "/" é uma landing de
+  verdade ("Hawk Informática — peças, montagem, assistência técnica") com
+  botão "Ver preços" → `/login`; senha certa (`hawkinf`, configurada em
+  `BuildPc__WebPassword` na VPS a pedido do usuário) entra na área da
+  equipe (`/precos` por padrão, ou o `returnUrl` original); **senha
+  errada não mostra erro — cai direto em `/consulta`**, a nova tabela de
+  preços pública (`ConsultaPublica.razor`, sempre preço de venda, sem
+  alternância de custo, sem Exportar PDF, sem nenhum link de
+  Orçamentos/Montagem — só teve o botão "Sou da equipe" de volta pro
+  login). Novo `PublicLayout.razor` (sem cabeçalho/nav da equipe) usado só
+  por Home e Login; `ConsultaPublica`/páginas da equipe continuam no
+  `MainLayout` de sempre (o cabeçalho já escondia nav/logout via
+  `AuthorizeView` pra quem não está autenticado — só precisou trocar o
+  texto da marca de "BuildPC" pra "Hawk Informática"). `/pdf/orcamento/
+  {id}` e `/pdf/tabela-precos` continuam com `.RequireAuthorization()`
+  inalterado — não são acessíveis da tela pública. Testado ponta a ponta
+  em produção via curl (senha errada → 302 `/consulta`; senha certa → 302
+  `/precos` + cookie; `/montagem` sem cookie → 302
+  `/login?ReturnUrl=%2Fmontagem`).
 - Cliente web (30/07) — página inicial ("/") deixou de ser um redirect
   silencioso pra Montagem e virou uma landing de verdade: título "Hawk
   Informática - Tabela de Preços", cartão centralizado com botão pra

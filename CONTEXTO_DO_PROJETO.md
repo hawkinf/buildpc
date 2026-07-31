@@ -967,6 +967,28 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- **Refatoração + reforço de segurança (31/07): tabela pública fica igual
+  à da equipe, exceto o botão de custo, que nunca pode aparecer.** Pedido
+  explícito do usuário ("nunca"). `/consulta` (sem senha) ganhou as mesmas
+  categorias em pills/dropdown, busca, lista/quadro e ordenação que
+  `/precos` (com senha) já tinha. Em vez de duplicar ~200 linhas quase
+  idênticas entre as duas páginas (já tinha acontecido de esquecer de
+  espelhar um ajuste — o alinhamento da tabela, mais cedo no mesmo dia),
+  tudo que é comum virou um componente novo,
+  `Components/Shared/PriceCatalogView.razor`, parametrizado por
+  `AllowCostToggle`. `Precos.razor`/`ConsultaPublica.razor` viram wrappers
+  finos. Blindagem: dentro do componente, toda leitura de custo na
+  marcação usa `ShowCost` (= `AllowCostToggle && _showCost`), nunca o
+  campo `_showCost` puro — mesmo que um bug futuro sete `_showCost` como
+  `true` em algum lugar, `ShowCost` continua `false` quando
+  `AllowCostToggle` é `false`. O endpoint `/pdf/tabela-precos` deixou de
+  exigir login (a tela pública também exporta PDF agora) mas ganhou
+  checagem própria: sem estar autenticado, o modo custo nunca sai, não
+  importa o que a URL peça — fecha a brecha de alguém montar a URL na mão
+  pra tentar pegar custo sem senha. Confirmado em produção: `/consulta`
+  sem checkbox de custo, `/precos` autenticado com o checkbox,
+  `/pdf/tabela-precos?priceMode=custo` sem login responde 200 (não exige
+  mais auth) mas a checagem server-side força venda mesmo assim.
 - Cliente web (31/07) — cinco ajustes em cima do que foi entregue antes em
   Consulta de Preços, todos pedidos numa única mensagem de feedback depois
   de ver a tela funcionando. (1) Tabela: custo e o traço ganham largura

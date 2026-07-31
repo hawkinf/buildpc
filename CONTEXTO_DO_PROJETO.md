@@ -967,6 +967,23 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (31/07) — cinco ajustes em cima do que foi entregue antes em
+  Consulta de Preços, todos pedidos numa única mensagem de feedback depois
+  de ver a tela funcionando. (1) Tabela: custo e o traço ganham largura
+  fixa (`.price-pair`), venda sempre começa na mesma posição horizontal em
+  toda linha — antes desalinhava conforme a quantidade de dígitos do
+  custo. (2) Quadro: custo e venda passam a empilhar (uma linha cada) em
+  vez de ficar lado a lado com traço, que truncava/quebrava feio em cards
+  estreitos. (3) Quadro ganha os mesmos controles de ordenação (nome/preço,
+  asc/desc) que a tabela já tinha. (4) Contagem das categorias (pills e
+  dropdown) volta a mostrar o total da categoria, ignorando o texto de
+  busca — antes filtrar por texto "zerava" a contagem de categorias que só
+  não batiam com a busca, o que parecia (incorretamente) que a categoria
+  estava vazia. (5) Nova alternância pill/dropdown para as categorias
+  (mesmo padrão de ícones do toggle lista/quadro) — o `<select>` antigo
+  volta como opção, não fica só no formato pill. De brinde: trocar de
+  categoria (por pill ou dropdown) agora limpa o texto de busca
+  automaticamente.
 - Cliente web (31/07) — Consulta de Preços ganha alternar entre lista
   (tabela atual) e quadros (cartão com foto grande, nome embaixo, preço em
   destaque, grid que quebra linha conforme a largura). Toggle com dois

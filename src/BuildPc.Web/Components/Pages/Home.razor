@@ -1,10 +1,20 @@
 @page "/"
-@inject NavigationManager NavigationManager
 
-@code {
-    // Montagem é a tela mais usada no dia a dia — decisão de rota deixada em
-    // aberto no plano até as três telas existirem, resolvida agora que a
-    // fase 7 fechou o conjunto (Montagem/Consulta de Preços/Orçamentos).
-    protected override void OnInitialized() =>
-        NavigationManager.NavigateTo("/montagem", forceLoad: true);
-}
+<PageTitle>Hawk Informática - Tabela de Preços</PageTitle>
+
+<div class="home-hero">
+    <div class="home-card">
+        <span class="home-eyebrow">Hawk Informática</span>
+        <h1>Tabela de Preços</h1>
+        <p class="home-tagline">
+            Consulte preços atualizados, monte orçamentos e acompanhe vendas
+            em um só lugar.
+        </p>
+        <a class="home-cta" href="/precos">Ver tabela de preços</a>
+        <div class="home-links">
+            <a href="/montagem">Montagem</a>
+            <span class="home-links-separator">•</span>
+            <a href="/orcamentos">Orçamentos</a>
+        </div>
+    </div>
+</div>

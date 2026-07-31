@@ -967,6 +967,19 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- **Bug corrigido (31/07): banner "Ocorreu um erro inesperado" aparecia
+  sempre visível no rodapé das páginas públicas, sem nenhum erro real
+  acontecer.** Reportado pelo usuário como "erro de carregamento lá no
+  final da página". Causa: `#blazor-error-ui` (o banner de erro de conexão
+  do Blazor) tinha seu `display: none` definido só em
+  `MainLayout.razor.css` — CSS isolado por componente no Blazor não vaza
+  entre componentes, então o `PublicLayout` novo (usado por Home e Login)
+  renderizava o mesmo elemento sem receber nenhuma regra de
+  `MainLayout.razor.css`, ficando visível o tempo todo. Corrigido movendo
+  a regra pra `wwwroot/app.css` (global, não escopado) — funciona em
+  qualquer layout presente ou futuro, sem precisar duplicar em cada
+  `.razor.css`. De passagem, removido CSS morto `.login-page`/
+  `.login-error` que sobrou do desenho antigo da tela de login.
 - Cliente web (31/07) — dois ajustes na página inicial/login, reportados
   pelo usuário depois de testar a versão anterior. (1) Os botões "Ver
   preços" (barra superior e hero) iam pra `/login` antes de chegar na

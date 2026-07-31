@@ -967,6 +967,18 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (31/07) — página inicial ganhou visual de verdade a pedido
+  do usuário ("quero uma pagina bonita, atrativa, com elementos
+  graficos"). A versão anterior (30/07) era só um cartão centralizado com
+  texto. Redesenhada: barra superior com logo + botão, hero com título
+  grande, três cards de serviço (Peças, Montagem, Assistência Técnica)
+  cada um com ícone SVG inline (sem imagem externa, sem dependência de
+  CDN) e manchas de gradiente desfocadas no fundo (`.home-blob`) pra dar
+  profundidade. Grid de 3 colunas no desktop, empilha em 1 coluna abaixo
+  de 720px. Testado rodando o site localmente antes do deploy (`dotnet
+  run`, curl na página e no CSS agrupado) pra confirmar que o HTML e as
+  classes novas realmente chegam ao navegador — sem `chromium-cli`
+  disponível neste ambiente pra captura de tela real.
 - **Mudança de arquitetura (30/07): site deixa de ser 100% privado e vira
   público + área da equipe atrás de senha.** Pedido explícito do usuário
   reagindo à tela de login "feia". Antes: `_Imports.razor` tinha

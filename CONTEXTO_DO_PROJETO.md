@@ -1001,7 +1001,7 @@ chave da API não aparece em texto aberto no JSON.
   Confirmado local (POST/GET nos dois esquemas, antes e depois da
   correção) e depois em produção pelos dois domínios reais.
 
-  Nginx: novo `location /tabela/` em `/etc/nginx/sites-available/
+  Nginx: novo `location ^~ /tabela/` em `/etc/nginx/sites-available/
   loja-hawk` (proxy pro mesmo backend de `precos.hawk.com.br`,
   `127.0.0.1:8126`, com os mesmos cabeçalhos de WebSocket), sem tocar no
   `location /` existente (site estático). Botão "Ver Preços" adicionado
@@ -1011,6 +1011,32 @@ chave da API não aparece em texto aberto no JSON.
   `precos.hawk.com.br` continua no ar sem nenhuma mudança de
   comportamento — confirmado via login/navegação completos depois do
   deploy, exatamente como funcionava antes.
+
+  **Segundo bug real, reportado pelo usuário via print (página sem CSS
+  nenhum, "alinhamento não está bom"/"modo claro fica esquisito")**: o
+  `location /tabela/` inicial (sem `^~`) perdia de um `location ~*
+  \.(css|js|png|...)$` já existente no mesmo arquivo, criado pro cache de
+  assets do site estático — no nginx, location por regex (`~`/`~*`) tem
+  precedência sobre prefixo simples, **mesmo sendo mais específico e
+  vindo depois no arquivo**, a menos que o prefixo use o modificador
+  `^~`. Resultado: toda requisição de `.css`/`.js`/imagem sob `/tabela/`
+  caía nesse bloco regex, que serve arquivo estático direto da raiz do
+  site (`/var/www/loja-hawk`) sem proxy nenhum — 404, porque esse
+  caminho não existe lá. A página carregava só o HTML puro, daí o visual
+  "sem estilo nenhum" do print. Diagnosticado por eliminação com curl:
+  confirmado que o backend servia o CSS certo direto
+  (`127.0.0.1:8126/tabela/app.xxx.css` → 200), que por trás do nginx
+  dava 404, e que o mesmo 404 persistia até contornando o Cloudflare
+  (`--resolve` direto na VPS) — isolando o problema no nginx local, não
+  em cache de CDN. Corrigido trocando pra `location ^~ /tabela/`, que
+  força o nginx a parar de avaliar os blocos regex assim que esse
+  prefixo bate. Confirmado depois: CSS sob `/tabela/` volta 200
+  `text/css`; cache de imagem do site estático (`/fotos/logo.png`)
+  continua intacto (`Cache-Control: public, max-age=604800`); `/tabela/`
+  e `/tabela/consulta` voltam 200. O "modo claro esquisito" do usuário
+  era a mesma causa — HTML sem nenhum CSS aplicado parece "modo claro"
+  cru (fundo branco, sem cores/gradientes do design) — não era um bug de
+  tema separado.
 - Cliente web (31/07) — seletor de produtos da Montagem ganha o mesmo
   padrão visual da Consulta de Preços, pedido do usuário ("fazer a
   montagem usando a semelhança da tabela de preços"). Select de categoria

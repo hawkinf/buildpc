@@ -967,6 +967,50 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- **Infraestrutura (31/07): tabela de preços passa a responder também em
+  loja.hawk.com.br/tabela, porque precos.hawk.com.br vai ser
+  desabilitado.** `loja.hawk.com.br` já existe e é o site institucional
+  real da Hawk Informática (com Google Ads apontando pra ele, SEO,
+  sitemap) — confirmado com o usuário antes de mexer: em vez de um
+  subdomínio novo, o `BuildPc.Web` deveria responder sob um subcaminho
+  (`/tabela`) sem alterar o site estático.
+
+  `app.UsePathBase("/tabela")` no `Program.cs` faz o MESMO processo
+  responder nos dois esquemas ao mesmo tempo — sem esse prefixo no
+  caminho (domínio antigo), nada muda. Pra isso funcionar de verdade (não
+  só a home, mas navegação/login/PDF), todo `href`/`action`/`NavigateTo`
+  absoluto (com "/" na frente) virou relativo em toda a base de código —
+  um `href="/montagem"` ignora qualquer PathBase (assim que HTML/Blazor
+  funcionam por padrão); `href="montagem"` resolve contra o `<base href>`
+  de cada requisição, que passou a ser dinâmico (`App.razor`, via
+  `HttpContext.Request.PathBase` em cascata) em vez do `/` fixo de antes.
+  Os assets do framework (`Assets["app.css"]` etc.) já eram relativos por
+  padrão — confirmado testando local antes de mexer em mais nada.
+  Redirects do lado servidor (`Results.LocalRedirect`) não têm
+  `<base href>` pra se apoiar — ganharam `context.Request.PathBase`
+  concatenado manualmente.
+
+  **Bug real encontrado e corrigido durante o teste**: `POST
+  /account/login` sob `/tabela` caía com 400 "antiforgery" — não por
+  antiforgery de verdade, mas porque a inserção automática de
+  `UseRouting()` (sem chamada explícita) acontecia tarde demais na
+  pipeline com `UsePathBase` presente; `UseAntiforgery`/`UseAuthorization`
+  rodavam sem endpoint resolvido, o request caía no fallback de
+  componente Razor (só aceita GET/HEAD) e devolvia esse erro confuso.
+  Corrigido com `app.UseRouting()` explícito logo após `UsePathBase`.
+  Confirmado local (POST/GET nos dois esquemas, antes e depois da
+  correção) e depois em produção pelos dois domínios reais.
+
+  Nginx: novo `location /tabela/` em `/etc/nginx/sites-available/
+  loja-hawk` (proxy pro mesmo backend de `precos.hawk.com.br`,
+  `127.0.0.1:8126`, com os mesmos cabeçalhos de WebSocket), sem tocar no
+  `location /` existente (site estático). Botão "Ver Preços" adicionado
+  na barra de navegação do `index.html` estático, linkando pra
+  `/tabela/consulta`. Backups de ambos os arquivos (`loja-hawk`,
+  `index.html`) feitos na VPS antes de editar (`.bak-<timestamp>`).
+  `precos.hawk.com.br` continua no ar sem nenhuma mudança de
+  comportamento — confirmado via login/navegação completos depois do
+  deploy, exatamente como funcionava antes.
 - Cliente web (31/07) — seletor de produtos da Montagem ganha o mesmo
   padrão visual da Consulta de Preços, pedido do usuário ("fazer a
   montagem usando a semelhança da tabela de preços"). Select de categoria

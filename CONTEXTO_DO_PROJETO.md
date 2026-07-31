@@ -967,6 +967,33 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (30/07) — página inicial ("/") deixou de ser um redirect
+  silencioso pra Montagem e virou uma landing de verdade: título "Hawk
+  Informática - Tabela de Preços", cartão centralizado com botão pra
+  Consulta de Preços e links menores pra Montagem/Orçamentos
+  (`Home.razor`/`.razor.css`, novos).
+- **Feature nova (30/07), só Web por enquanto: senha separada pra revelar
+  custo/desconto/lucro.** Pedido explícito do usuário, confirmado via
+  `AskUserQuestion` (duas leituras possíveis: reforçar o login existente,
+  ou uma segunda senha só pro "toque para ver" — escolheram a segunda).
+  Novo `RevealAccessState` (Scoped, um por circuito SignalR) injetado em
+  `RevealCost.razor`: primeiro toque em qualquer valor mascarado pede uma
+  senha separada da senha de login da equipe (mesmo `StaffPasswordValidator`
+  com hash PBKDF2, chave de configuração diferente); acertando, desbloqueia
+  pro resto da sessão (não pede nunca mais nessa sessão); errando, mantém
+  mascarado com "Senha incorreta". **Sem `BuildPc:RevealPassword`
+  configurada, o recurso fica desligado automaticamente** (toque revela
+  direto, comportamento de antes) — ainda falta configurar
+  `BuildPc__RevealPassword` em `/etc/buildpc-web.env` na VPS pra ativar de
+  verdade; o valor é uma escolha do usuário, não foi definido nesta sessão.
+- **Feature nova (30/07), Desktop e Web: opção de exportar PDF do orçamento
+  sem a descrição do produto.** `QuotePdfService.Export` ganhou o parâmetro
+  `includeDescriptions` (default `true`, compatível com as chamadas
+  antigas). Desktop: checkbox "Descrição" ao lado do botão Exportar PDF, na
+  Montagem e em Orçamentos. Web: mesma checkbox nas duas telas, passada
+  como query string (`?descricoes=true|false`) pro endpoint
+  `/pdf/orcamento/{id}`. A tabela de preços em PDF nunca imprimiu
+  descrição — não precisou mudar.
 - **Bug corrigido (30/07), afeta Desktop e Web igualmente: "Kabum" sobrevivia
   na descrição de produtos importados quando colado sem espaço.** Reportado
   pelo usuário ("fui bem claro para retirar 'no Kabum!'..."). Achado

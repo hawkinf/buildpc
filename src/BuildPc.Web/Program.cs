@@ -137,8 +137,7 @@ app.MapPost("/account/login", async (HttpContext context, StaffPasswordValidator
             ExpiresUtc = DateTimeOffset.UtcNow.AddHours(10)
         });
 
-    return Results.LocalRedirect(
-        string.IsNullOrEmpty(returnUrl) || returnUrl == "/" ? "/precos" : returnUrl);
+    return Results.LocalRedirect(IsLocalPath(returnUrl) ? returnUrl : "/precos");
 }).DisableAntiforgery();
 
 app.MapPost("/account/logout", async (HttpContext context) =>
@@ -253,3 +252,11 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+// Mesma checagem que Results.LocalRedirect faz por baixo dos panos, só que
+// sem lançar: um returnUrl que chegue absoluto (com host) ou malformado
+// agora cai em "/precos" em vez de derrubar a rota inteira com 500.
+static bool IsLocalPath(string? url) =>
+    !string.IsNullOrEmpty(url) &&
+    url[0] == '/' &&
+    (url.Length == 1 || (url[1] != '/' && url[1] != '\\'));

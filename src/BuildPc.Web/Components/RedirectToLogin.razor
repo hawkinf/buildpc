@@ -3,7 +3,13 @@
 @code {
     protected override void OnInitialized()
     {
-        var returnUrl = Uri.EscapeDataString(NavigationManager.Uri);
+        // NavigationManager.Uri é absoluta (com esquema e host) -- se fosse
+        // usada direto, o POST de /account/login rejeitava como "URL não
+        // local" (Results.LocalRedirect só aceita caminho relativo) e
+        // quebrava com 500 em vez de voltar pra página de origem depois do
+        // login. ToBaseRelativePath tira o host, sobra só o caminho.
+        var relativePath = "/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        var returnUrl = Uri.EscapeDataString(relativePath);
         NavigationManager.NavigateTo($"/login?returnUrl={returnUrl}", forceLoad: true);
     }
 }

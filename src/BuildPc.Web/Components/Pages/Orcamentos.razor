@@ -1,5 +1,6 @@
 @page "/orcamentos"
 @rendermode InteractiveServer
+@attribute [Authorize]
 @using BuildPc.Core.Models
 @inject IQuoteRepository QuoteRepository
 @implements IDisposable

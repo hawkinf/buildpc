@@ -1,4 +1,4 @@
-.home-hero {
+.login-hero {
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -7,22 +7,22 @@
     background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 60%, #ffffff 100%);
 }
 
-.home-card {
+.login-card {
     width: 100%;
-    max-width: 34rem;
+    max-width: 24rem;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 0.9rem;
+    align-items: stretch;
+    gap: 0.6rem;
     text-align: center;
     background: white;
-    padding: 3rem 2.5rem;
+    padding: 2.75rem 2.25rem;
     border-radius: 18px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
 
-.home-eyebrow {
+.login-eyebrow {
     font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -30,52 +30,62 @@
     color: #1d4ed8;
 }
 
-.home-card h1 {
+.login-card h1 {
     margin: 0;
-    font-size: 2.1rem;
+    font-size: 1.5rem;
     font-weight: 800;
-    line-height: 1.25;
     color: #1f2933;
 }
 
-.home-tagline {
-    margin: 0;
+.login-tagline {
+    margin: 0 0 0.5rem;
     color: #64748b;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     line-height: 1.5;
-    max-width: 26rem;
 }
 
-.home-cta {
-    margin-top: 0.5rem;
-    padding: 0.85rem 2.25rem;
+.login-card label {
+    text-align: left;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.login-card input[type="password"] {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.login-submit {
+    margin-top: 0.6rem;
+    padding: 0.75rem;
     background: #1d4ed8;
     color: white;
     font-weight: 700;
-    font-size: 1.05rem;
-    text-decoration: none;
+    font-size: 1rem;
+    border: none;
     border-radius: 999px;
+    cursor: pointer;
     box-shadow: 0 6px 16px rgba(29, 78, 216, 0.3);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.home-cta:hover {
+.login-submit:hover {
     transform: translateY(-1px);
     box-shadow: 0 8px 20px rgba(29, 78, 216, 0.38);
 }
 
-.home-note {
-    margin: 0;
+.login-skip {
+    margin-top: 0.5rem;
     color: #94a3b8;
     font-size: 0.8rem;
+    text-decoration: none;
 }
 
-@media (max-width: 480px) {
-    .home-card {
-        padding: 2.25rem 1.5rem;
-    }
-
-    .home-card h1 {
-        font-size: 1.6rem;
-    }
+.login-skip:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
 }

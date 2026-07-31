@@ -1,0 +1,213 @@
+@page "/consulta"
+@rendermode InteractiveServer
+@attribute [AllowAnonymous]
+@using BuildPc.Core.Models
+@inject IComponentCatalogRepository CatalogRepository
+@inject IQuoteRepository QuoteRepository
+@implements IDisposable
+
+<PageTitle>Tabela de Preços - Hawk Informática</PageTitle>
+
+<div class="public-price-page">
+    <div class="public-price-header">
+        <div>
+            <h1>Tabela de Preços</h1>
+            <p class="public-price-subtitle">Hawk Informática</p>
+        </div>
+        <a class="public-price-staff-link" href="/login">Sou da equipe</a>
+    </div>
+
+    @if (_loadError is not null)
+    {
+        <p class="price-error">Falha ao carregar o catálogo: @_loadError</p>
+    }
+    else if (_isLoading)
+    {
+        <p>Carregando catálogo...</p>
+    }
+    else
+    {
+        <div class="price-toolbar">
+            <select value="@SelectedCategoryValue" @onchange="OnCategoryChanged">
+                <option value="">Todas as categorias (@TotalFilteredCount())</option>
+                @foreach (var category in _categories)
+                {
+                    <option value="@category.Value">
+                        @category.Name (@CountFor(category.Value))
+                    </option>
+                }
+            </select>
+
+            <input
+                type="search"
+                placeholder="Buscar por nome, marca, descrição..."
+                value="@_searchText"
+                @oninput="OnSearchInput" />
+        </div>
+
+        <p class="price-count">@CountText</p>
+
+        <div class="price-table-wrap">
+        <table class="price-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>
+                        <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: false)">
+                            Produto @(SortIcon(byPrice: false))
+                        </button>
+                    </th>
+                    <th>
+                        <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: true)">
+                            Preço @(SortIcon(byPrice: true))
+                        </button>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in _rows)
+                {
+                    <tr>
+                        <td class="price-thumb-cell">
+                            @if (!string.IsNullOrWhiteSpace(row.ImageUrl))
+                            {
+                                <img class="price-thumb" src="@row.ImageUrl" alt="" loading="lazy" />
+                            }
+                        </td>
+                        <td>
+                            <ProductHoverPreview
+                                Title="@row.Title"
+                                Description="@row.Description"
+                                ImageUrl="@row.ImageUrl"
+                                Price="@row.Price.ToString("C", CultureHelpers.BrazilianCulture)">
+                                @row.Title
+                            </ProductHoverPreview>
+                        </td>
+                        <td>@row.Price.ToString("C", CultureHelpers.BrazilianCulture)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<PcComponent> _catalog = [];
+    private BusinessSettings _settings = new();
+    private IReadOnlyList<ProductCategoryDefinition> _categories = [];
+    private IReadOnlyList<ProductPriceTableRow> _rows = [];
+    private ComponentCategory? _selectedCategory;
+    private string _searchText = string.Empty;
+    private PriceTableSortMode _sortMode = PriceTableSortMode.NameAscending;
+    private bool _isLoading = true;
+    private string? _loadError;
+    private CancellationTokenSource? _searchDebounce;
+
+    private string SelectedCategoryValue => _selectedCategory?.ToString() ?? string.Empty;
+
+    private string CountText => _rows.Count switch
+    {
+        0 => "Nenhum produto encontrado.",
+        1 => "1 produto",
+        _ => $"{_rows.Count} produtos"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _catalog = await CatalogRepository.GetAllAsync();
+            _settings = await QuoteRepository.GetSettingsAsync();
+            _categories = _settings.EffectiveProductCategories();
+            RefreshRows();
+        }
+        catch (InvalidOperationException exception)
+        {
+            _loadError = exception.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private int CountFor(ComponentCategory category) =>
+        _catalog.Count(component =>
+            component.Category == category &&
+            ProductFilter.Matches(component, _searchText));
+
+    private int TotalFilteredCount() =>
+        _catalog.Count(component => ProductFilter.Matches(component, _searchText));
+
+    private void OnCategoryChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        _selectedCategory = string.IsNullOrEmpty(value)
+            ? null
+            : Enum.Parse<ComponentCategory>(value);
+        RefreshRows();
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        _searchText = e.Value?.ToString() ?? string.Empty;
+
+        _searchDebounce?.Cancel();
+        _searchDebounce = new CancellationTokenSource();
+        _ = DebounceRefreshAsync(_searchDebounce.Token);
+    }
+
+    private async Task DebounceRefreshAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(300), token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        RefreshRows();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ToggleSort(bool byPrice)
+    {
+        _sortMode = (byPrice, _sortMode) switch
+        {
+            (false, PriceTableSortMode.NameAscending) => PriceTableSortMode.NameDescending,
+            (false, _) => PriceTableSortMode.NameAscending,
+            (true, PriceTableSortMode.PriceAscending) => PriceTableSortMode.PriceDescending,
+            (true, _) => PriceTableSortMode.PriceAscending
+        };
+        RefreshRows();
+    }
+
+    private string SortIcon(bool byPrice)
+    {
+        var ascending = byPrice
+            ? _sortMode == PriceTableSortMode.PriceAscending
+            : _sortMode == PriceTableSortMode.NameAscending;
+        var isActive = byPrice
+            ? _sortMode is PriceTableSortMode.PriceAscending or PriceTableSortMode.PriceDescending
+            : _sortMode is PriceTableSortMode.NameAscending or PriceTableSortMode.NameDescending;
+        if (!isActive)
+        {
+            return string.Empty;
+        }
+        return ascending ? "▲" : "▼";
+    }
+
+    private void RefreshRows() =>
+        _rows = PriceTableRowBuilder.Build(
+            _catalog,
+            _settings,
+            _selectedCategory,
+            _searchText,
+            _sortMode,
+            showSalePrice: true);
+
+    public void Dispose() => _searchDebounce?.Cancel();
+}

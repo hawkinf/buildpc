@@ -1,28 +1,23 @@
 @page "/login"
 @attribute [AllowAnonymous]
+@layout PublicLayout
 
-<PageTitle>Entrar - BuildPC</PageTitle>
+<PageTitle>Entrar - Hawk Informática</PageTitle>
 
-<div class="login-page">
-    <form method="post" action="/account/login">
-        <h1>BuildPC</h1>
-        @if (HasError)
-        {
-            <p class="login-error">Senha incorreta.</p>
-        }
-        <label for="password">Senha da equipe</label>
+<div class="login-hero">
+    <form method="post" action="/account/login" class="login-card">
+        <span class="login-eyebrow">Hawk Informática</span>
+        <h1>Área da equipe</h1>
+        <p class="login-tagline">Digite a senha da equipe para acessar custos, orçamentos e configurações.</p>
+        <label for="password">Senha</label>
         <input type="password" id="password" name="password" autofocus required />
         <input type="hidden" name="returnUrl" value="@ReturnUrl" />
-        <button type="submit">Entrar</button>
+        <button type="submit" class="login-submit">Entrar</button>
+        <a href="/consulta" class="login-skip">Ver tabela de preços sem senha</a>
     </form>
 </div>
 
 @code {
-    [SupplyParameterFromQuery(Name = "error")]
-    public string? Error { get; set; }
-
     [SupplyParameterFromQuery(Name = "returnUrl")]
     public string? ReturnUrl { get; set; }
-
-    private bool HasError => !string.IsNullOrEmpty(Error);
 }

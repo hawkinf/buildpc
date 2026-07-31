@@ -116,10 +116,13 @@ app.MapPost("/account/login", async (HttpContext context, StaffPasswordValidator
     var password = form["password"].ToString();
     var returnUrl = form["returnUrl"].ToString();
 
+    // Senha errada não mostra erro nem some no vazio: cai direto na tabela
+    // de preços pública, como se a pessoa nunca tivesse tentado entrar como
+    // equipe. Pedido explícito do usuário -- "entrar" na área da equipe é
+    // opcional, a tabela pública sempre é o destino de quem não tem a senha.
     if (!validator.IsValid(password))
     {
-        return Results.Redirect(
-            $"/login?error=1&returnUrl={Uri.EscapeDataString(returnUrl)}");
+        return Results.LocalRedirect("/consulta");
     }
 
     var identity = new ClaimsIdentity(
@@ -135,7 +138,7 @@ app.MapPost("/account/login", async (HttpContext context, StaffPasswordValidator
         });
 
     return Results.LocalRedirect(
-        string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl);
+        string.IsNullOrEmpty(returnUrl) || returnUrl == "/" ? "/precos" : returnUrl);
 }).DisableAntiforgery();
 
 app.MapPost("/account/logout", async (HttpContext context) =>

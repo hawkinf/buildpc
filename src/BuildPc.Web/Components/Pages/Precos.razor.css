@@ -12,26 +12,28 @@
     font-size: 1rem;
 }
 
-.price-mode-toggle button {
-    padding: 0.5rem 1rem;
-    border: 1px solid #94a3b8;
-    background: white;
+.price-cost-check {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.25rem;
     cursor: pointer;
+    user-select: none;
 }
 
-.price-mode-toggle button:first-child {
-    border-radius: 4px 0 0 4px;
+.price-cost {
+    color: #b91c1c;
+    font-weight: 600;
 }
 
-.price-mode-toggle button:last-child {
-    border-radius: 0 4px 4px 0;
-    border-left: none;
+.price-dash {
+    color: #94a3b8;
+    margin: 0 0.3rem;
 }
 
-.price-mode-toggle button.active {
-    background: #1f2933;
-    color: white;
-    border-color: #1f2933;
+.price-sale {
+    color: #1d4ed8;
+    font-weight: 600;
 }
 
 .price-pdf-link {
@@ -95,19 +97,14 @@
 
     .price-toolbar select,
     .price-toolbar input[type="search"],
-    .price-mode-toggle,
     .price-pdf-link {
         width: 100%;
         box-sizing: border-box;
         text-align: center;
     }
 
-    .price-mode-toggle {
-        display: flex;
-    }
-
-    .price-mode-toggle button {
-        flex: 1;
+    .price-cost-check {
+        justify-content: center;
     }
 
     .price-pdf-link {

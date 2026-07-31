@@ -43,6 +43,26 @@ public sealed class PriceTableRowBuilderTests
     }
 
     [Fact]
+    public void Build_AlwaysFillsCostPriceRegardlessOfShowSalePrice()
+    {
+        var settings = new BusinessSettings { GlobalMarginPercent = 20m };
+        var catalog = new[] { Product("CPU", ComponentCategory.Processor, 100m) };
+
+        var salesRows = PriceTableRowBuilder.Build(
+            catalog,
+            settings,
+            categoryFilter: null,
+            searchText: null,
+            PriceTableSortMode.NameAscending,
+            showSalePrice: true);
+
+        Assert.Equal(100m, Assert.Single(salesRows).CostPrice);
+        Assert.Equal(
+            PricingCalculator.CalculateSalePrice(100m, 20m),
+            Assert.Single(salesRows).Price);
+    }
+
+    [Fact]
     public void Build_FiltersByCategory()
     {
         var settings = new BusinessSettings();

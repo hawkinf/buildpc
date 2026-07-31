@@ -37,20 +37,10 @@ else
             value="@_searchText"
             @oninput="OnSearchInput" />
 
-        <div class="price-mode-toggle">
-            <button
-                type="button"
-                class="@(_showSalePrice ? "active" : null)"
-                @onclick="() => SetPriceMode(true)">
-                Venda
-            </button>
-            <button
-                type="button"
-                class="@(!_showSalePrice ? "active" : null)"
-                @onclick="() => SetPriceMode(false)">
-                Custo
-            </button>
-        </div>
+        <label class="price-cost-check">
+            <input type="checkbox" checked="@_showCost" @onchange="OnShowCostChanged" />
+            Custo
+        </label>
 
         <a class="price-pdf-link" href="@PdfDownloadUrl" target="_blank">
             Exportar PDF
@@ -71,7 +61,7 @@ else
                 </th>
                 <th>
                     <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: true)">
-                        @(_showSalePrice ? "Preço de venda" : "Custo") @(SortIcon(byPrice: true))
+                        Preço de venda @(SortIcon(byPrice: true))
                     </button>
                 </th>
             </tr>
@@ -95,7 +85,14 @@ else
                             @row.Title
                         </ProductHoverPreview>
                     </td>
-                    <td>@row.Price.ToString("C", CultureHelpers.BrazilianCulture)</td>
+                    <td>
+                        @if (_showCost)
+                        {
+                            <span class="price-cost">@row.CostPrice.ToString("C", CultureHelpers.BrazilianCulture)</span>
+                            <span class="price-dash">-</span>
+                        }
+                        <span class="price-sale">@row.Price.ToString("C", CultureHelpers.BrazilianCulture)</span>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -111,7 +108,7 @@ else
     private ComponentCategory? _selectedCategory;
     private string _searchText = string.Empty;
     private PriceTableSortMode _sortMode = PriceTableSortMode.NameAscending;
-    private bool _showSalePrice = true;
+    private bool _showCost;
     private bool _isLoading = true;
     private string? _loadError;
     private CancellationTokenSource? _searchDebounce;
@@ -132,7 +129,7 @@ else
             var query = new List<string>
             {
                 $"sort={Uri.EscapeDataString(_sortMode.ToString())}",
-                $"priceMode={(_showSalePrice ? "venda" : "custo")}"
+                $"priceMode={(_showCost ? "custo" : "venda")}"
             };
             if (_selectedCategory is not null)
             {
@@ -209,9 +206,9 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    private void SetPriceMode(bool showSalePrice)
+    private void OnShowCostChanged(ChangeEventArgs e)
     {
-        _showSalePrice = showSalePrice;
+        _showCost = (bool)(e.Value ?? false);
         RefreshRows();
     }
 
@@ -242,6 +239,9 @@ else
         return ascending ? "▲" : "▼";
     }
 
+    // O preço de venda é sempre a base de ordenação/exibição; o checkbox só
+    // acrescenta o custo ao lado, não troca de modo — por isso showSalePrice
+    // vai sempre true aqui (CostPrice já vem preenchido independente disso).
     private void RefreshRows() =>
         _rows = PriceTableRowBuilder.Build(
             _catalog,
@@ -249,7 +249,7 @@ else
             _selectedCategory,
             _searchText,
             _sortMode,
-            _showSalePrice);
+            showSalePrice: true);
 
     public void Dispose() => _searchDebounce?.Cancel();
 }

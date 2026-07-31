@@ -13,7 +13,11 @@ public sealed record ProductPriceTableRow(
     ComponentCategory Category = ComponentCategory.Processor,
     string CategoryName = "",
     // Só usado pelo popup de hover do BuildPc.Web (não entra no PDF).
-    string Description = "");
+    string Description = "",
+    // Sempre preenchido com o custo bruto, independente do modo pedido em
+    // Price -- permite a tela mostrar custo e venda lado a lado sem uma
+    // segunda consulta ao catálogo.
+    decimal CostPrice = 0m);
 
 public sealed record ProductPriceTableSection(
     string? CategoryName,

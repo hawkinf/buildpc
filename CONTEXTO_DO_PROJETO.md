@@ -967,6 +967,17 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (31/07) — seletor de produtos da Montagem ganha o mesmo
+  padrão visual da Consulta de Preços, pedido do usuário ("fazer a
+  montagem usando a semelhança da tabela de preços"). Select de categoria
+  vira pills (sempre uma selecionada, sem "Todos" — a Montagem trabalha
+  uma categoria por vez, diferente da consulta). Lista de produtos ganha
+  alternar lista/quadro (cards com foto, nome, preço), mantendo os mesmos
+  gestos de sempre (clique seleciona, duplo clique adiciona direto) e
+  ordenação nome/preço nos dois modos. CSS próprio em
+  `Montagem.razor.css`, sem depender do `PriceCatalogView` novo — a
+  interação de selecionar/adicionar item é diferente o suficiente da
+  consulta (só leitura) pra não valer a pena forçar o mesmo componente.
 - **Refatoração + reforço de segurança (31/07): tabela pública fica igual
   à da equipe, exceto o botão de custo, que nunca pode aparecer.** Pedido
   explícito do usuário ("nunca"). `/consulta` (sem senha) ganhou as mesmas

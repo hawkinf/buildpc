@@ -967,6 +967,19 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (31/07) — Consulta de Preços ganha alternar entre lista
+  (tabela atual) e quadros (cartão com foto grande, nome embaixo, preço em
+  destaque, grid que quebra linha conforme a largura). Toggle com dois
+  ícones ao lado do checkbox de custo; lista continua sendo o padrão. Na
+  sequência, o usuário mandou print da Kabum como referência visual ("mais
+  ou menos dessa forma") — o filtro de categoria (antes um `<select>`) virou
+  uma fileira de pills roláveis horizontalmente (Todos + uma por categoria,
+  com contagem), ativa preenchida na cor azul da marca (a referência usava
+  laranja, mantivemos a paleta já estabelecida no site). Preço do cartão em
+  modo quadro ficou maior e ancorado embaixo do card (`margin-top: auto`)
+  pra ficar mais parecido com o padrão de e-commerce da referência. Ambos
+  reaproveitam a mesma lógica de filtro/busca/ordenação e o popup de hover
+  já existentes — só mudou a apresentação.
 - Cliente web (31/07) — Consulta de Preços troca o toggle "Venda"/"Custo"
   por um checkbox único "Custo": desmarcado, mostra só o preço de venda
   (como sempre foi); marcado, mostra custo (vermelho) e venda (azul) juntos

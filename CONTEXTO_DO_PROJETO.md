@@ -967,6 +967,38 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- Cliente web (31/07) — Consulta de Preços troca o toggle "Venda"/"Custo"
+  por um checkbox único "Custo": desmarcado, mostra só o preço de venda
+  (como sempre foi); marcado, mostra custo (vermelho) e venda (azul) juntos
+  na mesma célula, separados por um traço, em vez de trocar de modo.
+  `ProductPriceTableRow` (Core, compartilhado com o PDF) ganhou `CostPrice`,
+  sempre preenchido com o custo bruto independente do `Price` pedido —
+  evita duplicar a consulta ao catálogo pra mostrar os dois valores. A
+  ordenação continua sempre pelo preço de venda; o checkbox só acrescenta
+  a coluna de custo. Novo teste
+  `Build_AlwaysFillsCostPriceRegardlessOfShowSalePrice`.
+- **Bug crítico de produção corrigido (31/07): login com senha certa
+  quebrava com 500 ao voltar de uma página protegida.** Não reportado pelo
+  usuário — achado testando o checkbox de custo acima, direto em produção
+  via curl. Fluxo real quebrado: acessar `/montagem` (ou qualquer tela da
+  equipe) deslogado → redireciona pra `/login?returnUrl=<URL ABSOLUTA>` →
+  digitar a senha certa → `Results.LocalRedirect(returnUrl)` recebe uma URL
+  com esquema e host (não um caminho relativo) →
+  `InvalidOperationException: The supplied URL is not local` sem nenhum
+  handler pegando → 500 pro usuário em vez de voltar pra página que ele
+  tentou abrir. Causa raiz: `RedirectToLogin.razor` usava
+  `NavigationManager.Uri` (sempre absoluta) como `returnUrl`, desde a
+  reestruturação do site público (mesmo dia, entrada anterior). Corrigido
+  em duas camadas: (1) `RedirectToLogin.razor` agora manda só o caminho
+  relativo via `ToBaseRelativePath` — a causa raiz; (2) o handler de
+  `POST /account/login` ganhou uma checagem própria (`IsLocalPath`) que
+  nunca lança — qualquer `returnUrl` que não seja um caminho local válido
+  cai em `/precos` em vez de derrubar a rota, blindagem contra a mesma
+  classe de bug reaparecer por outro caminho. Confirmado em produção via
+  curl (com cuidado extra: um argumento de `--data-urlencode` começando em
+  `/` sofre a conversão automática de path do Git Bash/MSYS pra caminho
+  Windows — usar `%2F` já escapado manualmente evita esse artefato de
+  teste).
 - Cliente web (31/07) — em Consulta de Preços (só nesse módulo, tela já
   protegida por senha), clicar no toggle "Custo" mostra o valor direto em
   vez de mascarar cada linha de novo com `RevealCost`. Pedido do usuário:

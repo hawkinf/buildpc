@@ -69,6 +69,11 @@
             </StackPanel>
           </Button>
 
+          <CheckBox Content="Incluir descrição"
+                    IsChecked="{Binding IncludeDescriptionsInPdf, Mode=TwoWay}"
+                    VerticalAlignment="Center"
+                    AutomationProperties.Name="Incluir descrição no PDF exportado" />
+
           <Button Classes="primary"
                   Click="ExportPdf_Click"
                   IsEnabled="{Binding CanExport}"

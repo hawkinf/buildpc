@@ -30,6 +30,7 @@ builder.Services.AddSingleton<IAssemblyTemplateRepository>(
 
 builder.Services.AddSingleton(sp =>
     StaffPasswordValidator.FromConfiguration(sp.GetRequiredService<IConfiguration>()));
+builder.Services.AddScoped<BuildPc.Web.Services.RevealAccessState>();
 
 // KabumCatalogImporter roda inteiramente no servidor (é assim que o Desktop
 // já faz hoje, só que na máquina do usuário) — sem CORS envolvido, porque
@@ -213,7 +214,7 @@ app.MapGet(
 // orçamentos não chega perto do volume que justificaria um endpoint novo.
 app.MapGet(
     "/pdf/orcamento/{id:guid}",
-    async Task<IResult> (Guid id, IQuoteRepository quoteRepository) =>
+    async Task<IResult> (Guid id, IQuoteRepository quoteRepository, bool descricoes = true) =>
     {
         var quotes = await quoteRepository.GetQuotesAsync();
         var quote = quotes.FirstOrDefault(quote => quote.Id == id);
@@ -227,7 +228,7 @@ app.MapGet(
             $"buildpc-web-orcamento-{Guid.NewGuid():N}.pdf");
         try
         {
-            await Task.Run(() => new QuotePdfService().Export(quote, tempPath));
+            await Task.Run(() => new QuotePdfService().Export(quote, tempPath, descricoes));
             var bytes = await File.ReadAllBytesAsync(tempPath);
             return Results.File(
                 bytes,

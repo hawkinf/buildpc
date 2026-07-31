@@ -144,7 +144,11 @@ else
                 <button type="button" @onclick="RequestClear">Limpar</button>
                 @if (_savedQuote is not null && !_isDirty)
                 {
-                    <a href="@($"/pdf/orcamento/{_savedQuote.Id}")" target="_blank">Exportar PDF</a>
+                    <label class="build-pdf-option">
+                        <input type="checkbox" checked="@_exportDescriptions" @onchange="e => _exportDescriptions = (bool)(e.Value ?? true)" />
+                        Incluir descrição
+                    </label>
+                    <a href="@($"/pdf/orcamento/{_savedQuote.Id}?descricoes={_exportDescriptions}")" target="_blank">Exportar PDF</a>
                 }
                 else
                 {
@@ -416,6 +420,7 @@ else
     private string? _statusMessage;
     private bool _topCollapsed;
     private bool _itemsCollapsed;
+    private bool _exportDescriptions = true;
 
     private string _templateName = string.Empty;
     private AssemblyTemplate? _templateToDelete;

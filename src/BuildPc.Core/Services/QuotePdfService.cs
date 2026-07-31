@@ -7,7 +7,10 @@ namespace BuildPc.Core.Services;
 
 public sealed class QuotePdfService
 {
-    public void Export(SavedQuote quote, string outputPath)
+    public void Export(
+        SavedQuote quote,
+        string outputPath,
+        bool includeDescriptions = true)
     {
         ArgumentNullException.ThrowIfNull(quote);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
@@ -19,7 +22,7 @@ public sealed class QuotePdfService
             Directory.CreateDirectory(directory);
         }
 
-        var document = BuildDocument(quote);
+        var document = BuildDocument(quote, includeDescriptions);
         var renderer = new PdfDocumentRenderer
         {
             Document = document
@@ -28,7 +31,7 @@ public sealed class QuotePdfService
         renderer.PdfDocument.Save(outputPath);
     }
 
-    private static Document BuildDocument(SavedQuote quote)
+    private static Document BuildDocument(SavedQuote quote, bool includeDescriptions)
     {
         var document = new Document
         {
@@ -55,7 +58,7 @@ public sealed class QuotePdfService
 
         AddHeader(section, quote);
         AddClient(section, quote);
-        AddItems(section, quote);
+        AddItems(section, quote, includeDescriptions);
         AddTotals(section, quote);
         AddCommercialTerms(section, quote);
         AddNotes(section, quote);
@@ -147,7 +150,10 @@ public sealed class QuotePdfService
         section.AddParagraph().Format.SpaceAfter = Unit.FromCentimeter(0.12);
     }
 
-    private static void AddItems(Section section, SavedQuote quote)
+    private static void AddItems(
+        Section section,
+        SavedQuote quote,
+        bool includeDescriptions)
     {
         var table = section.AddTable();
         table.Borders.Width = 0.4;
@@ -187,7 +193,7 @@ public sealed class QuotePdfService
             SetCellText(row.Cells[1], item.CategoryName);
             var product = row.Cells[2].AddParagraph();
             product.AddFormattedText(item.Name, TextFormat.Bold);
-            if (!string.IsNullOrWhiteSpace(item.Description))
+            if (includeDescriptions && !string.IsNullOrWhiteSpace(item.Description))
             {
                 product.AddLineBreak();
                 var description = product.AddFormattedText(item.Description);

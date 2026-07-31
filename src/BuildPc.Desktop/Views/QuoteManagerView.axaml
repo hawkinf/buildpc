@@ -112,18 +112,22 @@
               <TextBlock Text="Abrir na Montagem" />
             </StackPanel>
           </Button>
-          <Button Grid.Column="5"
-                  Classes="primary"
-                  Click="ExportPdf_Click"
-                  MinHeight="36"
-                  Padding="12,8"
-                  IsEnabled="{Binding $parent[UserControl].DataContext.HasSelection}">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <PathIcon Data="{StaticResource Icon.Pdf}" Width="16" Height="16"
-                        Foreground="White" />
-              <TextBlock Text="Exportar PDF" Foreground="White" />
-            </StackPanel>
-          </Button>
+          <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <CheckBox Content="Descrição"
+                      IsChecked="{Binding $parent[UserControl].DataContext.IncludeDescriptionsInPdf, Mode=TwoWay}"
+                      AutomationProperties.Name="Incluir descrição no PDF exportado" />
+            <Button Classes="primary"
+                    Click="ExportPdf_Click"
+                    MinHeight="36"
+                    Padding="12,8"
+                    IsEnabled="{Binding $parent[UserControl].DataContext.HasSelection}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <PathIcon Data="{StaticResource Icon.Pdf}" Width="16" Height="16"
+                          Foreground="White" />
+                <TextBlock Text="Exportar PDF" Foreground="White" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
           <Button Grid.Column="6"
                   Classes="secondary"
                   Command="{Binding $parent[UserControl].DataContext.DuplicateCommand}"

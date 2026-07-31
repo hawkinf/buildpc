@@ -42,7 +42,10 @@ public partial class QuoteManagerView : UserControl
             $"orcamento-{selected.Quote.Number:000000}.pdf");
         try
         {
-            new QuotePdfService().Export(selected.Quote, outputPath);
+            new QuotePdfService().Export(
+                selected.Quote,
+                outputPath,
+                viewModel.IncludeDescriptionsInPdf);
             viewModel.CompletePdfPreview(SystemFileLauncher.Open(outputPath));
         }
         catch

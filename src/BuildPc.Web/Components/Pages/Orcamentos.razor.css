@@ -99,6 +99,15 @@
     cursor: pointer;
 }
 
+.quote-pdf-option {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #475569;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
 @media (max-width: 640px) {
     .quote-toolbar {
         flex-direction: column;

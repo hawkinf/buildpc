@@ -60,6 +60,43 @@ public sealed class QuotePdfServiceTests
     }
 
     [Fact]
+    public void Export_WithoutDescriptions_StillCreatesReadablePdf()
+    {
+        var path = Path.Combine(
+            Path.GetTempPath(),
+            $"buildpc-orcamento-sem-descricao-{Guid.NewGuid():N}.pdf");
+        try
+        {
+            var quote = new SavedQuote
+            {
+                Id = Guid.NewGuid(),
+                Number = 43,
+                CreatedAt = new DateTimeOffset(2026, 7, 29, 14, 35, 0, TimeSpan.FromHours(-3)),
+                ClientName = "Mariana Oliveira",
+                ClientPhone = "(11) 98765-4321",
+                TotalCost = 2400m,
+                TotalPrice = 3000m,
+                CompanySnapshot = new CompanySnapshot { CompanyName = "BuildPC Tecnologia" },
+                Items = [Item("Processador", "AMD Ryzen 7 7800X3D", 1, 3000m)]
+            };
+
+            new QuotePdfService().Export(quote, path, includeDescriptions: false);
+
+            Assert.True(File.Exists(path));
+            var bytes = File.ReadAllBytes(path);
+            Assert.True(bytes.Length > 1000);
+            Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(bytes, 0, 4));
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+    }
+
+    [Fact]
     public async Task ProductPriceTableExport_CreatesPdfWithFilteredRows()
     {
         var requestedPath = Environment.GetEnvironmentVariable(

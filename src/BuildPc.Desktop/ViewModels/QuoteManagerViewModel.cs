@@ -22,6 +22,7 @@ public sealed class QuoteManagerViewModel : ViewModelBase
     private bool _isDeleteConfirmationVisible;
     private string _searchText = string.Empty;
     private QuotePeriodOptionViewModel _selectedPeriod = null!;
+    private bool _includeDescriptionsInPdf = true;
 
     public QuoteManagerViewModel(
         IQuoteRepository repository,
@@ -116,6 +117,13 @@ public sealed class QuoteManagerViewModel : ViewModelBase
     }
 
     public bool HasSelection => SelectedQuote is not null;
+
+    public bool IncludeDescriptionsInPdf
+    {
+        get => _includeDescriptionsInPdf;
+        set => SetProperty(ref _includeDescriptionsInPdf, value);
+    }
+
     public bool HasQuotes => Quotes.Count > 0;
     public bool IsEmpty => !HasQuotes;
 

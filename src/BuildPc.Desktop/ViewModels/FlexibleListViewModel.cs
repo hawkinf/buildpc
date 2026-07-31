@@ -32,6 +32,7 @@ public sealed class FlexibleListViewModel : ViewModelBase
     private int _validityDays;
     private string _paymentTerms = string.Empty;
     private string _deliveryTerms = string.Empty;
+    private bool _includeDescriptionsInPdf = true;
 
     public FlexibleListViewModel(
         IEnumerable<PcComponent> catalog,
@@ -170,6 +171,13 @@ public sealed class FlexibleListViewModel : ViewModelBase
     }
 
     public bool CanExport => SavedQuote is not null && !IsDirty;
+
+    public bool IncludeDescriptionsInPdf
+    {
+        get => _includeDescriptionsInPdf;
+        set => SetProperty(ref _includeDescriptionsInPdf, value);
+    }
+
     public string SaveStateText => SavedQuote is null
         ? "Grave o orçamento antes de exportar."
         : IsDirty

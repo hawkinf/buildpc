@@ -153,7 +153,10 @@ public partial class FlexibleListView : UserControl
             $"orcamento-{quote.Number:000000}.pdf");
         try
         {
-            new QuotePdfService().Export(quote, outputPath);
+            new QuotePdfService().Export(
+                quote,
+                outputPath,
+                viewModel.IncludeDescriptionsInPdf);
             viewModel.CompletePdfPreview(SystemFileLauncher.Open(outputPath));
         }
         catch

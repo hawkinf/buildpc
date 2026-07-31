@@ -82,6 +82,21 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var app = builder.Build();
+
+// Deixa o app responder tanto na raiz (precos.hawk.com.br, domínio antigo,
+// ainda no ar) quanto sob /tabela (loja.hawk.com.br/tabela, novo domínio
+// público) com o MESMO processo — sem prefixo "/tabela" no caminho, o
+// middleware não mexe em nada, então precos.hawk.com.br continua igual.
+//
+// O UseRouting() explícito logo em seguida não é cosmético: sem ele, a
+// inserção automática de roteamento do minimal hosting acontecia tarde
+// demais (só antes do primeiro Map*), então UseAntiforgery()/
+// UseAuthorization() rodavam sem endpoint resolvido ainda -- POST
+// /account/login sob /tabela caía no fallback de componente Razor (só
+// aceita GET/HEAD) e voltava 400 "antiforgery" em vez de bater no
+// endpoint certo. Confirmado reproduzindo local antes/depois da correção.
+app.UsePathBase("/tabela");
+app.UseRouting();
 app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
@@ -122,7 +137,7 @@ app.MapPost("/account/login", async (HttpContext context, StaffPasswordValidator
     // opcional, a tabela pública sempre é o destino de quem não tem a senha.
     if (!validator.IsValid(password))
     {
-        return Results.LocalRedirect("/consulta");
+        return Results.LocalRedirect(context.Request.PathBase + "/consulta");
     }
 
     var identity = new ClaimsIdentity(
@@ -137,13 +152,14 @@ app.MapPost("/account/login", async (HttpContext context, StaffPasswordValidator
             ExpiresUtc = DateTimeOffset.UtcNow.AddHours(10)
         });
 
-    return Results.LocalRedirect(IsLocalPath(returnUrl) ? returnUrl : "/precos");
+    var target = IsLocalPath(returnUrl) ? returnUrl : "/precos";
+    return Results.LocalRedirect(context.Request.PathBase + target);
 }).DisableAntiforgery();
 
 app.MapPost("/account/logout", async (HttpContext context) =>
 {
     await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-    return Results.LocalRedirect("/login");
+    return Results.LocalRedirect(context.Request.PathBase + "/login");
 }).DisableAntiforgery();
 
 // Endpoint minimal-API dedicado (não parte do circuito Blazor Server): o

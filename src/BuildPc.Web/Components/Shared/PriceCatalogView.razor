@@ -255,7 +255,7 @@ else
             {
                 query.Add($"search={Uri.EscapeDataString(_searchText)}");
             }
-            return $"/pdf/tabela-precos?{string.Join('&', query)}";
+            return $"pdf/tabela-precos?{string.Join('&', query)}";
         }
     }
 

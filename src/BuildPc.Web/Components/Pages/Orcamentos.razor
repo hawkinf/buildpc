@@ -111,13 +111,13 @@ else
                 }
 
                 <div class="quote-actions">
-                    <a href="@($"/montagem?editar={selected.Id}")">Abrir na Montagem</a>
-                    <a href="@($"/montagem?duplicar={selected.Id}")">Duplicar</a>
+                    <a href="@($"montagem?editar={selected.Id}")">Abrir na Montagem</a>
+                    <a href="@($"montagem?duplicar={selected.Id}")">Duplicar</a>
                     <label class="quote-pdf-option">
                         <input type="checkbox" checked="@_exportDescriptions" @onchange="e => _exportDescriptions = (bool)(e.Value ?? true)" />
                         Incluir descrição
                     </label>
-                    <a href="@($"/pdf/orcamento/{selected.Id}?descricoes={_exportDescriptions}")" target="_blank">Baixar PDF</a>
+                    <a href="@($"pdf/orcamento/{selected.Id}?descricoes={_exportDescriptions}")" target="_blank">Baixar PDF</a>
                     @if (_isDeleteConfirmationVisible)
                     {
                         <span>

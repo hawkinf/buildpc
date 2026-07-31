@@ -149,7 +149,7 @@ else
                         <input type="checkbox" checked="@_exportDescriptions" @onchange="e => _exportDescriptions = (bool)(e.Value ?? true)" />
                         Incluir descrição
                     </label>
-                    <a href="@($"/pdf/orcamento/{_savedQuote.Id}?descricoes={_exportDescriptions}")" target="_blank">Exportar PDF</a>
+                    <a href="@($"pdf/orcamento/{_savedQuote.Id}?descricoes={_exportDescriptions}")" target="_blank">Exportar PDF</a>
                 }
                 else
                 {

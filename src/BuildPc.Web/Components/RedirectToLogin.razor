@@ -10,6 +10,6 @@
         // login. ToBaseRelativePath tira o host, sobra só o caminho.
         var relativePath = "/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
         var returnUrl = Uri.EscapeDataString(relativePath);
-        NavigationManager.NavigateTo($"/login?returnUrl={returnUrl}", forceLoad: true);
+        NavigationManager.NavigateTo($"login?returnUrl={returnUrl}", forceLoad: true);
     }
 }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <base href="/" />
+    <base href="@BaseHref" />
     <ResourcePreloader />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["BuildPc.Web.styles.css"]" />
@@ -19,3 +19,18 @@
 </body>
 
 </html>
+
+@code {
+    // precos.hawk.com.br roda o app na raiz; loja.hawk.com.br/tabela roda o
+    // MESMO processo sob um prefixo (app.UsePathBase("/tabela") no
+    // Program.cs). Com o <base href> certo pro domínio de cada requisição,
+    // todo link relativo do app (sem "/" na frente, ver MainLayout/NavLink
+    // etc.) resolve certo nos dois -- sem isto, precisaria reescrever cada
+    // link manualmente pra cada domínio.
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    private string BaseHref => string.IsNullOrEmpty(HttpContext.Request.PathBase)
+        ? "/"
+        : $"{HttpContext.Request.PathBase}/";
+}

@@ -967,6 +967,23 @@ chave da API não aparece em texto aberto no JSON.
 
 ## Histórico recente relevante
 
+- **Bug corrigido (30/07), afeta Desktop e Web igualmente: "Kabum" sobrevivia
+  na descrição de produtos importados quando colado sem espaço.** Reportado
+  pelo usuário ("fui bem claro para retirar 'no Kabum!'..."). Achado
+  direto no Postgres de produção: a descrição real de um monitor tinha
+  "...encontra noKaBuM" — a preposição colada direto no nome da loja, sem
+  espaço, provavelmente um artefato do HTML original da Kabum. O regex
+  `StoreMentionRegex` (`KabumCatalogImporter.cs`, único lugar que faz essa
+  limpeza, compartilhado por Desktop e Web) exigia `\s+` (um ou mais
+  espaços) entre "no/na/do/da" e "kabum" — trocado pra `\s*` (zero ou
+  mais). Novo teste `ParseCatalogHtml_RemovesStoreNameEvenWithoutASpaceBeforeIt`
+  cobre o caso colado; o caso com espaço (já testado antes) continua
+  passando. **Não precisou reimplantar a API** — diferente do bug anterior
+  do mesmo dia, esta mudança não toca nenhum tipo exposto pelos endpoints
+  da API, só a lógica de importação que roda no processo do Desktop/Web.
+  O único registro afetado hoje no catálogo de produção (`kabum-873589`)
+  só é corrigido reimportando a categoria Monitores — a limpeza não
+  reprocessa retroativamente produtos já salvos.
 - **Bug de deploy corrigido (30/07): `BuildPc.Api` na VPS ficou desatualizada
   depois da feature de Validade/Prazo de entrega padrão.** Reportado pelo
   usuário: configurações salvas no Desktop não apareciam na Web. Causa: a

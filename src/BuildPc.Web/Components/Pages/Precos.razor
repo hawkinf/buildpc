@@ -95,16 +95,7 @@ else
                             @row.Title
                         </ProductHoverPreview>
                     </td>
-                    <td>
-                        @if (_showSalePrice)
-                        {
-                            @row.Price.ToString("C", CultureHelpers.BrazilianCulture)
-                        }
-                        else
-                        {
-                            <RevealCost Value="row.Price" />
-                        }
-                    </td>
+                    <td>@row.Price.ToString("C", CultureHelpers.BrazilianCulture)</td>
                 </tr>
             }
         </tbody>

@@ -11,3 +11,46 @@
 .reveal-cost-masked {
     letter-spacing: 0.15em;
 }
+
+.reveal-cost-unlock {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.reveal-cost-unlock-input {
+    width: 6rem;
+    padding: 0.2rem 0.4rem;
+    border: 1px solid #94a3b8;
+    border-radius: 4px;
+    font: inherit;
+    font-size: 0.85rem;
+}
+
+.reveal-cost-unlock-submit,
+.reveal-cost-unlock-cancel {
+    border: none;
+    border-radius: 4px;
+    width: 1.6rem;
+    height: 1.6rem;
+    cursor: pointer;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.reveal-cost-unlock-submit {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.reveal-cost-unlock-cancel {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.reveal-cost-error {
+    color: #b91c1c;
+    font-size: 0.75rem;
+    flex-basis: 100%;
+}

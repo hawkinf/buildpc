@@ -1,15 +1,38 @@
 @implements IDisposable
+@inject RevealAccessState AccessState
 
-<button type="button" class="reveal-cost" title="Toque para ver" @onclick="Reveal">
-    @if (_revealed)
-    {
-        <span>@FormattedValue</span>
-    }
-    else
-    {
-        <span class="reveal-cost-masked" aria-hidden="true">•••••</span>
-    }
-</button>
+@if (_showPasswordPrompt)
+{
+    <span class="reveal-cost-unlock">
+        <input
+            type="password"
+            class="reveal-cost-unlock-input"
+            placeholder="Senha"
+            value="@_passwordAttempt"
+            autofocus
+            @oninput="e => _passwordAttempt = e.Value?.ToString() ?? string.Empty"
+            @onkeydown="OnPasswordKeyDown" />
+        <button type="button" class="reveal-cost-unlock-submit" @onclick="SubmitPassword" title="Confirmar">✓</button>
+        <button type="button" class="reveal-cost-unlock-cancel" @onclick="CancelPasswordPrompt" title="Cancelar">✕</button>
+        @if (_showError)
+        {
+            <span class="reveal-cost-error">Senha incorreta</span>
+        }
+    </span>
+}
+else
+{
+    <button type="button" class="reveal-cost" title="Toque para ver" @onclick="Reveal">
+        @if (_revealed)
+        {
+            <span>@FormattedValue</span>
+        }
+        else
+        {
+            <span class="reveal-cost-masked" aria-hidden="true">•••••</span>
+        }
+    </button>
+}
 
 @code {
     [Parameter, EditorRequired]
@@ -28,6 +51,9 @@
     public int RevealSeconds { get; set; } = 5;
 
     private bool _revealed;
+    private bool _showPasswordPrompt;
+    private bool _showError;
+    private string _passwordAttempt = string.Empty;
     private CancellationTokenSource? _cts;
 
     private string FormattedValue => string.IsNullOrEmpty(Suffix)
@@ -45,10 +71,52 @@
             return;
         }
 
+        if (!AccessState.IsUnlocked)
+        {
+            _showPasswordPrompt = true;
+            _showError = false;
+            _passwordAttempt = string.Empty;
+            return;
+        }
+
         _revealed = true;
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
         _ = HideAfterDelayAsync(_cts.Token);
+    }
+
+    private void SubmitPassword()
+    {
+        if (AccessState.TryUnlock(_passwordAttempt))
+        {
+            _showPasswordPrompt = false;
+            _passwordAttempt = string.Empty;
+            Reveal();
+        }
+        else
+        {
+            _showError = true;
+            _passwordAttempt = string.Empty;
+        }
+    }
+
+    private void CancelPasswordPrompt()
+    {
+        _showPasswordPrompt = false;
+        _showError = false;
+        _passwordAttempt = string.Empty;
+    }
+
+    private void OnPasswordKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            SubmitPassword();
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelPasswordPrompt();
+        }
     }
 
     private async Task HideAfterDelayAsync(CancellationToken token)

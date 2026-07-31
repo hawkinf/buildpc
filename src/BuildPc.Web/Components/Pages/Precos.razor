@@ -42,6 +42,23 @@ else
             Custo
         </label>
 
+        <div class="price-view-toggle">
+            <button
+                type="button"
+                class="@(!_isGridView ? "active" : null)"
+                title="Ver em lista"
+                @onclick="() => SetGridView(false)">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13" /><path d="M3 6h.01M3 12h.01M3 18h.01" /></svg>
+            </button>
+            <button
+                type="button"
+                class="@(_isGridView ? "active" : null)"
+                title="Ver em quadros"
+                @onclick="() => SetGridView(true)">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="8" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /><rect x="13" y="13" width="8" height="8" rx="1.5" /></svg>
+            </button>
+        </div>
+
         <a class="price-pdf-link" href="@PdfDownloadUrl" target="_blank">
             Exportar PDF
         </a>
@@ -49,55 +66,89 @@ else
 
     <p class="price-count">@CountText</p>
 
-    <div class="price-table-wrap">
-    <table class="price-table">
-        <thead>
-            <tr>
-                <th></th>
-                <th>
-                    <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: false)">
-                        Produto @(SortIcon(byPrice: false))
-                    </button>
-                </th>
-                <th>
-                    <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: true)">
-                        Preço de venda @(SortIcon(byPrice: true))
-                    </button>
-                </th>
-            </tr>
-        </thead>
-        <tbody>
+    @if (_isGridView)
+    {
+        <div class="price-grid">
             @foreach (var row in _rows)
             {
-                <tr>
-                    <td class="price-thumb-cell">
+                <div class="price-card">
+                    <div class="price-card-thumb">
                         @if (!string.IsNullOrWhiteSpace(row.ImageUrl))
                         {
-                            <img class="price-thumb" src="@row.ImageUrl" alt="" loading="lazy" />
+                            <img src="@row.ImageUrl" alt="" loading="lazy" />
                         }
-                    </td>
-                    <td>
-                        <ProductHoverPreview
-                            Title="@row.Title"
-                            Description="@row.Description"
-                            ImageUrl="@row.ImageUrl"
-                            Price="@row.Price.ToString("C", CultureHelpers.BrazilianCulture)">
-                            @row.Title
-                        </ProductHoverPreview>
-                    </td>
-                    <td>
+                    </div>
+                    <ProductHoverPreview
+                        Title="@row.Title"
+                        Description="@row.Description"
+                        ImageUrl="@row.ImageUrl"
+                        Price="@row.Price.ToString("C", CultureHelpers.BrazilianCulture)">
+                        <span class="price-card-name">@row.Title</span>
+                    </ProductHoverPreview>
+                    <div class="price-card-prices">
                         @if (_showCost)
                         {
                             <span class="price-cost">@row.CostPrice.ToString("C", CultureHelpers.BrazilianCulture)</span>
                             <span class="price-dash">-</span>
                         }
                         <span class="price-sale">@row.Price.ToString("C", CultureHelpers.BrazilianCulture)</span>
-                    </td>
-                </tr>
+                    </div>
+                </div>
             }
-        </tbody>
-    </table>
-    </div>
+        </div>
+    }
+    else
+    {
+        <div class="price-table-wrap">
+        <table class="price-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>
+                        <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: false)">
+                            Produto @(SortIcon(byPrice: false))
+                        </button>
+                    </th>
+                    <th>
+                        <button type="button" class="price-sort-button" @onclick="() => ToggleSort(byPrice: true)">
+                            Preço de venda @(SortIcon(byPrice: true))
+                        </button>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in _rows)
+                {
+                    <tr>
+                        <td class="price-thumb-cell">
+                            @if (!string.IsNullOrWhiteSpace(row.ImageUrl))
+                            {
+                                <img class="price-thumb" src="@row.ImageUrl" alt="" loading="lazy" />
+                            }
+                        </td>
+                        <td>
+                            <ProductHoverPreview
+                                Title="@row.Title"
+                                Description="@row.Description"
+                                ImageUrl="@row.ImageUrl"
+                                Price="@row.Price.ToString("C", CultureHelpers.BrazilianCulture)">
+                                @row.Title
+                            </ProductHoverPreview>
+                        </td>
+                        <td>
+                            @if (_showCost)
+                            {
+                                <span class="price-cost">@row.CostPrice.ToString("C", CultureHelpers.BrazilianCulture)</span>
+                                <span class="price-dash">-</span>
+                            }
+                            <span class="price-sale">@row.Price.ToString("C", CultureHelpers.BrazilianCulture)</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        </div>
+    }
 }
 
 @code {
@@ -109,6 +160,7 @@ else
     private string _searchText = string.Empty;
     private PriceTableSortMode _sortMode = PriceTableSortMode.NameAscending;
     private bool _showCost;
+    private bool _isGridView;
     private bool _isLoading = true;
     private string? _loadError;
     private CancellationTokenSource? _searchDebounce;
@@ -211,6 +263,8 @@ else
         _showCost = (bool)(e.Value ?? false);
         RefreshRows();
     }
+
+    private void SetGridView(bool isGridView) => _isGridView = isGridView;
 
     private void ToggleSort(bool byPrice)
     {

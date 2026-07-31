@@ -36,6 +36,33 @@
     font-weight: 600;
 }
 
+.price-view-toggle {
+    display: flex;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.price-view-toggle button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.45rem 0.6rem;
+    border: none;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.price-view-toggle button:first-child {
+    border-right: 1px solid #cbd5e1;
+}
+
+.price-view-toggle button.active {
+    background: #1d4ed8;
+    color: white;
+}
+
 .price-pdf-link {
     margin-left: auto;
     padding: 0.5rem 1rem;
@@ -43,6 +70,55 @@
     color: white;
     text-decoration: none;
     border-radius: 4px;
+}
+
+.price-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 1rem;
+}
+
+.price-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: white;
+}
+
+.price-card-thumb {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.price-card-thumb img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.price-card-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1f2933;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.price-card-prices {
+    font-size: 0.9rem;
 }
 
 .price-sort-button {
@@ -107,6 +183,10 @@
         justify-content: center;
     }
 
+    .price-view-toggle {
+        align-self: center;
+    }
+
     .price-pdf-link {
         margin-left: 0;
     }
@@ -115,5 +195,10 @@
     .price-table td {
         padding: 0.5rem;
         font-size: 0.9rem;
+    }
+
+    .price-grid {
+        grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+        gap: 0.75rem;
     }
 }

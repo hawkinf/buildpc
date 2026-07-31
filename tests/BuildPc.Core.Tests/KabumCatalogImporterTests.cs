@@ -149,6 +149,31 @@ public sealed class KabumCatalogImporterTests
     }
 
     [Fact]
+    public void ParseCatalogHtml_RemovesStoreNameEvenWithoutASpaceBeforeIt()
+    {
+        // Achado em produção: a descrição real da Kabum às vezes cola a
+        // preposição direto no nome da loja, sem espaço ("...encontra
+        // noKaBuM"), e o regex antigo exigia espaço ali.
+        var html = CatalogHtml(new
+        {
+            code = 99,
+            name = "Monitor Gamer",
+            tagDescription = "Tudo isso você encontra noKaBuM",
+            priceWithDiscount = 100m
+        });
+
+        var monitor = Assert.Single(KabumCatalogImporter.ParseCatalogHtml(
+            html,
+            ComponentCategory.Monitor));
+
+        Assert.DoesNotContain(
+            "kabum",
+            monitor.Description,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Tudo isso você encontra", monitor.Description);
+    }
+
+    [Fact]
     public async Task FetchAsync_ImportsEveryPageAndRemovesDuplicates()
     {
         var requestedPages = new List<int>();

@@ -691,8 +691,11 @@ public sealed partial class KabumCatalogImporter
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant)]
     private static partial Regex NextDataRegex();
 
+    // O texto original da Kabum às vezes cola a preposição direto no nome da
+    // loja, sem espaço (ex.: "...encontra noKaBuM") — por isso \s* (zero ou
+    // mais espaços) em vez de \s+ aqui.
     [GeneratedRegex(
-        @"\b(?:(?:no|na|do|da)\s+)?kabum\b!?",
+        @"\b(?:(?:no|na|do|da)\s*)?kabum\b!?",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex StoreMentionRegex();
 

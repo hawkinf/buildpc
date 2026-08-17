@@ -32,6 +32,10 @@ builder.Services.AddSingleton(sp =>
     StaffPasswordValidator.FromConfiguration(sp.GetRequiredService<IConfiguration>()));
 builder.Services.AddScoped<BuildPc.Web.Services.RevealAccessState>();
 
+// Importacao diaria automatica: roda no servidor a mesma sequencia do botao
+// "Importar tudo". Desligavel por BuildPc:ImportacaoDiaria:Habilitada.
+builder.Services.AddHostedService<BuildPc.Web.Services.ImportacaoDiariaHostedService>();
+
 // KabumCatalogImporter roda inteiramente no servidor (é assim que o Desktop
 // já faz hoje, só que na máquina do usuário) — sem CORS envolvido, porque
 // não é o navegador quem chama o Kabum. Tipo tipado em vez de "new

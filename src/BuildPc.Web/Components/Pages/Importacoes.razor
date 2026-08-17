@@ -99,39 +99,10 @@ else
 
 @code {
     private IReadOnlyList<ProductCategoryDefinition> _categories = [];
-    // Mesmas URLs já configuradas no Desktop (buildpc.config.json /
-    // MainWindowViewModel.ImportSource) — servem de ponto de partida a cada
-    // sessão, já que essa configuração não é persistida no servidor (ver
-    // histórico da fase de Importações no CONTEXTO_DO_PROJETO.md).
-    private static readonly Dictionary<ComponentCategory, string> DefaultUrls = new()
-    {
-        [ComponentCategory.HardDrive] =
-            "https://www.kabum.com.br/hardware/disco-rigido-hd?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
-        [ComponentCategory.Processor] =
-            "https://www.kabum.com.br/hardware/processadores?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
-        [ComponentCategory.Cooler] =
-            "https://www.kabum.com.br/hardware/coolers?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
-        [ComponentCategory.Motherboard] =
-            "https://www.kabum.com.br/hardware/placas-mae?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
-        [ComponentCategory.Memory] =
-            "https://www.kabum.com.br/hardware/memoria-ram?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
-        [ComponentCategory.GraphicsCard] =
-            "https://www.kabum.com.br/hardware/placa-de-video-vga?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
-        [ComponentCategory.Storage] =
-            "https://www.kabum.com.br/hardware/ssd-2-5?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
-        [ComponentCategory.PowerSupply] =
-            "https://www.kabum.com.br/hardware/fontes?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
-        [ComponentCategory.Case] =
-            "https://www.kabum.com.br/perifericos/gabinetes?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
-        [ComponentCategory.Monitor] =
-            "https://www.kabum.com.br/computadores/monitores?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
-        [ComponentCategory.Mouse] =
-            "https://www.kabum.com.br/perifericos/teclado-mouse?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched",
-        [ComponentCategory.Keyboard] =
-            "https://www.kabum.com.br/perifericos/teclado-mouse?page_number=1&page_size=60&facet_filters=eyJrYWJ1bV9wcm9kdWN0IjpbInRydWUiXX0=&sort=most_searched"
-    };
-
-    private readonly Dictionary<ComponentCategory, string> _urls = new(DefaultUrls);
+    // As URLs padrao vivem em BuildPc.Core (ImportSourceDefaults): a rotina
+    // diaria de importacao usa a MESMA lista, e duplicar aqui faria uma
+    // mudanca valer so para quem clica no botao.
+    private readonly Dictionary<ComponentCategory, string> _urls = new(ImportSourceDefaults.Urls);
     private readonly Dictionary<ComponentCategory, ImportReplaceResult> _results = [];
     private readonly Dictionary<ComponentCategory, string> _errors = [];
     private bool _isLoading = true;
@@ -176,15 +147,11 @@ else
     private bool HasConfiguredUrl(ProductCategoryDefinition category) =>
         !string.IsNullOrWhiteSpace(_urls.GetValueOrDefault(category.Value));
 
-    // Mesma chave de origem que o Desktop usa por categoria
-    // (MainWindowViewModel.ImportSource) — HardDrive é rastreado
-    // separadamente como "kabum-hd", as demais como "kabum". Manter igual
-    // aqui é o que faz GetLastImportsAsync bater entre os dois clientes.
     private static string SourceKeyFor(ComponentCategory category) =>
-        category == ComponentCategory.HardDrive ? "kabum-hd" : "kabum";
+        ImportSourceDefaults.SourceKeyFor(category);
 
     private static string ConfigurationKeyFor(ComponentCategory category) =>
-        ImportKeys.SourceUrlKey(category, SourceKeyFor(category));
+        ImportSourceDefaults.ConfigurationKeyFor(category);
 
     private async Task OnUrlChanged(ProductCategoryDefinition category, ChangeEventArgs e)
     {

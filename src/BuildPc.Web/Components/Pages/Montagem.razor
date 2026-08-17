@@ -182,6 +182,89 @@ else
         </ul>
     }
 
+    <section class="build-saved-quotes">
+        <button
+            type="button"
+            class="build-collapse-toggle"
+            @onclick="() => _quotesCollapsed = !_quotesCollapsed">
+            @(_quotesCollapsed
+                ? $"▼ Orçamentos salvos ({_allQuotes.Count})"
+                : "▲ Recolher orçamentos salvos")
+        </button>
+
+        @if (!_quotesCollapsed)
+        {
+            <div class="build-quotes-toolbar">
+                <select value="@((int)_quotesPeriod)" @onchange="OnQuotesPeriodChanged">
+                    @foreach (var period in QuotePeriods)
+                    {
+                        <option value="@((int)period)">@QuoteFilter.DisplayName(period)</option>
+                    }
+                </select>
+                <input
+                    type="search"
+                    placeholder="Buscar por número, cliente ou item"
+                    value="@_quotesSearch"
+                    @onchange="OnQuotesSearchChanged" />
+                <span class="build-quotes-count">@_visibleQuotes.Count de @_allQuotes.Count</span>
+            </div>
+
+            @if (_visibleQuotes.Count == 0)
+            {
+                <p class="build-quotes-empty">Nenhum orçamento encontrado para este filtro.</p>
+            }
+            else
+            {
+                <div class="build-quotes-table-wrap">
+                    <table class="build-quotes-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Cliente</th>
+                                <th>Data</th>
+                                <th class="build-quotes-total">Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var quote in _visibleQuotes)
+                            {
+                                <tr>
+                                    <td>#@quote.Number.ToString("000000")</td>
+                                    <td>@quote.ClientName</td>
+                                    <td>@quote.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="build-quotes-total">
+                                        @quote.FinalPrice.ToString("C", CultureHelpers.BrazilianCulture)
+                                    </td>
+                                    <td class="build-quotes-actions">
+                                        <button type="button" @onclick="() => OpenQuote(quote)">Abrir</button>
+                                        <button type="button" @onclick="() => DuplicateQuote(quote)">Duplicar</button>
+                                        <a href="@($"pdf/orcamento/{quote.Id}?descricoes=true")" target="_blank">PDF</a>
+                                        @if (_quotePendingDelete == quote.Id)
+                                        {
+                                            <button type="button" @onclick="() => DeleteQuoteAsync(quote)">
+                                                Confirmar
+                                            </button>
+                                            <button type="button" @onclick="() => _quotePendingDelete = null">
+                                                Cancelar
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" @onclick="() => _quotePendingDelete = quote.Id">
+                                                Excluir
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+    </section>
+
     @if (_items.Count == 0)
     {
         <p>Nenhum item adicionado ainda.</p>
@@ -347,6 +430,14 @@ else
                             <span class="build-picker-card-name">@(product.IsFavorite ? "★ " : "")@product.Name</span>
                         </ProductHoverPreview>
                         <span class="build-picker-card-price">@SalePriceFor(product).ToString("C", CultureHelpers.BrazilianCulture)</span>
+                        <button
+                            type="button"
+                            class="build-picker-add"
+                            title="Adicionar ao orçamento"
+                            @onclick="() => SelectAndAdd(product)"
+                            @onclick:stopPropagation="true">
+                            +
+                        </button>
                     </div>
                 }
             </div>
@@ -369,6 +460,7 @@ else
                             Preço @(PickerSortIcon(byPrice: true))
                         </button>
                     </th>
+                    <th class="build-picker-add-cell"></th>
                 </tr>
             </thead>
             <tbody>
@@ -394,6 +486,16 @@ else
                             </ProductHoverPreview>
                         </td>
                         <td>@SalePriceFor(product).ToString("C", CultureHelpers.BrazilianCulture)</td>
+                        <td class="build-picker-add-cell">
+                            <button
+                                type="button"
+                                class="build-picker-add"
+                                title="Adicionar ao orçamento"
+                                @onclick="() => SelectAndAdd(product)"
+                                @onclick:stopPropagation="true">
+                                +
+                            </button>
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -457,6 +559,16 @@ else
     private IReadOnlyList<AssemblyTemplate> _templates = [];
     private readonly List<BuildLineItem> _items = [];
     private IReadOnlyList<CompatibilityIssue> _compatibilityIssues = [];
+
+    // Lista de orçamentos salvos, que antes vivia na tela /orcamentos: agora
+    // fica aqui para montar e consultar no mesmo lugar, sem trocar de tela.
+    private static readonly QuotePeriod[] QuotePeriods = Enum.GetValues<QuotePeriod>();
+    private IReadOnlyList<SavedQuote> _allQuotes = [];
+    private IReadOnlyList<SavedQuote> _visibleQuotes = [];
+    private string _quotesSearch = string.Empty;
+    private QuotePeriod _quotesPeriod = QuotePeriod.All;
+    private bool _quotesCollapsed = true;
+    private Guid? _quotePendingDelete;
 
     private ComponentCategory _pickerCategory;
     private string _pickerSearch = string.Empty;
@@ -572,6 +684,7 @@ else
             _pickerCategory = _categories.Count > 0 ? _categories[0].Value : ComponentCategory.Processor;
             ApplyDefaultTerms();
             _templates = await TemplateRepository.GetTemplatesAsync();
+            await RefreshQuotesAsync();
 
             if (EditarId is { } editId)
             {
@@ -619,6 +732,85 @@ else
         _pickerCategory = category;
         _pickerComponentId = null;
         _pickerSearch = string.Empty;
+    }
+
+    private async Task RefreshQuotesAsync()
+    {
+        _allQuotes = await QuoteRepository.GetQuotesAsync();
+        ApplyQuotesFilter();
+    }
+
+    private void ApplyQuotesFilter()
+    {
+        var agora = DateTimeOffset.Now;
+        _visibleQuotes = _allQuotes
+            .Where(quote =>
+                QuoteFilter.IsInPeriod(quote, _quotesPeriod, agora) &&
+                QuoteFilter.Matches(quote, _quotesSearch))
+            .OrderByDescending(quote => quote.CreatedAt)
+            .ToList();
+    }
+
+    private void OnQuotesPeriodChanged(ChangeEventArgs e)
+    {
+        _quotesPeriod = (QuotePeriod)int.Parse(e.Value?.ToString() ?? "0");
+        ApplyQuotesFilter();
+    }
+
+    private void OnQuotesSearchChanged(ChangeEventArgs e)
+    {
+        _quotesSearch = e.Value?.ToString() ?? string.Empty;
+        ApplyQuotesFilter();
+    }
+
+    // Abrir um orçamento salvo carrega ele na montagem, exatamente como o
+    // link "Abrir na Montagem" fazia — so que sem trocar de tela.
+    private void OpenQuote(SavedQuote quote)
+    {
+        LoadQuote(quote);
+        _quotesCollapsed = true;
+        _statusMessage = $"Orçamento #{quote.Number:000000} aberto na montagem.";
+    }
+
+    private async Task DeleteQuoteAsync(SavedQuote quote)
+    {
+        var numero = quote.Number;
+        try
+        {
+            var excluido = await QuoteRepository.DeleteQuoteAsync(quote.Id);
+            _statusMessage = excluido
+                ? $"Orçamento #{numero:000000} excluído."
+                : "O orçamento ja nao estava mais gravado.";
+        }
+        catch (InvalidOperationException exception)
+        {
+            _statusMessage = $"Nao foi possivel excluir o orçamento: {exception.Message}";
+            _quotePendingDelete = null;
+            return;
+        }
+
+        // Se o orçamento aberto na montagem foi o excluido, ele deixa de
+        // existir no servidor: gravar de novo tem que criar um novo, nao
+        // tentar atualizar uma linha que nao esta mais la.
+        if (_savedQuote?.Id == quote.Id)
+        {
+            _savedQuote = null;
+            _isDirty = true;
+        }
+
+        _quotePendingDelete = null;
+        await RefreshQuotesAsync();
+    }
+
+    private void DuplicateQuote(SavedQuote quote)
+    {
+        LoadQuote(quote);
+        _savedQuote = null;
+        _clientName = string.Empty;
+        _clientPhone = string.Empty;
+        _isDirty = true;
+        _quotesCollapsed = true;
+        _statusMessage = $"Cópia do orçamento #{quote.Number:000000} carregada. Grave para criar um novo.";
     }
 
     private void SelectAndAdd(PcComponent product)
@@ -897,6 +1089,9 @@ else
             _savedQuote = await QuoteRepository.SaveQuoteAsync(_savedQuote, draft);
             _isDirty = false;
             _statusMessage = $"Orçamento #{_savedQuote.Number:000000} gravado.";
+            // A lista de salvos vive na mesma tela agora: sem isto, o
+            // orçamento recém-gravado só apareceria ao recarregar a pagina.
+            await RefreshQuotesAsync();
         }
         catch (ArgumentException exception)
         {

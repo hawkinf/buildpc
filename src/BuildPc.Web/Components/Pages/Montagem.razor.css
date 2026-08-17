@@ -792,3 +792,99 @@
         box-sizing: border-box;
     }
 }
+
+/* ---------------------------------------------------------------
+   Orcamentos salvos dentro da Montagem (antes: tela /orcamentos)
+   --------------------------------------------------------------- */
+
+.build-saved-quotes {
+    margin: 0.75rem 0;
+}
+
+.build-quotes-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 0.5rem 0;
+}
+
+.build-quotes-toolbar select,
+.build-quotes-toolbar input[type="search"] {
+    padding: 0.4rem;
+}
+
+.build-quotes-toolbar input[type="search"] {
+    flex: 1;
+    min-width: 12rem;
+}
+
+.build-quotes-count {
+    color: #475569;
+    font-size: 0.85rem;
+}
+
+.build-quotes-empty {
+    color: #b45309;
+}
+
+.build-quotes-table-wrap {
+    max-height: 18rem;
+    overflow: auto;
+}
+
+.build-quotes-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.build-quotes-table th,
+.build-quotes-table td {
+    text-align: left;
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.build-quotes-table tbody tr:nth-child(even) {
+    background: #eef2f7;
+}
+
+.build-quotes-total {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.build-quotes-actions {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+/* Botao "+" para adicionar direto, sem o passo de selecionar e subir
+   ate o botao "Adicionar" no topo do seletor. */
+.build-picker-add {
+    padding: 0.1rem 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #065f46;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.build-picker-add:hover {
+    background: #d1fae5;
+}
+
+.build-picker-add-cell {
+    width: 3rem;
+    text-align: center;
+}
+
+.build-picker-card .build-picker-add {
+    align-self: center;
+    margin-top: 0.25rem;
+}

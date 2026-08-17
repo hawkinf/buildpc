@@ -84,32 +84,56 @@ else
                     <p>@selected.Notes</p>
                 }
 
-                <ul class="quote-items">
-                    @foreach (var item in selected.Items)
-                    {
-                        <li>
-                            @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
-                            {
-                                <img class="quote-item-thumb" src="@item.ImageUrl" alt="" loading="lazy" />
-                            }
-                            @item.Quantity x
-                            <ProductHoverPreview
-                                Title="@item.Name"
-                                Description="@item.Description"
-                                ImageUrl="@item.ImageUrl"
-                                Price="@item.UnitPrice.ToString("C", CultureHelpers.BrazilianCulture)">
-                                @item.Name
-                            </ProductHoverPreview>
-                            — @item.TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)
-                        </li>
-                    }
-                </ul>
+                <table class="quote-items-table">
+                    <thead>
+                        <tr>
+                            <th class="quote-item-qty">Qtd</th>
+                            <th class="quote-item-desc">Descrição</th>
+                            <th class="quote-item-price">Preço</th>
+                            <th class="quote-item-subtotal">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in selected.Items)
+                        {
+                            <tr>
+                                <td class="quote-item-qty">@item.Quantity</td>
+                                <td class="quote-item-desc">
+                                    @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                    {
+                                        <img class="quote-item-thumb" src="@item.ImageUrl" alt="" loading="lazy" />
+                                    }
+                                    <ProductHoverPreview
+                                        Title="@item.Name"
+                                        Description="@item.Description"
+                                        ImageUrl="@item.ImageUrl"
+                                        Price="@item.UnitPrice.ToString("C", CultureHelpers.BrazilianCulture)">
+                                        @item.Name
+                                    </ProductHoverPreview>
+                                </td>
+                                <td class="quote-item-price">
+                                    @item.UnitPrice.ToString("C", CultureHelpers.BrazilianCulture)
+                                </td>
+                                <td class="quote-item-subtotal">
+                                    @item.TotalPrice.ToString("C", CultureHelpers.BrazilianCulture)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
 
                 @if (selected.HasDiscount)
                 {
-                    <p>Desconto: @selected.DiscountAmount.ToString("C", CultureHelpers.BrazilianCulture)</p>
+                    <p class="quote-discount">
+                        Desconto: @selected.DiscountAmount.ToString("C", CultureHelpers.BrazilianCulture)
+                    </p>
                 }
-                <p><strong>Total: @selected.FinalPrice.ToString("C", CultureHelpers.BrazilianCulture)</strong></p>
+                <p class="quote-total">
+                    <span class="quote-total-label">Total</span>
+                    <span class="quote-total-value">
+                        @selected.FinalPrice.ToString("C", CultureHelpers.BrazilianCulture)
+                    </span>
+                </p>
                 @if (selected.ValidUntil is { } validUntil)
                 {
                     <p>Válido até @validUntil.ToString("dd/MM/yyyy")</p>

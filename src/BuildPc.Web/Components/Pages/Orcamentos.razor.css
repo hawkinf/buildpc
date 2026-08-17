@@ -66,18 +66,77 @@
     border-radius: 4px;
 }
 
-.quote-items {
-    padding-left: 1.25rem;
-    list-style: none;
+.quote-items-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0.75rem 0;
 }
 
-.quote-items li {
-    padding: 0.3rem 0.5rem;
+.quote-items-table th,
+.quote-items-table td {
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
+
+.quote-items-table tbody tr:nth-child(even) {
+    background: #eef2f7;
+}
+
+.quote-item-qty {
+    width: 3.5rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.quote-item-desc {
+    text-align: left;
+}
+
+/* Dinheiro alinhado a direita e com tabular-nums: as casas decimais
+   alinham na vertical e da para comparar os valores batendo o olho. */
+.quote-item-price,
+.quote-item-subtotal {
+    width: 8rem;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.quote-item-subtotal {
+    font-weight: 600;
+}
+
+.quote-discount {
+    text-align: right;
+    color: #475569;
+}
+
+/* Total em destaque: e o numero que o cliente pergunta primeiro. */
+.quote-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin: 0.5rem 0 0;
+    padding: 0.6rem 0.75rem;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
     border-radius: 4px;
 }
 
-.quote-items li:nth-child(even) {
-    background: #eef2f7;
+.quote-total-label {
+    font-weight: 600;
+    color: #065f46;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.quote-total-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #065f46;
+    font-variant-numeric: tabular-nums;
 }
 
 .quote-item-thumb {

@@ -44,3 +44,13 @@
         width: 100%;
     }
 }
+
+.import-last {
+    margin: 0.35rem 0 0;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.import-last-nunca {
+    color: #b45309;
+}

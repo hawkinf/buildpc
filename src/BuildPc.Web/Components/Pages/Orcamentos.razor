@@ -32,6 +32,11 @@ else
             placeholder="Buscar por número, cliente, telefone..."
             value="@_searchText"
             @oninput="OnSearchInput" />
+
+        @* A Montagem sem parametro ja comeca em branco - o que faltava era a
+           porta de entrada. "Abrir na Montagem" carrega um orcamento existente;
+           este aqui abre um novo, do zero. *@
+        <a class="quote-new" href="montagem">Novo orçamento</a>
     </div>
 
     <p class="quote-count">@CountText</p>

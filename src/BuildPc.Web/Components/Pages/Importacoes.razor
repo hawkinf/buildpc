@@ -85,8 +85,16 @@ else
                 {
                     <p class="import-result">
                         @result.Imported importados, @result.Removed removidos, @result.Kept mantidos
-                        (@result.ImportedAt.ToString("dd/MM HH:mm"))
+                        (@FormatarData(result.ImportedAt))
                     </p>
+                }
+                else if (UltimaImportacao(category.Value) is { } ultima)
+                {
+                    <p class="import-last">Última importação: @FormatarData(ultima)</p>
+                }
+                else
+                {
+                    <p class="import-last import-last-nunca">Nunca importada</p>
                 }
                 @if (_errors.TryGetValue(category.Value, out var error))
                 {
@@ -104,6 +112,8 @@ else
     // mudanca valer so para quem clica no botao.
     private readonly Dictionary<ComponentCategory, string> _urls = new(ImportSourceDefaults.Urls);
     private readonly Dictionary<ComponentCategory, ImportReplaceResult> _results = [];
+    private IReadOnlyDictionary<string, DateTimeOffset> _ultimasImportacoes =
+        new Dictionary<string, DateTimeOffset>();
     private readonly Dictionary<ComponentCategory, string> _errors = [];
     private bool _isLoading = true;
     private bool _isImporting;
@@ -123,6 +133,11 @@ else
             // — ver MainWindowViewModel.SaveApplicationConfiguration) — só
             // cai para o padrão embutido quando a categoria nunca foi
             // configurada em lugar nenhum.
+            // Data da última importação de cada categoria: sem isto o cartão só
+            // mostrava resultado depois de importar NESTA sessão, e ao abrir a
+            // página não dava para saber se o catálogo era de hoje ou de julho.
+            _ultimasImportacoes = await CatalogRepository.GetLastImportsAsync();
+
             var storedUrls = await QuoteRepository.GetImportSourceUrlsAsync();
             foreach (var category in _categories)
             {
@@ -146,6 +161,28 @@ else
 
     private bool HasConfiguredUrl(ProductCategoryDefinition category) =>
         !string.IsNullOrWhiteSpace(_urls.GetValueOrDefault(category.Value));
+
+    private DateTimeOffset? UltimaImportacao(ComponentCategory category)
+    {
+        var chave = ImportKeys.For(category, SourceKeyFor(category));
+        return _ultimasImportacoes.TryGetValue(chave, out var quando) ? quando : null;
+    }
+
+    // O servidor grava em UTC; mostrar cru deixava a importação das 13h
+    // aparecendo como 16h. Convertido para o fuso de São Paulo na exibição.
+    private static string FormatarData(DateTimeOffset quando)
+    {
+        try
+        {
+            var fuso = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
+            return TimeZoneInfo.ConvertTime(quando, fuso).ToString("dd/MM/yyyy HH:mm");
+        }
+        catch (Exception excecao)
+            when (excecao is TimeZoneNotFoundException or InvalidTimeZoneException)
+        {
+            return quando.ToOffset(TimeSpan.FromHours(-3)).ToString("dd/MM/yyyy HH:mm");
+        }
+    }
 
     private static string SourceKeyFor(ComponentCategory category) =>
         ImportSourceDefaults.SourceKeyFor(category);

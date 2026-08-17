@@ -51,7 +51,7 @@
 }
 
 .quote-table tbody tr:nth-child(even) {
-    background: #f8fafc;
+    background: #eef2f7;
 }
 
 .quote-table tr.selected {
@@ -77,7 +77,7 @@
 }
 
 .quote-items li:nth-child(even) {
-    background: #f8fafc;
+    background: #eef2f7;
 }
 
 .quote-item-thumb {

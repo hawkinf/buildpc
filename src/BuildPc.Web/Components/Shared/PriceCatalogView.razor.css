@@ -235,7 +235,7 @@
 }
 
 .price-table tbody tr:nth-child(even) {
-    background: #f8fafc;
+    background: #eef2f7;
 }
 
 .price-error {

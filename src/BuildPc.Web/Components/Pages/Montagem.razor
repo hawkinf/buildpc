@@ -34,6 +34,9 @@ else
                 <span>@(string.IsNullOrWhiteSpace(_clientName) ? "Sem cliente" : _clientName)</span>
                 <span>@_items.Count item(ns)</span>
                 <span class="build-collapsed-total">@FinalPrice.ToString("C", CultureHelpers.BrazilianCulture)</span>
+                @* Recolher nao pode esconder a acao principal: sem isto era
+                   preciso expandir o bloco inteiro so para gravar. *@
+                <button type="button" disabled="@(!HasItems)" @onclick="SaveAsync">Gravar</button>
             </div>
         }
         else
@@ -504,7 +507,17 @@ else
     }
 
     <section class="build-templates">
-        <h2>Modelos de montagem</h2>
+        <button
+            type="button"
+            class="build-collapse-toggle"
+            @onclick="() => _templatesCollapsed = !_templatesCollapsed">
+            @(_templatesCollapsed
+                ? $"▼ Modelos de montagem ({_templates.Count})"
+                : "▲ Recolher modelos de montagem")
+        </button>
+
+        @if (!_templatesCollapsed)
+        {
         @if (_templates.Count == 0)
         {
             <p>Nenhum modelo salvo.</p>
@@ -540,6 +553,7 @@ else
                     Salvar montagem atual como modelo
                 </button>
             </div>
+        }
         }
     </section>
 }
@@ -597,8 +611,13 @@ else
     private bool _isLoading = true;
     private string? _loadError;
     private string? _statusMessage;
-    private bool _topCollapsed;
+    // Recolhido por padrao: expandido, o bloco de cliente/resumo/condicoes
+    // enchia a tela inteira e empurrava a lista de precos para baixo da
+    // dobra. A barra compacta continua mostrando cliente, itens e total, e
+    // o seletor ganha altura extra pela classe .top-collapsed.
+    private bool _topCollapsed = true;
     private bool _itemsCollapsed;
+    private bool _templatesCollapsed = true;
     private bool _exportDescriptions = true;
 
     private string _templateName = string.Empty;
@@ -1056,6 +1075,9 @@ else
         if (_isClientNameInvalid || _isClientPhoneInvalid)
         {
             _statusMessage = "Informe o nome e o telefone do cliente.";
+            // Gravando pela barra compacta, os campos estao fora da tela:
+            // sem expandir, a mensagem apontaria para algo invisivel.
+            _topCollapsed = false;
             return;
         }
 

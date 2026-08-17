@@ -888,3 +888,22 @@
     align-self: center;
     margin-top: 0.25rem;
 }
+
+/* Gravar na barra compacta: acao principal, precisa se distinguir do
+   texto cinza do resumo ao lado. */
+.build-collapsed-summary button {
+    padding: 0.25rem 0.75rem;
+    font-weight: 600;
+    color: #065f46;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.build-collapsed-summary button:disabled {
+    color: #94a3b8;
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    cursor: default;
+}

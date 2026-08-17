@@ -52,56 +52,76 @@ else
         <p class="import-progress">@_progressText</p>
     }
 
-    <div class="import-cards">
-        @foreach (var category in _categories)
-        {
-            <div class="import-card">
-                <h2>@category.Name</h2>
-                <input
-                    type="url"
-                    placeholder="URL da categoria no Kabum"
-                    value="@_urls.GetValueOrDefault(category.Value)"
-                    @onchange="e => OnUrlChanged(category, e)" />
-
-                @if (_confirmingCategory == category.Value)
+    <div class="import-table-wrap">
+        <table class="import-table">
+            <thead>
+                <tr>
+                    <th class="import-category-cell">Categoria</th>
+                    <th class="import-url-cell">URL da categoria no Kabum</th>
+                    <th class="import-date-cell">Última importação</th>
+                    <th class="import-result-cell">Resultado</th>
+                    <th class="import-action-cell">Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var category in _categories)
                 {
-                    <p>
-                        Substituir o catálogo de "@category.Name" agora?
-                        <button type="button" @onclick="() => ImportCategoryAsync(category)">Confirmar</button>
-                        <button type="button" @onclick="() => _confirmingCategory = null">Cancelar</button>
-                    </p>
+                    <tr>
+                        <td class="import-category-cell">@category.Name</td>
+                        <td class="import-url-cell">
+                            <input
+                                type="url"
+                                placeholder="URL da categoria no Kabum"
+                                value="@_urls.GetValueOrDefault(category.Value)"
+                                @onchange="e => OnUrlChanged(category, e)" />
+                        </td>
+                        <td class="import-date-cell">
+                            @if (UltimaImportacao(category.Value) is { } ultima)
+                            {
+                                <span class="import-date">@FormatarDia(ultima)</span>
+                                <span class="import-time">@FormatarHora(ultima)</span>
+                            }
+                            else
+                            {
+                                <span class="import-last-nunca">Nunca importada</span>
+                            }
+                        </td>
+                        <td class="import-result-cell">
+                            @if (_results.TryGetValue(category.Value, out var result))
+                            {
+                                <span class="import-result">
+                                    @result.Imported importados, @result.Removed removidos,
+                                    @result.Kept mantidos (@FormatarData(result.ImportedAt))
+                                </span>
+                            }
+                            @if (_errors.TryGetValue(category.Value, out var error))
+                            {
+                                <span class="import-error">@error</span>
+                            }
+                        </td>
+                        <td class="import-action-cell">
+                            @if (_confirmingCategory == category.Value)
+                            {
+                                <span class="import-confirm-inline">
+                                    Substituir "@category.Name"?
+                                    <button type="button" @onclick="() => ImportCategoryAsync(category)">Confirmar</button>
+                                    <button type="button" @onclick="() => _confirmingCategory = null">Cancelar</button>
+                                </span>
+                            }
+                            else
+                            {
+                                <button
+                                    type="button"
+                                    disabled="@(_isImporting || !HasConfiguredUrl(category))"
+                                    @onclick="() => _confirmingCategory = category.Value">
+                                    Importar
+                                </button>
+                            }
+                        </td>
+                    </tr>
                 }
-                else
-                {
-                    <button
-                        type="button"
-                        disabled="@(_isImporting || !HasConfiguredUrl(category))"
-                        @onclick="() => _confirmingCategory = category.Value">
-                        Importar
-                    </button>
-                }
-
-                @if (_results.TryGetValue(category.Value, out var result))
-                {
-                    <p class="import-result">
-                        @result.Imported importados, @result.Removed removidos, @result.Kept mantidos
-                        (@FormatarData(result.ImportedAt))
-                    </p>
-                }
-                else if (UltimaImportacao(category.Value) is { } ultima)
-                {
-                    <p class="import-last">Última importação: @FormatarData(ultima)</p>
-                }
-                else
-                {
-                    <p class="import-last import-last-nunca">Nunca importada</p>
-                }
-                @if (_errors.TryGetValue(category.Value, out var error))
-                {
-                    <p class="import-error">@error</p>
-                }
-            </div>
-        }
+            </tbody>
+        </table>
     </div>
 }
 
@@ -170,19 +190,31 @@ else
 
     // O servidor grava em UTC; mostrar cru deixava a importação das 13h
     // aparecendo como 16h. Convertido para o fuso de São Paulo na exibição.
-    private static string FormatarData(DateTimeOffset quando)
+    private static DateTimeOffset NoFusoLocal(DateTimeOffset quando)
     {
         try
         {
             var fuso = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
-            return TimeZoneInfo.ConvertTime(quando, fuso).ToString("dd/MM/yyyy HH:mm");
+            return TimeZoneInfo.ConvertTime(quando, fuso);
         }
         catch (Exception excecao)
             when (excecao is TimeZoneNotFoundException or InvalidTimeZoneException)
         {
-            return quando.ToOffset(TimeSpan.FromHours(-3)).ToString("dd/MM/yyyy HH:mm");
+            return quando.ToOffset(TimeSpan.FromHours(-3));
         }
     }
+
+    private static string FormatarData(DateTimeOffset quando) =>
+        NoFusoLocal(quando).ToString("dd/MM/yyyy HH:mm");
+
+    // Na tabela o dia e a hora vão em linhas separadas da mesma célula: a
+    // coluna fica estreita e a hora, que era o dado mais fácil de perder de
+    // vista no cartão, ganha destaque próprio.
+    private static string FormatarDia(DateTimeOffset quando) =>
+        NoFusoLocal(quando).ToString("dd/MM/yyyy");
+
+    private static string FormatarHora(DateTimeOffset quando) =>
+        NoFusoLocal(quando).ToString("HH:mm");
 
     private static string SourceKeyFor(ComponentCategory category) =>
         ImportSourceDefaults.SourceKeyFor(category);

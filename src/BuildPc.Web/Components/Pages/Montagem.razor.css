@@ -907,3 +907,18 @@
     border-color: #e2e8f0;
     cursor: default;
 }
+
+/* Custo e lucro na barra compacta: rotulo pequeno em cima do valor, para
+   caber na mesma linha do cliente/total sem estourar a largura. */
+.build-collapsed-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.build-collapsed-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+}

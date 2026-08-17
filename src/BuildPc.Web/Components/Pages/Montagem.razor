@@ -33,7 +33,19 @@ else
             <div class="build-collapsed-summary">
                 <span>@(string.IsNullOrWhiteSpace(_clientName) ? "Sem cliente" : _clientName)</span>
                 <span>@_items.Count item(ns)</span>
+                @* Custo e lucro tambem recolhidos: sao o dado que se olha o
+                   tempo todo montando, e recolher o topo os tirava da tela.
+                   Mesmo RevealCost do bloco expandido, entao continuam
+                   mascarados na frente do cliente. *@
+                <span class="build-collapsed-stat">
+                    <span class="build-collapsed-label">Custo</span>
+                    <RevealCost Value="TotalCost" />
+                </span>
                 <span class="build-collapsed-total">@FinalPrice.ToString("C", CultureHelpers.BrazilianCulture)</span>
+                <span class="build-collapsed-stat">
+                    <span class="build-collapsed-label">Lucro</span>
+                    <RevealCost Value="TotalProfit" Suffix="@($"({TotalProfitPercent.ToString("0.0", CultureHelpers.BrazilianCulture)}%)")" />
+                </span>
                 @* Recolher nao pode esconder a acao principal: sem isto era
                    preciso expandir o bloco inteiro so para gravar. *@
                 <button type="button" disabled="@(!HasItems)" @onclick="SaveAsync">Gravar</button>

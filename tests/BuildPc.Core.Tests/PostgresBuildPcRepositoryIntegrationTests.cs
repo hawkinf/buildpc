@@ -33,8 +33,10 @@ public sealed class PostgresFixture : IAsyncLifetime
     {
         try
         {
-            _container = new PostgreSqlBuilder()
-                .WithImage("postgres:16-alpine")
+            // A imagem vai no construtor: o ctor sem parâmetros ficou
+            // obsoleto no Testcontainers 4.14 (e obsoleto vira erro aqui,
+            // por causa do TreatWarningsAsErrors).
+            _container = new PostgreSqlBuilder("postgres:16-alpine")
                 .WithDatabase("buildpc_test")
                 .WithUsername("buildpc_test")
                 .WithPassword("buildpc_test")

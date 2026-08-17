@@ -21,16 +21,16 @@
     color: #e50000;
 }
 
+/* O detalhe do orçamento fica ABAIXO da tabela, nao ao lado: na coluna
+   estreita da direita cada nome de produto quebrava em quatro ou cinco
+   linhas, e a lista de itens ficava mais alta que a propria tabela. */
 .quote-layout {
     display: flex;
+    flex-direction: column;
     gap: 1.5rem;
-    align-items: flex-start;
-    flex-wrap: wrap;
 }
 
 .quote-table-wrap {
-    flex: 1;
-    min-width: 20rem;
     overflow-x: auto;
 }
 
@@ -58,9 +58,9 @@
     background: #e2e8f0;
 }
 
+/* Sem max-width: embaixo da tabela ele ocupa a largura toda, que era o
+   ponto de tirar da lateral. */
 .quote-detail {
-    min-width: 18rem;
-    max-width: 24rem;
     padding: 1rem;
     border: 1px solid #e2e8f0;
     border-radius: 4px;
@@ -116,22 +116,6 @@
 
     .quote-toolbar select,
     .quote-toolbar input[type="search"] {
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .quote-layout {
-        flex-direction: column;
-    }
-
-    .quote-table-wrap {
-        min-width: 0;
-        width: 100%;
-    }
-
-    .quote-detail {
-        min-width: 0;
-        max-width: none;
         width: 100%;
         box-sizing: border-box;
     }

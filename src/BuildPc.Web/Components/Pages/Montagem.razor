@@ -46,9 +46,13 @@ else
                     <span class="build-collapsed-label">Lucro</span>
                     <RevealCost Value="TotalProfit" Suffix="@($"({TotalProfitPercent.ToString("0.0", CultureHelpers.BrazilianCulture)}%)")" />
                 </span>
-                @* Recolher nao pode esconder a acao principal: sem isto era
-                   preciso expandir o bloco inteiro so para gravar. *@
-                <button type="button" disabled="@(!HasItems)" @onclick="SaveAsync">Gravar</button>
+                @* Botao de expandir, nao de gravar: gravar exige nome e
+                   telefone do cliente, que ficam no bloco recolhido, entao
+                   um "Gravar" aqui so expandia a tela e mentia sobre o que
+                   ia fazer. *@
+                <button type="button" @onclick="() => _topCollapsed = false">
+                    Preencher e gravar
+                </button>
             </div>
         }
         else
